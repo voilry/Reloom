@@ -24,3 +24,8 @@ APP_OUTLINE.md
 # OS files
 .DS_Store
 Thumbs.db
+
+# imp
+*.jks
+*.keystore
+*.b64

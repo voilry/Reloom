@@ -374,21 +374,21 @@ export default function SettingsScreen() {
                         <MenuOption
                             label="Privacy Policy"
                             icon={<ShieldCheck size={20} color={colors.secondary} />}
-                            onPress={() => openLink('https://example.com/privacy')}
+                            onPress={() => openLink('https://github.com/voilry/Reloom/blob/main/PRIVACY.md')}
                             colors={colors}
                             rightIcon={<ExternalLink size={14} color={colors.icon} />}
                         />
                         <MenuOption
                             label="GitHub Repository"
                             icon={<Github size={20} color={colors.secondary} />}
-                            onPress={() => openLink('https://github.com')}
+                            onPress={() => openLink('https://github.com/voilry/Reloom')}
                             colors={colors}
                             rightIcon={<ExternalLink size={14} color={colors.icon} />}
                         />
                         <View style={styles.infoRow}>
                             <Heart size={16} color={colors.error} weight="fill" />
                             <View style={{ marginLeft: 16 }}>
-                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v0.7 alpha</ThemedText>
+                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v0.3.1 alpha</ThemedText>
                                 <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 1 }}>Build with love by zash</ThemedText>
                             </View>
                         </View>
