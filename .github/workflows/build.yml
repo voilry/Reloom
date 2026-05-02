@@ -51,7 +51,7 @@ jobs:
           EXPO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           EXPO_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           EXPO_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: npx eas build --platform android --profile preview --local --non-interactive --output ./build/reloom.apk
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build/reloom.apk
 
       - name: Securely Delete Keystore
         if: always()
