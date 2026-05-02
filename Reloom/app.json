@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Reloom",
+    "slug": "reloom",
+    "version": "0.3.1-alpha",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#c9803a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voileet.reloom"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8F3EB"
+      },
+      "package": "com.voileet.reloom"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ],
+    "scheme": "reloom",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7f360239-fcdf-4730-8e85-e7e0e2e8e2c3"
+      }
+    },
+    "owner": "voileetn"
+  }
+}

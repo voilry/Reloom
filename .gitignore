@@ -1,0 +1,26 @@
+# Node dependencies
+node_modules/
+Reloom/node_modules/
+
+# Expo / React Native
+.expo/
+Reloom/.expo/
+dist/
+Reloom/dist/
+build/
+Reloom/build/
+
+# Environment variables
+.env
+.env.*
+*.local
+
+# Project specific documentation to ignore
+CURRENT_IMPLEMENTATION.md
+learnings.md
+learnings_backup.md
+APP_OUTLINE.md
+
+# OS files
+.DS_Store
+Thumbs.db

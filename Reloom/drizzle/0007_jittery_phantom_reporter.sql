@@ -1,0 +1,1 @@
+ALTER TABLE `people` ADD `is_pinned` integer DEFAULT false;

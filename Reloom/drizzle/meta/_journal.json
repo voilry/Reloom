@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1769081090193,
+      "tag": "0000_handy_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1769084504210,
+      "tag": "0001_colorful_mysterio",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1769085929100,
+      "tag": "0002_fair_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1769604727297,
+      "tag": "0003_legal_miek",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1769936695394,
+      "tag": "0004_panoramic_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1773480579859,
+      "tag": "0005_round_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1775568812058,
+      "tag": "0006_nice_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1776078168756,
+      "tag": "0007_jittery_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1777000000000,
+      "tag": "0008_add_location_fields",
+      "breakpoints": true
+    }
+  ]
+}
