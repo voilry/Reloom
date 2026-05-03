@@ -1,7 +1,5 @@
 <div align="center">
-  <kbd>
-    <img src="Reloom/assets/icon.png" alt="Reloom Logo" width="120" />
-  </kbd>
+  <img src="Reloom/assets/reloom-icon.png" alt="Reloom Logo" width="120" />
   <h1>Reloom</h1>
   <p>A private social registry and personal CRM, built for the long term.</p>
 </div>
