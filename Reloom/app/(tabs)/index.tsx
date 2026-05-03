@@ -1,4 +1,4 @@
-import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable } from 'react-native';
 import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -525,16 +525,6 @@ export default function PeopleScreen() {
                     <ThemedText type="display" style={styles.title}>People</ThemedText>
                 </View>
                 <View style={styles.headerActions}>
-                    <ScalePressable
-                        onPress={() => router.push('/location/')}
-                        style={[styles.headerAction, { backgroundColor: colors.surface, marginRight: 12 }]}
-                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                        innerStyle={{ borderRadius: DesignSystem.radius.full }}
-                        scaleTo={0.88}
-                        springConfig={DesignSystem.animation.springs.fast}
-                    >
-                        <MapPin size={22} color={colors.text} />
-                    </ScalePressable>
                     <ScalePressable
                         onPress={() => router.push('/settings')}
                         style={[styles.headerAction, { backgroundColor: colors.surface, marginRight: 0 }]}
@@ -1143,44 +1133,60 @@ export default function PeopleScreen() {
             {/* Person Manage Bottom Sheet */}
             <Modal
                 visible={showPersonManageModal}
-                animationType="slide"
+                animationType="none"
                 transparent={true}
                 onRequestClose={() => setShowPersonManageModal(false)}
                 statusBarTranslucent
             >
-                <TouchableOpacity
-                    style={[styles.modalOverlay, { justifyContent: 'flex-end' }]}
-                    activeOpacity={1}
-                    onPress={() => setShowPersonManageModal(false)}
-                >
-                    <View style={[styles.bottomSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 100 }]}>
-                        <View style={styles.sheetHeader}>
-                            <View style={[styles.handleIndicator, { backgroundColor: colors.border }]} />
-                        </View>
-
-                        <ThemedText type="subtitle" style={{ marginBottom: 20, textAlign: 'center', fontSize: 22, fontFamily: Typography.fontFamily.medium }}>
-                            {personToManage?.name}
-                        </ThemedText>
-
-                        <ScalePressable
-                            onPress={handleTogglePin}
+                <View style={styles.modalOverlay}>
+                    <Animated.View
+                        entering={FadeIn.duration(200)}
+                        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                    />
+                    <Pressable
+                        style={{ flex: 1, justifyContent: 'flex-end' }}
+                        onPress={() => setShowPersonManageModal(false)}
+                    >
+                        <Animated.View 
+                            entering={SlideInDown.duration(300).springify()}
                             style={[
-                                styles.pinButton,
-                                { backgroundColor: personToManage?.isPinned ? colors.surface : colors.tint }
+                                styles.bottomSheet, 
+                                { 
+                                    backgroundColor: colors.card, 
+                                    paddingBottom: insets.bottom + 160, 
+                                    marginBottom: -120 
+                                }
                             ]}
-                            scaleTo={0.96}
+                            onStartShouldSetResponder={() => true}
                         >
-                            <PushPin
-                                size={22}
-                                color={personToManage?.isPinned ? colors.secondary : (theme === 'dark' ? '#000' : '#fff')}
-                                weight={personToManage?.isPinned ? 'regular' : 'fill'}
-                            />
-                            <ThemedText style={{ fontSize: 16, fontWeight: '700', color: personToManage?.isPinned ? colors.text : (theme === 'dark' ? '#000' : '#fff') }}>
-                                {personToManage?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                            <View style={styles.sheetHeader}>
+                                <View style={[styles.handleIndicator, { backgroundColor: colors.border }]} />
+                            </View>
+
+                            <ThemedText type="subtitle" style={{ marginBottom: 20, textAlign: 'center', fontSize: 22, fontFamily: Typography.fontFamily.medium }}>
+                                {personToManage?.name}
                             </ThemedText>
-                        </ScalePressable>
-                    </View>
-                </TouchableOpacity>
+
+                            <ScalePressable
+                                onPress={handleTogglePin}
+                                style={[
+                                    styles.pinButton,
+                                    { backgroundColor: personToManage?.isPinned ? colors.surface : colors.tint }
+                                ]}
+                                scaleTo={0.96}
+                            >
+                                <PushPin
+                                    size={22}
+                                    color={personToManage?.isPinned ? colors.secondary : (theme === 'dark' ? '#000' : '#fff')}
+                                    weight={personToManage?.isPinned ? 'regular' : 'fill'}
+                                />
+                                <ThemedText style={{ fontSize: 16, fontWeight: '700', color: personToManage?.isPinned ? colors.text : (theme === 'dark' ? '#000' : '#fff') }}>
+                                    {personToManage?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                                </ThemedText>
+                            </ScalePressable>
+                        </Animated.View>
+                    </Pressable>
+                </View>
             </Modal>
             <QuickScrollButton 
                 isScrolling={isScrolling} 

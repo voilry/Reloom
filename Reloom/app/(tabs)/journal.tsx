@@ -282,17 +282,17 @@ export default function JournalScreen() {
                         <View style={styles.headerTitleContainer}>
                             <ThemedText type="display" style={styles.title}>Journal</ThemedText>
                         </View>
-                        <TouchableOpacity
+                        <ScalePressable
                             onPress={handleAddPress}
                             style={[
                                 styles.headerAction,
                                 { backgroundColor: colors.tint + '1A', borderColor: colors.tint + '30', borderWidth: 1 }
                             ]}
+                            innerStyle={{ borderRadius: 22 }}
                             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                            activeOpacity={0.7}
                         >
                             <PenTool size={22} color={colors.tint} weight="duotone" />
-                        </TouchableOpacity>
+                        </ScalePressable>
                     </View>
                 </Animated.View>
 

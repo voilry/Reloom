@@ -152,7 +152,6 @@ function RootLayoutContent() {
           <Stack.Screen name="person/[id]" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="person/[id]/locations" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="person/[id]/relations" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="location/[city]" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="graph" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false, presentation: 'card' }} />

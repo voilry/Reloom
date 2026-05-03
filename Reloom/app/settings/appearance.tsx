@@ -1,4 +1,5 @@
 import React from 'react';
+import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
@@ -109,7 +110,7 @@ export default function AppearanceSettingsScreen() {
                             <SegmentedSelection
                                 options={[
                                     { label: 'Classic List', value: 'default' },
-                                    { label: 'Discovery', value: 'discovery' }
+                                    { label: 'Dashboard', value: 'discovery' }
                                 ]}
                                 selectedValue={settings.peopleTabMode}
                                 onValueChange={(v: 'default' | 'discovery') => {
@@ -354,23 +355,39 @@ function SettingRow({ label, description, icon, children, colors, style }: any) 
 
 function SegmentedSelection({ options, selectedValue, onValueChange, colors, theme }: any) {
     const selectedIndex = options.findIndex((o: any) => o.value === selectedValue);
+    
+    const pillStyle = useAnimatedStyle(() => {
+        const widthPercent = 100 / options.length;
+        return {
+            width: `${widthPercent}%`,
+            left: withSpring(`${selectedIndex * widthPercent}%`, { damping: 50, stiffness: 800, mass: 0.5 }),
+        };
+    });
 
     return (
         <View style={[styles.segmentedContainer, { backgroundColor: colors.surface, marginLeft: 32 }]}>
+            {/* Sliding Background Pill */}
+            <Animated.View 
+                style={[
+                    pillStyle,
+                    {
+                        position: 'absolute',
+                        top: 4,
+                        bottom: 4,
+                        backgroundColor: theme === 'dark' ? colors.tint + '40' : colors.tint,
+                        borderRadius: 7,
+                    }
+                ]} 
+            />
+
             {options.map((opt: any, index: number) => {
                 const isSelected = index === selectedIndex;
                 return (
                     <TouchableOpacity
                         key={opt.label}
+                        activeOpacity={0.8}
                         onPress={() => onValueChange(opt.value)}
-                        style={[
-                            styles.segmentedOption,
-                            isSelected && {
-                                backgroundColor: theme === 'dark' ? colors.tint + '40' : colors.tint,
-                                borderColor: 'transparent',
-                                borderWidth: 0
-                            }
-                        ]}
+                        style={styles.segmentedOption}
                     >
                         <ThemedText style={[
                             styles.segmentedText,

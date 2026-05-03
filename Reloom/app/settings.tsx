@@ -231,20 +231,24 @@ export default function SettingsScreen() {
                                     { label: 'Oldest First', value: 'oldest' }
                                 ].map((opt) => (
                                     <View key={opt.label} style={styles.strengthButtonWrapper}>
-                                        <TouchableOpacity
+                                        <ScalePressable
                                             onPress={() => {
                                                 triggerHaptic();
                                                 updateSetting('defaultSort', opt.value as any);
                                             }}
                                             style={[
                                                 styles.strengthButton,
-                                                { backgroundColor: colors.surface, borderColor: settings.defaultSort === opt.value ? colors.tint : 'transparent' }
+                                                { 
+                                                    backgroundColor: settings.defaultSort === opt.value ? colors.tint + '15' : colors.surface, 
+                                                    borderColor: settings.defaultSort === opt.value ? colors.tint + '60' : 'transparent',
+                                                    borderWidth: 1
+                                                }
                                             ]}
                                         >
                                             <ThemedText type="tiny" style={{ color: settings.defaultSort === opt.value ? colors.tint : colors.secondary, fontWeight: '800' }}>
                                                 {opt.label}
                                             </ThemedText>
-                                        </TouchableOpacity>
+                                        </ScalePressable>
                                     </View>
                                 ))}
                             </View>
@@ -313,7 +317,7 @@ export default function SettingsScreen() {
                         </SettingRow>
                         <View style={[styles.separator, { backgroundColor: colors.border }]} />
                         <SettingRow
-                            label="Dashboard Sections"
+                            label="Quick Glance"
                             icon={<Layout size={20} color={colors.tint} weight="duotone" />}
                             colors={colors}
                             style={[styles.paddingBox, { paddingVertical: 18, paddingBottom: 20, paddingTop: 20 }]}

@@ -109,7 +109,6 @@ export class PersonRepository {
             if (!p.birthdate) missingFields++;
             if (!p.gender) missingFields++;
             if (!p.firstMet) missingFields++;
-            if (!p.city) missingFields++;
             if (!p.locationHome && !p.locationWork) missingFields++;
 
             if (totalActivity > 0 && missingFields >= 3) {

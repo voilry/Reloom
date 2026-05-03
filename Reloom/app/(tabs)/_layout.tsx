@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { useSettings } from '../../store/SettingsContext';
 import { useState, useEffect } from 'react';
-import Animated, { FadeIn, FadeOut, FadeInUp, FadeOutDown, SlideInDown, SlideOutDown, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInUp, FadeOutDown, SlideInDown, SlideOutDown, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -94,35 +94,35 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         }}>
             {/* Global Add Menu Overlay (NO MODAL) */}
             {showAddMenu && (
-                <View style={{ position: 'absolute', bottom: -30, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pointerEvents: 'box-none' }}>
+                <View style={{ position: 'absolute', bottom: -30, width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 1.2, pointerEvents: 'box-none' }}>
                     <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={StyleSheet.absoluteFill}>
-                        <BlurView intensity={theme === 'dark' ? 50 : 25} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.2)' }]} />
+                        <BlurView intensity={theme === 'dark' ? 80 : 50} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.4)' }]} />
                         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowAddMenu(false)} />
                     </Animated.View>
 
                     {/* The sleek menu card */}
-                    <Animated.View entering={FadeInUp.duration(250)} exiting={FadeOutDown.duration(200)} style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}>
+                    <Animated.View entering={FadeInUp.duration(300)} exiting={FadeOutDown.duration(200)} style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}>
                         <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0, ...DesignSystem.shadows.xl }}>
 
                             <MenuOption icon={<UserIcon size={20} color={colors.tint} />} title="New Person" bgColor={colors.tint + '15'} onPress={() => handleAction('newPerson')} colors={colors} />
-                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.5 }} />
+                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
 
                             <MenuOption icon={<PenLine size={20} color="#6366f1" />} title="Quick Note" bgColor="#6366f115" onPress={() => handleAction('quickNote')} colors={colors} />
-                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.5 }} />
+                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
 
                             <MenuOption icon={<AddressBook size={20} color="#f59e0b" />} title="Quick Contact" bgColor="#f59e0b15" onPress={() => handleAction('quickContact')} colors={colors} />
 
                             {settings.showCalendarTab && (
                                 <>
-                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.5 }} />
+                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
                                     <MenuOption icon={<Bell size={20} color="#ef4444" />} title="Set Reminder" bgColor="#ef444415" onPress={() => handleAction('setReminder')} colors={colors} />
                                 </>
                             )}
 
                             {settings.showJournalTab && (
                                 <>
-                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: 0.5 }} />
+                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
                                     <MenuOption icon={<Book size={20} color="#10b981" />} title="Quick Journal" bgColor="#10b98115" onPress={() => handleAction('quickJournal')} colors={colors} />
                                 </>
                             )}

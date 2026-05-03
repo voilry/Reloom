@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Pressable, Platform } from 'react-native';
+import { View, StyleSheet, Modal, ScrollView, Pressable, Platform } from 'react-native';
+import { ScalePressable } from '../ui/ScalePressable';
 import { ThemedText } from '../ui/ThemedText';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -75,13 +75,15 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                                         const IconComponent = getGroupIcon(g.icon);
 
                                         return (
-                                            <TouchableOpacity
+                                            <ScalePressable
                                                 key={g.id}
                                                 style={[styles.groupOption, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
                                                 onPress={() => {
                                                     triggerHaptic();
                                                     onToggleGroup(g.id);
                                                 }}
+                                                innerStyle={{ borderRadius: 0 }} // Keep full row pressable feel
+                                                scaleTo={0.96}
                                             >
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                                                     <View style={[
@@ -115,7 +117,7 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                                                 ]}>
                                                     {isSelected && <Check size={12} color="#fff" weight="bold" />}
                                                 </View>
-                                            </TouchableOpacity>
+                                            </ScalePressable>
                                         );
                                     })
                                 ) : (

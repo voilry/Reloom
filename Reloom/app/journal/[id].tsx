@@ -460,7 +460,7 @@ export default function JournalEditorScreen() {
                         </View>
 
                         {isEditing && (
-                            <ScalePressable 
+                            <ScalePressable
                                 onPress={() => tagSearchRef.current?.focus()}
                                 style={[styles.searchBar, { backgroundColor: colors.surface }]}
                                 scaleTo={0.98}
@@ -544,36 +544,38 @@ export default function JournalEditorScreen() {
                     onPress={() => setShowMoreMenu(false)}
                 >
                     <View style={[styles.menuContent, { top: insets.top + 56, backgroundColor: colors.card, ...DesignSystem.shadows.lg }]}>
-                        <TouchableOpacity
+                        <ScalePressable
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowMoreMenu(false);
                                 handleShare();
                             }}
+                            innerStyle={{ borderRadius: 12 }}
                         >
                             <ShareIcon size={18} color={colors.text} />
-                            <ThemedText style={styles.menuText}>Share Memo</ThemedText>
-                        </TouchableOpacity>
+                            <ThemedText style={styles.menuText}>Share</ThemedText>
+                        </ScalePressable>
 
-                        <View style={{ height: 1, backgroundColor: colors.border, opacity: 0.2, marginHorizontal: 8 }} />
+                        <View style={{ height: 1, backgroundColor: colors.border, opacity: 0.6, marginHorizontal: 8 }} />
 
-                        <TouchableOpacity
+                        <ScalePressable
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowMoreMenu(false);
                                 handleDelete();
                             }}
+                            innerStyle={{ borderRadius: 12 }}
                         >
                             <Trash2 size={18} color={colors.error} />
-                            <ThemedText style={[styles.menuText, { color: colors.error }]}>Delete Memo</ThemedText>
-                        </TouchableOpacity>
+                            <ThemedText style={[styles.menuText, { color: colors.error }]}>Delete</ThemedText>
+                        </ScalePressable>
                     </View>
                 </Pressable>
             </Modal>
 
             <DeleteModal
                 visible={showDeleteModal}
-                title="Delete Memo"
+                title="Delete Entry"
                 description="This action cannot be undone. Permanent wipe?"
                 onCancel={() => setShowDeleteModal(false)}
                 onDelete={() => {
@@ -718,15 +720,16 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 100,
         right: 20,
-        width: 180,
+        minWidth: 180,
         borderRadius: 16,
-        padding: 4,
+        padding: 6,
         overflow: 'hidden',
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         borderRadius: 12,
     },
     menuText: {

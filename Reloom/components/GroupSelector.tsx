@@ -1,4 +1,4 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, Platform, Modal, TextInput } from 'react-native';
 import { ScalePressable } from './ui/ScalePressable';
 import { ThemedText } from './ui/ThemedText';
 import { Colors } from '../constants/Colors';
@@ -186,15 +186,17 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
 
                         {/* Add Button - Cleaner */}
                         {groups.length < 8 && (
-                            <TouchableOpacity
+                            <ScalePressable
                                 onPress={() => {
                                     if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     setShowCreateModal(true);
                                 }}
                                 style={[styles.tab, { backgroundColor: colors.surface, borderWidth: theme === 'light' ? 1 : 0, borderColor: colors.border, paddingHorizontal: 12 }]}
+                                innerStyle={{ borderRadius: 20 }}
+                                scaleTo={0.9}
                             >
                                 <Plus size={18} color={colors.text} />
-                            </TouchableOpacity>
+                            </ScalePressable>
                         )}
                     </ScrollView>
                 </View>
@@ -223,10 +225,10 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 autoFocus
                             />
 
-                            <ThemedText style={styles.label}>Select Color</ThemedText>
+                            <ThemedText style={styles.label}>Select color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
                                 {COLORS.map(c => (
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         key={c}
                                         onPress={() => setSelectedColor(c)}
                                         style={[
@@ -234,43 +236,51 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                             { backgroundColor: c },
                                             selectedColor === c && { borderWidth: 2, borderColor: colors.text }
                                         ]}
+                                        innerStyle={{ borderRadius: 16 }}
+                                        scale={false}
+                                        overlayColor="transparent"
                                     />
                                 ))}
                             </ScrollView>
 
-                            <ThemedText style={styles.label}>Select Icon</ThemedText>
+                            <ThemedText style={styles.label}>Select icon</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
                                 {ICONS.map(icon => (
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         key={icon}
                                         onPress={() => setSelectedIcon(icon)}
                                         style={[
                                             styles.iconOption,
                                             selectedIcon === icon && { backgroundColor: selectedColor, borderColor: selectedColor }
                                         ]}
+                                        innerStyle={{ borderRadius: 18 }}
+                                        scale={false}
+                                        overlayColor="transparent"
                                     >
                                         {getIcon(icon, selectedIcon === icon ? '#fff' : colors.text, 18)}
-                                    </TouchableOpacity>
+                                    </ScalePressable>
                                 ))}
                             </ScrollView>
 
                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-                                <TouchableOpacity
+                                <ScalePressable
                                     onPress={() => setShowCreateModal(false)}
                                     style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 1, borderColor: colors.border }]}
+                                    innerStyle={{ borderRadius: 12 }}
                                 >
                                     <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ScalePressable>
+                                <ScalePressable
                                     onPress={handleCreate}
                                     disabled={!newGroupName.trim()}
                                     style={[
                                         styles.actionBtn,
                                         { backgroundColor: newGroupName.trim() ? selectedColor : colors.border, flex: 2 }
                                     ]}
+                                    innerStyle={{ borderRadius: 12 }}
                                 >
                                     <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Create Group</ThemedText>
-                                </TouchableOpacity>
+                                </ScalePressable>
                             </View>
                         </View>
                     </View>
@@ -293,7 +303,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 <ThemedText type="small" style={{ opacity: 0.6 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
                             </View>
                             {onManageMembers && (
-                                <TouchableOpacity 
+                                <ScalePressable
                                     onPress={() => {
                                         if (selectedGroupToEdit) {
                                             onManageMembers(selectedGroupToEdit);
@@ -301,9 +311,12 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                         }
                                     }}
                                     style={{ padding: 8 }}
+                                    innerStyle={{ borderRadius: 8 }}
+                                    scaleTo={0.9}
+                                    overlayColor="transparent"
                                 >
                                     <ThemedText type="defaultSemiBold" style={{ color: colors.tint, fontSize: 13 }}>Manage Group →</ThemedText>
-                                </TouchableOpacity>
+                                </ScalePressable>
                             )}
                         </View>
 
@@ -315,10 +328,10 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 onChangeText={setEditName}
                             />
 
-                            <ThemedText style={styles.label}>Update Color</ThemedText>
+                            <ThemedText style={styles.label}>Update color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
                                 {COLORS.map(c => (
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         key={c}
                                         onPress={() => setEditColor(c)}
                                         style={[
@@ -326,50 +339,59 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                             { backgroundColor: c },
                                             editColor === c && { borderWidth: 2, borderColor: colors.text }
                                         ]}
+                                        innerStyle={{ borderRadius: 16 }}
+                                        scale={false}
+                                        overlayColor="transparent"
                                     />
                                 ))}
                             </ScrollView>
 
-                            <ThemedText style={styles.label}>Update Icon</ThemedText>
+                            <ThemedText style={styles.label}>Update icon</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
                                 {ICONS.map(icon => (
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         key={icon}
                                         onPress={() => setEditIcon(icon)}
                                         style={[
                                             styles.iconOption,
                                             editIcon === icon && { backgroundColor: editColor, borderColor: editColor }
                                         ]}
+                                        innerStyle={{ borderRadius: 18 }}
+                                        scale={false}
+                                        overlayColor="transparent"
                                     >
                                         {getIcon(icon, editIcon === icon ? '#fff' : colors.text, 18)}
-                                    </TouchableOpacity>
+                                    </ScalePressable>
                                 ))}
                             </ScrollView>
 
                             <View style={{ gap: 12, marginTop: 16 }}>
                                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         onPress={() => setSelectedGroupToEdit(null)}
                                         style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 1, borderColor: colors.border }]}
+                                        innerStyle={{ borderRadius: 12 }}
                                     >
                                         <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
-                                    </TouchableOpacity>
+                                    </ScalePressable>
 
-                                    <TouchableOpacity
+                                    <ScalePressable
                                         onPress={handleUpdate}
                                         disabled={!editName.trim()}
                                         style={[styles.actionBtn, { backgroundColor: editColor, flex: 2 }]}
+                                        innerStyle={{ borderRadius: 12 }}
                                     >
                                         <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Save Changes</ThemedText>
-                                    </TouchableOpacity>
+                                    </ScalePressable>
                                 </View>
 
-                                <TouchableOpacity
+                                <ScalePressable
                                     onPress={handleDelete}
                                     style={[styles.actionBtn, { backgroundColor: colors.error + '10' }]}
+                                    innerStyle={{ borderRadius: 12 }}
                                 >
                                     <ThemedText style={{ color: colors.error, fontWeight: '700' }}>Delete Group</ThemedText>
-                                </TouchableOpacity>
+                                </ScalePressable>
                             </View>
                         </View>
                     </View>
@@ -460,12 +482,12 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     label: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '800',
         marginTop: 12,
         marginBottom: 8,
         opacity: 0.5,
-        textTransform: 'uppercase',
+        textTransform: 'none',
         letterSpacing: 1,
     }
 });

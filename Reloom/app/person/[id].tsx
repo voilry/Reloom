@@ -459,42 +459,45 @@ export default function PersonDetailScreen() {
                     <Animated.View
                         entering={FadeInDown.duration(200).springify()}
                         style={[styles.menuContent, { top: insets.top + 56, backgroundColor: colors.card, ...DesignSystem.shadows.lg }]}>
-                        <TouchableOpacity
+                        <ScalePressable
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowMoreMenu(false);
                                 setShowEditModal(true);
                             }}
+                            innerStyle={{ borderRadius: 12 }}
                         >
                             <Edit size={18} color={colors.text} />
                             <ThemedText style={styles.menuText}>Edit Profile</ThemedText>
-                        </TouchableOpacity>
+                        </ScalePressable>
 
-                        <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+                        <View style={{ height: 1, backgroundColor: colors.border, opacity: 0.6, marginHorizontal: 8 }} />
 
-                        <TouchableOpacity
+                        <ScalePressable
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowMoreMenu(false);
                                 setShowGroupModal(true);
                             }}
+                            innerStyle={{ borderRadius: 12 }}
                         >
                             <Folder size={18} color={colors.text} />
                             <ThemedText style={styles.menuText}>Manage Groups</ThemedText>
-                        </TouchableOpacity>
+                        </ScalePressable>
 
-                        <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+                        <View style={{ height: 1, backgroundColor: colors.border, opacity: 0.6, marginHorizontal: 8 }} />
 
-                        <TouchableOpacity
+                        <ScalePressable
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowMoreMenu(false);
                                 handleDeletePerson();
                             }}
+                            innerStyle={{ borderRadius: 12 }}
                         >
                             <Trash size={18} color={colors.error} />
                             <ThemedText style={[styles.menuText, { color: colors.error, fontWeight: '700' }]}>Delete Profile</ThemedText>
-                        </TouchableOpacity>
+                        </ScalePressable>
                     </Animated.View>
                 </Pressable>
             </Modal>
@@ -660,8 +663,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.4)',
     },
     menuContent: {
-        borderRadius: 12,
-        padding: 8,
+        borderRadius: 16,
+        padding: 6,
         minWidth: 180,
         position: 'absolute',
         right: 16,
@@ -669,7 +672,10 @@ const styles = StyleSheet.create({
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        paddingVertical: 12,
+        paddingLeft: 12,
+        paddingRight: 16,
+        borderRadius: 12,
     },
     menuText: {
         marginLeft: 12,

@@ -11,7 +11,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { ScalePressable } from '../../../components/ui/ScalePressable';
 import { useAppTheme } from '../../../hooks/useAppTheme';
-import { House as Home, Briefcase, Airplane as Plane, Globe, MapPin, X, Check, NavigationArrow as Navigation } from 'phosphor-react-native';
+import { House as Home, Briefcase, Airplane as Plane, MapPin, X, Check, NavigationArrow as Navigation } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -32,8 +32,7 @@ export default function PersonLocationsScreen() {
     const [locationHome, setLocationHome] = useState('');
     const [locationWork, setLocationWork] = useState('');
     const [locationOther, setLocationOther] = useState('');
-    const [city, setCity] = useState('');
-    const [originalData, setOriginalData] = useState({ home: '', work: '', other: '', city: '' });
+    const [originalData, setOriginalData] = useState({ home: '', work: '', other: '' });
     const [isSaving, setIsSaving] = useState(false);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
 
@@ -48,13 +47,11 @@ export default function PersonLocationsScreen() {
             const data = {
                 home: p.locationHome || '',
                 work: p.locationWork || '',
-                other: p.locationOther || '',
-                city: p.city || ''
+                other: p.locationOther || ''
             };
             setLocationHome(data.home);
             setLocationWork(data.work);
             setLocationOther(data.other);
-            setCity(data.city);
             setOriginalData(data);
         }
     };
@@ -63,10 +60,9 @@ export default function PersonLocationsScreen() {
         return (
             locationHome.trim() !== originalData.home ||
             locationWork.trim() !== originalData.work ||
-            locationOther.trim() !== originalData.other ||
-            city.trim() !== originalData.city
+            locationOther.trim() !== originalData.other
         );
-    }, [locationHome, locationWork, locationOther, city, originalData]);
+    }, [locationHome, locationWork, locationOther, originalData]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -99,8 +95,7 @@ export default function PersonLocationsScreen() {
         await PersonRepository.update(personId, {
             locationHome: locationHome.trim(),
             locationWork: locationWork.trim(),
-            locationOther: locationOther.trim(),
-            city: city.trim()
+            locationOther: locationOther.trim()
         });
 
         setIsSaving(false);
@@ -207,32 +202,6 @@ export default function PersonLocationsScreen() {
                         colors={colors}
                     />
 
-                    <View style={{ height: 24 }} />
-                    <View style={styles.sectionDivider}>
-                        <ThemedText type="sectionHeader" style={styles.sectionLabel}>City Grouping</ThemedText>
-                    </View>
-
-                    <LocationInputRow
-                        label="City"
-                        value={city}
-                        onChangeText={setCity}
-                        placeholder="Chicago, London, etc."
-                        icon={<Globe size={22} color={colors.icon} weight="duotone" />}
-                        colors={colors}
-                    />
-
-                    <View style={[
-                        styles.disclaimerCard,
-                        {
-                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-                            borderWidth: theme === 'dark' ? 0 : 1,
-                            borderColor: colors.border + '40'
-                        }
-                    ]}>
-                        <ThemedText style={[styles.disclaimerText, { color: colors.secondary, opacity: 0.8 }]}>
-                            Specific addresses enable quick maps navigation, while city grouping allows you to visualize your social circle by region in the main Cities hub.
-                        </ThemedText>
-                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
 

@@ -12,7 +12,7 @@ import { DesignSystem } from '../../constants/DesignSystem';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface ScalePressableProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     style?: StyleProp<ViewStyle>;
     innerStyle?: StyleProp<ViewStyle>;
     onPress?: () => void;
