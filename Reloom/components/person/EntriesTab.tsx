@@ -120,7 +120,7 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                     style={[styles.addButton, { backgroundColor: colors.tint, ...DesignSystem.shadows.sm }]}
                     innerStyle={{ borderRadius: 14 }}
                 >
-                    <Plus size={24} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />
+                    <Plus size={24} color={theme === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'} weight="bold" />
                 </ScalePressable>
             </View>
 
@@ -194,7 +194,7 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
 
 const styles = StyleSheet.create({
     entriesSection: {
-        paddingTop: 8,
+        paddingTop: 0,
     },
     searchRow: {
         flexDirection: 'row',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         height: 50,
         borderRadius: 12,
-        borderWidth: 1,
+        borderWidth: 0.6,
         marginRight: 10,
     },
     searchInput: {

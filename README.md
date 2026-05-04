@@ -59,5 +59,5 @@ npx expo start
 This project is a personal project and is not currently open to external contributions. Pull requests will be closed without review.
 
 ## License & Privacy
-Reloom is open-source under the [GPL-3.0 License](./LICENSE). 
+Reloom is open-source under the [AGPL-3.0 License](./LICENSE). 
 Your data remains on your device. [Privacy Policy](./PRIVACY.md).

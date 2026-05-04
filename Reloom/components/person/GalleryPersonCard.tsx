@@ -7,6 +7,7 @@ import { ScalePressable } from '../ui/ScalePressable';
 import { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { PushPin } from 'phosphor-react-native';
+import { Typography } from '../../constants/Typography';
 
 interface GalleryPersonCardProps {
     person: Person;
@@ -18,6 +19,20 @@ interface GalleryPersonCardProps {
 export const GalleryPersonCard = memo(({ person, colors, onPress, onLongPress }: GalleryPersonCardProps) => {
     const { theme } = useAppTheme();
     const initials = (person.name || '?').substring(0, 1).toUpperCase();
+
+    // Original gradient logic from Avatar for consistency
+    const getGradientColors = (str: string) => {
+        const palettes = [
+            ['#dc2626', '#991b1b'], ['#ea580c', '#9a3412'], ['#d97706', '#92400e'],
+            ['#65a30d', '#3f6212'], ['#059669', '#065f46'], ['#0891b2', '#155e75'],
+            ['#2563eb', '#1e40af'], ['#4f46e5', '#3730a3'], ['#7c3aed', '#5b21b6'],
+            ['#c026d3', '#86198f'], ['#e11d48', '#9f1239'], ['#475569', '#1e293b'],
+        ];
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        return palettes[Math.abs(hash) % palettes.length];
+    };
+    const gradientColors = getGradientColors(person.name || '?');
 
     return (
         <ScalePressable
@@ -60,26 +75,40 @@ export const GalleryPersonCard = memo(({ person, colors, onPress, onLongPress }:
                     )}
                 </>
             ) : (
-                // No avatar: use a tinted fallback with large initial + name below
-                <View style={[styles.fallbackContainer, { backgroundColor: colors.card }]}>
-                    <View style={[styles.fallbackInitialBox, { backgroundColor: colors.tint + '18' }]}>
-                        <ThemedText style={[styles.fallbackInitial, { color: colors.tint }]}>
+                // No avatar: use full-card colorful gradient
+                <View style={styles.fallbackContainer}>
+                    <LinearGradient
+                        colors={gradientColors as [string, string]}
+                        style={StyleSheet.absoluteFillObject}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    />
+                    <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)']}
+                        style={StyleSheet.absoluteFillObject}
+                        locations={[0.3, 0.6, 1]}
+                    />
+
+                    <View style={styles.fallbackInitialWrapper}>
+                        <ThemedText style={styles.fallbackInitial}>
                             {initials}
                         </ThemedText>
                     </View>
+
                     <View style={styles.textContainer}>
-                        <ThemedText style={[styles.nameFallback, { color: colors.text }]} numberOfLines={1}>
+                        <ThemedText style={styles.nameOverlay} numberOfLines={1}>
                             {person.name}
                         </ThemedText>
                         {!!person.elevatorPitch && (
-                            <ThemedText style={[styles.pitchFallback, { color: colors.secondary }]} numberOfLines={1}>
+                            <ThemedText style={styles.pitchOverlay} numberOfLines={1}>
                                 {person.elevatorPitch}
                             </ThemedText>
                         )}
                     </View>
+
                     {person.isPinned && (
-                        <View style={[styles.pinBadge, { backgroundColor: colors.tint + '20' }]}>
-                            <PushPin size={14} color={colors.tint} weight="fill" />
+                        <View style={[styles.pinBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                            <PushPin size={14} color="#fff" weight="fill" />
                         </View>
                     )}
                 </View>
@@ -104,7 +133,7 @@ const styles = StyleSheet.create({
     },
     nameOverlay: {
         color: '#fff',
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: '800',
         textShadowColor: 'rgba(0,0,0,0.4)',
         textShadowOffset: { width: 0, height: 1 },
@@ -112,9 +141,9 @@ const styles = StyleSheet.create({
     },
     pitchOverlay: {
         color: 'rgba(255,255,255,0.75)',
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600',
-        marginTop: 3,
+        marginTop: -6,
     },
     fallbackContainer: {
         ...StyleSheet.absoluteFillObject,
@@ -122,26 +151,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 0,
     },
-    fallbackInitialBox: {
-        width: 64,
-        height: 64,
-        borderRadius: 20,
+    fallbackInitialWrapper: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 44, // push up so text at bottom has room
+        paddingBottom: 40,
     },
     fallbackInitial: {
-        fontSize: 30,
-        fontWeight: '900',
-    },
-    nameFallback: {
-        fontSize: 16,
-        fontWeight: '800',
-    },
-    pitchFallback: {
-        fontSize: 12,
-        fontWeight: '600',
-        marginTop: 3,
+        fontSize: 40,
+        fontFamily: Typography.fontFamily.serif,
+        color: '#ffffff',
+        opacity: 0.85,
+        lineHeight: 60,
+        includeFontPadding: false,
     },
     pinBadge: {
         position: 'absolute',

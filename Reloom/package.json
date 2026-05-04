@@ -1,6 +1,7 @@
 {
   "name": "reloom",
-  "version": "0.3.1-alpha",
+  "version": "0.3.2-alpha",
+  "license": "AGPL-3.0-only",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",

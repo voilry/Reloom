@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabLabel: { fontWeight: '700', fontSize: 13 },
-    content: { paddingHorizontal: 20, marginTop: 24 },
+    content: { paddingHorizontal: 20, marginTop: 12 },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',

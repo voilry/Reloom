@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderRadius: DesignSystem.radius.lg,
-        borderWidth: 1,
+        borderWidth: 0.6,
         marginBottom: 32,
         overflow: 'hidden', // Fix press effect clipping
         ...DesignSystem.shadows.sm,

@@ -3,6 +3,7 @@ import { View, Image, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Typography } from '../../constants/Typography';
 
 interface AvatarProps {
     uri?: string | null;
@@ -91,6 +92,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     initial: {
-        fontWeight: '700',
+        fontFamily: Typography.fontFamily.serif,
     },
 });

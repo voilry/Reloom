@@ -238,8 +238,8 @@ export default function SettingsScreen() {
                                             }}
                                             style={[
                                                 styles.strengthButton,
-                                                { 
-                                                    backgroundColor: settings.defaultSort === opt.value ? colors.tint + '15' : colors.surface, 
+                                                {
+                                                    backgroundColor: settings.defaultSort === opt.value ? colors.tint + '15' : colors.surface,
                                                     borderColor: settings.defaultSort === opt.value ? colors.tint + '60' : 'transparent',
                                                     borderWidth: 1
                                                 }
@@ -392,7 +392,7 @@ export default function SettingsScreen() {
                         <View style={styles.infoRow}>
                             <Heart size={16} color={colors.error} weight="fill" />
                             <View style={{ marginLeft: 16 }}>
-                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v0.3.1 alpha</ThemedText>
+                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v0.3.2-alpha</ThemedText>
                                 <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 1 }}>Build with love by zash</ThemedText>
                             </View>
                         </View>

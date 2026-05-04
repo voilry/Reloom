@@ -163,8 +163,13 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
 
     const enableCustom = () => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-        setIsCustom(true);
-        setCategory('');
+        if (isCustom) {
+            setIsCustom(false);
+            setCategory('Note');
+        } else {
+            setIsCustom(true);
+            setCategory('');
+        }
     };
 
     const CategoryChip = ({
@@ -192,7 +197,7 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                 end={{ x: 1, y: 1 }}
                 style={[
                     styles.chip,
-                    !isSelected && { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }
+                    !isSelected && { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.08)' }
                 ]}
             >
                 <ThemedText style={[

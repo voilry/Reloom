@@ -73,7 +73,7 @@ const PersonItem = memo(({ item, index, colors, theme, onPress, onLongPress }: a
                     </ThemedText>
                 </View>
                 {item.isPinned && (
-                    <PushPin size={20} color={colors.tint} weight="fill" style={{ marginLeft: 12, marginRight: 4 }} />
+                    <PushPin size={20} color={colors.icon} weight="fill" style={{ marginLeft: 12, marginRight: 4 }} />
                 )}
             </View>
         </ScalePressable>

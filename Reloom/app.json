@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reloom",
     "slug": "reloom",
-    "version": "0.3.1-alpha",
+    "version": "0.3.2-alpha",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

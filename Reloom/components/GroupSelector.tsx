@@ -1,10 +1,10 @@
-import { View, ScrollView, StyleSheet, Platform, Modal, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, Platform, Modal, TextInput, Pressable } from 'react-native';
 import { ScalePressable } from './ui/ScalePressable';
 import { ThemedText } from './ui/ThemedText';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { useAppTheme } from '../hooks/useAppTheme';
-import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile } from 'phosphor-react-native';
+import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Rocket, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Animated, { FadeIn, Layout, ZoomIn } from 'react-native-reanimated';
@@ -27,7 +27,7 @@ export interface GroupSelectorHandle {
     openEdit: (group: Group) => void;
 }
 
-const ICONS = ['Folder', 'Star', 'Briefcase', 'Heart', 'Zap', 'Coffee', 'Home', 'Globe', 'Plane', 'Music', 'Book', 'Smile'];
+const ICONS = ['Folder', 'Star', 'Briefcase', 'Heart', 'Rocket', 'Coffee', 'Home', 'Globe', 'Plane', 'Music', 'Book', 'Smile'];
 
 export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>((props, ref) => {
     const { groups, selectedGroupId, onSelectGroup, onCreateGroup, onUpdateGroup, onDeleteGroup, onManageMembers, hidden } = props;
@@ -35,29 +35,29 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('Folder');
-    const [selectedColor, setSelectedColor] = useState('#4338CA');
+    const [selectedColor, setSelectedColor] = useState('#CA8A04');
 
     // Edit Group State
     const [selectedGroupToEdit, setSelectedGroupToEdit] = useState<Group | null>(null);
     const [editName, setEditName] = useState('');
     const [editIcon, setEditIcon] = useState('Folder');
-    const [editColor, setEditColor] = useState('#4338CA');
+    const [editColor, setEditColor] = useState('#CA8A04');
     const [memberCount, setMemberCount] = useState<number>(0);
 
     const COLORS = [
+        '#CA8A04', // Yellow 700
         '#4338CA', // Indigo 700
         '#BE123C', // Rose 700
         '#047857', // Emerald 700
         '#B45309', // Amber 700
         '#334155', // Slate 700
         '#6D28D9', // Violet 700
-        '#1D4ED8', // Blue 700
         '#C2410C', // Orange 700
         '#B91C1C', // Red 700
         '#0E7490', // Cyan 700
         '#A21CAF', // Fuchsia 700
         '#BE185D', // Pink 700
-        '#27272A', // Zinc 800
+        '#65A30D', // Lime 700
     ];
 
     const handleCreate = () => {
@@ -104,7 +104,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
             case 'Briefcase': return <Briefcase size={size} color={color} />;
             case 'Heart': return <Heart size={size} color={color} />;
             case 'Users': return <Users size={size} color={color} />;
-            case 'Zap': return <Zap size={size} color={color} />;
+            case 'Rocket': return <Rocket size={size} color={color} />;
             case 'Coffee': return <Coffee size={size} color={color} />;
             case 'Home': return <Home size={size} color={color} />;
             case 'Globe': return <Globe size={size} color={color} />;
@@ -234,9 +234,9 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                         style={[
                                             styles.colorOption,
                                             { backgroundColor: c },
-                                            selectedColor === c && { borderWidth: 2, borderColor: colors.text }
+                                            selectedColor === c && { borderWidth: 2.5, borderColor: colors.text }
                                         ]}
-                                        innerStyle={{ borderRadius: 16 }}
+                                        innerStyle={{ borderRadius: 15 }}
                                         scale={false}
                                         overlayColor="transparent"
                                     />
@@ -265,7 +265,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                                 <ScalePressable
                                     onPress={() => setShowCreateModal(false)}
-                                    style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 1, borderColor: colors.border }]}
+                                    style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 0.5, borderColor: colors.border }]}
                                     innerStyle={{ borderRadius: 12 }}
                                 >
                                     <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
@@ -337,9 +337,9 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                         style={[
                                             styles.colorOption,
                                             { backgroundColor: c },
-                                            editColor === c && { borderWidth: 2, borderColor: colors.text }
+                                            editColor === c && { borderWidth: 2.5, borderColor: colors.text }
                                         ]}
-                                        innerStyle={{ borderRadius: 16 }}
+                                        innerStyle={{ borderRadius: 15 }}
                                         scale={false}
                                         overlayColor="transparent"
                                     />
@@ -369,7 +369,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 <View style={{ flexDirection: 'row', gap: 10 }}>
                                     <ScalePressable
                                         onPress={() => setSelectedGroupToEdit(null)}
-                                        style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 1, borderColor: colors.border }]}
+                                        style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 0.5, borderColor: colors.border }]}
                                         innerStyle={{ borderRadius: 12 }}
                                     >
                                         <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 340,
         borderRadius: DesignSystem.radius.xl,
-        borderWidth: 1,
+        borderWidth: 0.5,
         overflow: 'hidden',
     },
     modalHeader: {
@@ -447,7 +447,8 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     selectorScroll: {
-        marginVertical: 12,
+        marginTop: 4,
+        marginBottom: 12,
         maxHeight: 40,
     },
     iconOption: {
@@ -485,7 +486,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '800',
         marginTop: 12,
-        marginBottom: 8,
+        marginBottom: 2,
         opacity: 0.5,
         textTransform: 'none',
         letterSpacing: 1,
