@@ -27,7 +27,7 @@ import { AlertModal } from '../components/ui/AlertModal';
 import { ScalePressable } from '../components/ui/ScalePressable';
 
 export default function SettingsScreen() {
-    const { settings, updateSetting, resetSettings } = useSettings();
+    const { settings, updateSetting, resetSettings, refreshApp } = useSettings();
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -137,7 +137,10 @@ export default function SettingsScreen() {
         try {
             await DataRepository.importData(importedDataToRestore);
             triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-            showAlert("Success", "Your network has been restored.", "success", () => router.replace('/(tabs)'));
+            showAlert("Success", "Your network has been restored.", "success", () => {
+                router.dismissAll();
+                setTimeout(() => refreshApp(), 100);
+            });
         } catch (e: any) {
             console.error('Full import error:', e);
             showAlert("Import Error", `Failed to restore: ${e.message || "Unknown error"}`, "error");
@@ -155,7 +158,10 @@ export default function SettingsScreen() {
         await DataRepository.clearAllData();
         triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
         setShowClearData(false);
-        showAlert("Registry Wiped", "Your network has been cleared.", "success", () => router.replace('/(tabs)'));
+        showAlert("Registry Wiped", "Your network has been cleared.", "success", () => {
+            router.dismissAll();
+            setTimeout(() => refreshApp(), 100);
+        });
     };
 
     const openLink = (url: string) => {
@@ -437,6 +443,7 @@ export default function SettingsScreen() {
                 onDelete={confirmRestoreBackup}
                 actionLabel="Restore"
                 actionColor={colors.tint}
+                actionTextColor="#000"
             />
 
             <AlertModal

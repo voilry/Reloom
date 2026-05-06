@@ -20,7 +20,16 @@ interface DeleteModalProps {
     actionColor?: string;
 }
 
-export function DeleteModal({ visible, title, description, onCancel, onDelete, actionLabel = 'Delete', actionColor = '#ef4444' }: DeleteModalProps) {
+export function DeleteModal({ 
+    visible, 
+    title, 
+    description, 
+    onCancel, 
+    onDelete, 
+    actionLabel = 'Delete', 
+    actionColor = '#ef4444',
+    actionTextColor = '#fff'
+}: DeleteModalProps & { actionTextColor?: string }) {
     const { colors, hapticsEnabled } = useAppTheme();
     const insets = useSafeAreaInsets();
 
@@ -57,7 +66,7 @@ export function DeleteModal({ visible, title, description, onCancel, onDelete, a
                                     onDelete();
                                 }}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: '800', textAlign: 'center' }}>{actionLabel}</ThemedText>
+                                <ThemedText style={{ color: actionTextColor, fontWeight: '800', textAlign: 'center' }}>{actionLabel}</ThemedText>
                             </ScalePressable>
                             <ScalePressable
                                 style={[styles.button, { backgroundColor: colors.surface, flex: 1, marginLeft: 8 }]}

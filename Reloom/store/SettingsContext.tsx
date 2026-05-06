@@ -33,6 +33,8 @@ interface SettingsContextType {
     isLoading: boolean;
     lastSecurityEvent: number;
     triggerSecurityEvent: () => void;
+    refreshKey: number;
+    refreshApp: () => void;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -64,9 +66,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
     const [isLoading, setIsLoading] = useState(true);
     const [lastSecurityEvent, setLastSecurityEvent] = useState(0);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const triggerSecurityEvent = () => {
         setLastSecurityEvent(Date.now());
+    };
+
+    const refreshApp = () => {
+        setRefreshKey(prev => prev + 1);
     };
 
     useEffect(() => {
@@ -128,7 +135,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <SettingsContext.Provider value={{ settings, updateSetting, resetSettings, isLoading, lastSecurityEvent, triggerSecurityEvent }}>
+        <SettingsContext.Provider value={{ 
+            settings, 
+            updateSetting, 
+            resetSettings, 
+            isLoading, 
+            lastSecurityEvent, 
+            triggerSecurityEvent,
+            refreshKey,
+            refreshApp 
+        }}>
             {children}
         </SettingsContext.Provider>
     );

@@ -39,7 +39,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
-  const { settings, isLoading: settingsLoading } = useSettings();
+  const { settings, isLoading: settingsLoading, refreshKey } = useSettings();
   const { colors: appColors, isDark } = useAppTheme();
   
   // Track if we are fully ready to show the app
@@ -129,7 +129,7 @@ function RootLayoutContent() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: appColors.background }}>
+    <View style={{ flex: 1, backgroundColor: appColors.background }} key={refreshKey}>
       <ThemeProvider value={isDark ? MyDarkTheme : MyLightTheme}>
         <Stack
           screenOptions={{
