@@ -74,7 +74,8 @@ const JournalItem = memo(({ item, index, colors, router, hapticsEnabled, onDelet
                 }}
                 style={{ width: '100%' }}
                 innerStyle={{ borderRadius: DesignSystem.radius.lg }}
-                scale={false}
+                scale={true}
+                scaleTo={0.96}
             >
             <Card style={[{ backgroundColor: colors.surface, borderColor: colors.text + '10' }]} padding="lg">
                 <View style={styles.cardHeader}>
