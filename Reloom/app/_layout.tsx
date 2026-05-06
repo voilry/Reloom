@@ -72,6 +72,17 @@ function RootLayoutContent() {
     }
   }, [migrationError]);
 
+  const { checkForUpdates } = useSettings();
+
+  useEffect(() => {
+    if (isReady) {
+      const timer = setTimeout(() => {
+        checkForUpdates();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady]);
+
   useEffect(() => {
     async function prepare() {
       // Wait for everything: Fonts, Migrations, and Settings

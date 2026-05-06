@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar } from 'phosphor-react-native';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp } from 'phosphor-react-native';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -27,7 +27,7 @@ import { AlertModal } from '../components/ui/AlertModal';
 import { ScalePressable } from '../components/ui/ScalePressable';
 
 export default function SettingsScreen() {
-    const { settings, updateSetting, resetSettings, refreshApp } = useSettings();
+    const { settings, updateSetting, resetSettings, refreshApp, hasUpdate, latestVersion } = useSettings();
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -219,8 +219,27 @@ export default function SettingsScreen() {
                         colors={colors}
                         rightIcon={<CaretRight size={16} color={colors.icon} />}
                         noBackground
+                        borderRadius={DesignSystem.radius.lg}
                     />
                 </Card>
+
+                {hasUpdate && (
+                    <Card style={[styles.card, { marginBottom: 32, borderColor: colors.tint, borderWidth: 1.2 }]} padding="none">
+                        <MenuOption
+                            label={`Update Available: ${latestVersion}`}
+                            description="A new version of Reloom is ready."
+                            icon={<CloudArrowUp size={24} color={colors.tint} weight="duotone" />}
+                            onPress={() => {
+                                triggerHaptic();
+                                Linking.openURL('https://github.com/voilry/Reloom/releases/latest');
+                            }}
+                            colors={colors}
+                            rightIcon={<ExternalLink size={16} color={colors.tint} />}
+                            noBackground
+                            borderRadius={DesignSystem.radius.lg}
+                        />
+                    </Card>
+                )}
 
                 <Section title="App Dynamics">
                     <Card style={[styles.card, { marginBottom: 12 }]} padding="none">
@@ -351,6 +370,7 @@ export default function SettingsScreen() {
                             colors={colors}
                             rightIcon={<CaretRight size={16} color={colors.icon} />}
                             noBackground
+                            borderRadius={DesignSystem.radius.lg}
                         />
                     </Card>
                 </Section>
@@ -538,13 +558,14 @@ function SettingRow({ label, description, icon, children, colors, style }: any) 
     );
 }
 
-function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground }: any) {
+function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground, borderRadius }: any) {
     return (
         <ScalePressable
             onPress={onPress}
             style={[styles.optionRow, !description && { paddingVertical: 12 }]}
-            innerStyle={{ borderRadius: DesignSystem.radius.sm }}
-            scale={false}
+            innerStyle={{ borderRadius: borderRadius || DesignSystem.radius.sm }}
+            scale={true}
+            scaleTo={0.96}
         >
             <View style={styles.optionLabelGroup}>
                 <View style={[

@@ -42,6 +42,7 @@ import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ContactRepository } from '../../db/repositories/ContactRepository';
 import { AddressBook } from 'phosphor-react-native';
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
+import { UpdateModal } from '../../components/ui/UpdateModal';
 
 const PersonItem = memo(({ item, index, colors, theme, onPress, onLongPress }: any) => (
     <View>
@@ -91,7 +92,9 @@ export default function PeopleScreen() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const { colors, theme, hapticsEnabled } = useAppTheme();
-    const { settings } = useSettings();
+    const { settings, hasUpdate, latestVersion } = useSettings();
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const hasShownUpdateRef = useRef(false);
 
     // Scroll Logic
     const scrollY = useSharedValue(0);
@@ -236,6 +239,16 @@ export default function PeopleScreen() {
         setPersonToManage(person);
         setShowPersonManageModal(true);
     };
+
+    useEffect(() => {
+        if (hasUpdate && !hasShownUpdateRef.current) {
+            const timer = setTimeout(() => {
+                setShowUpdateModal(true);
+                hasShownUpdateRef.current = true;
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [hasUpdate]);
 
     useEffect(() => {
         const sub1 = DeviceEventEmitter.addListener('globalAction:newPerson', () => setShowAddModal(true));
@@ -534,6 +547,19 @@ export default function PeopleScreen() {
                         springConfig={DesignSystem.animation.springs.fast}
                     >
                         <Settings size={22} color={colors.text} />
+                        {hasUpdate && (
+                            <View style={{
+                                position: 'absolute',
+                                top: 2,
+                                right: 2,
+                                width: 10,
+                                height: 10,
+                                borderRadius: 5,
+                                backgroundColor: '#ef4444',
+                                borderWidth: 2,
+                                borderColor: colors.surface,
+                            }} />
+                        )}
                     </ScalePressable>
                 </View>
             </View>
@@ -1192,6 +1218,11 @@ export default function PeopleScreen() {
                 isScrolling={isScrolling} 
                 direction={scrollDirection} 
                 onPress={handleQuickScroll} 
+            />
+            <UpdateModal 
+                visible={showUpdateModal} 
+                version={latestVersion} 
+                onClose={() => setShowUpdateModal(false)} 
             />
         </ThemedView>
     );
