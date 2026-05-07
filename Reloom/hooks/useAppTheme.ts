@@ -17,14 +17,25 @@ export function useAppTheme() {
         const presetColors = Colors.presets[preset]?.[theme];
         const colors = presetColors || Colors[theme];
         
+        // Apply AMOLED override if enabled in dark mode
+        const finalColors = (theme === 'dark' && settings.amoledEnabled) 
+            ? {
+                ...colors,
+                background: '#000000',
+                card: '#161514',
+                surface: '#22201F',
+                border: '#3D3935', // Original AMOLED border
+              }
+            : colors;
+
         return {
             theme,
             colors: {
-                ...colors,
+                ...finalColors,
                 tintContrast: theme === 'dark' ? '#000' : '#fff'
             },
             isDark: theme === 'dark',
             hapticsEnabled: settings.hapticsEnabled
         };
-    }, [settings.theme, settings.themePreset, settings.hapticsEnabled, systemColorScheme]);
+    }, [settings.theme, settings.themePreset, settings.hapticsEnabled, settings.amoledEnabled, systemColorScheme]);
 }

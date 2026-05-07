@@ -197,7 +197,7 @@ export default function AppearanceSettingsScreen() {
                         <View style={styles.paddingBox}>
                             <SettingRow
                                 label="Content Padding"
-                                description="Adjust horizontal margins in journal views"
+                                description="Adjust horizontal margins in journal"
                                 icon={<SelectionBackground size={20} color={colors.tint} />}
                                 colors={colors}
                             />

@@ -28,6 +28,7 @@ interface Settings {
     biometricEnabled: boolean;
     hasUpdate: boolean;
     latestVersion: string;
+    amoledEnabled: boolean;
 }
 
 interface SettingsContextType {
@@ -67,6 +68,7 @@ const DEFAULT_SETTINGS: Settings = {
     biometricEnabled: false,
     hasUpdate: false,
     latestVersion: '',
+    amoledEnabled: true,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -171,6 +173,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             if (stored.showCalendarTab !== undefined) merged.showCalendarTab = stored.showCalendarTab === 'true';
             if (stored.hasUpdate !== undefined) merged.hasUpdate = stored.hasUpdate === 'true';
             if (stored.latestVersion) merged.latestVersion = stored.latestVersion;
+            if (stored.amoledEnabled !== undefined) merged.amoledEnabled = stored.amoledEnabled === 'true';
 
             setSettings(merged);
         } catch (e) {

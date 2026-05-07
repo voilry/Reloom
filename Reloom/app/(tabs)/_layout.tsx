@@ -106,16 +106,16 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                         <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0, ...DesignSystem.shadows.xl }}>
 
                             <MenuOption icon={<UserIcon size={22} color={colors.tint} />} title="New Person" onPress={() => handleAction('newPerson')} />
-                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
+                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
                             <MenuOption icon={<PenLine size={22} color="#6366f1" />} title="Quick Note" onPress={() => handleAction('quickNote')} />
-                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
+                            <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
                             <MenuOption icon={<AddressBook size={22} color="#f59e0b" />} title="Quick Contact" onPress={() => handleAction('quickContact')} />
 
                             {settings.showCalendarTab && (
                                 <>
-                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
+                                    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
                                     <MenuOption icon={<Bell size={22} color="#ef4444" />} title="Set Reminder" onPress={() => handleAction('setReminder')} />
                                 </>
                             )}

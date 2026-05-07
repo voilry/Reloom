@@ -22,14 +22,14 @@ export const baseDarkColors = {
     text: '#FFFFFF', // High contrast white
     textSecondary: '#D6D1CC', // Much brighter secondary text
     textTertiary: '#A39D96', // Mid grey
-    background: '#000000', // Pure OLED Black for maximum pop
+    background: '#121211', // Almost imperceptible Amber shift
     tint: '#FBBF24', // Extra Vibrant Gold
     icon: '#F5F5F5',
-    tabIconDefault: '#736D66',
+    tabIconDefault: '#909090',
     tabIconSelected: '#FBBF24',
-    border: '#3D3935', // More visible dark border
-    card: '#161514', // Lighter / More distinct card surface
-    surface: '#22201F', // Distinct navigation/header surfaces
+    border: '#333333', // Visible border
+    card: '#1C1C1B', // Barely-there warm charcoal
+    surface: '#242423', // Subtle surface lift
     primary: '#FFFFFF',
     secondary: '#D6D1CC',
     error: '#EF4444',
@@ -62,10 +62,10 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
         },
         dark: {
             ...baseDarkColors,
-            background: '#0F0F0F', 
-            card: '#1E1E1E',       
-            surface: '#262626', 
-            border: '#323232',     
+            background: '#121214', // Almost imperceptible Blue shift
+            card: '#1C1C1F',       
+            surface: '#242429', 
+            border: '#333338',     
             tint: '#38BDF8',       
             tabIconSelected: '#38BDF8',
         }
@@ -89,6 +89,10 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
         },
         dark: {
             ...baseDarkColors,
+            background: '#121412', // Almost imperceptible Green shift
+            card: '#1C211C',       
+            surface: '#242B24', 
+            border: '#2C332C',     
             tint: '#10B981',       
             tabIconSelected: '#10B981',
         }
@@ -112,10 +116,10 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
         },
         dark: {
             ...baseDarkColors,
-            background: '#0F0F0F', 
-            card: '#1E1E1E',       
-            surface: '#262626', 
-            border: '#323232',     
+            background: '#141212', // Almost imperceptible Rose shift
+            card: '#211C1C',       
+            surface: '#2B2424', 
+            border: '#332C2C',     
             tint: '#FB7185',       
             tabIconSelected: '#FB7185',
         }

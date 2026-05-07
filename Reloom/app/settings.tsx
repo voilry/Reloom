@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp } from 'phosphor-react-native';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf } from 'phosphor-react-native';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -208,37 +208,70 @@ export default function SettingsScreen() {
                     />
                 </View>
 
-                <Card style={[styles.card, { marginBottom: 32 }]} padding="none">
-                    <MenuOption
-                        label="Appearance"
-                        icon={<PaintBrush size={24} color={colors.tint} weight="duotone" />}
-                        onPress={() => {
-                            triggerHaptic();
-                            router.push('/settings/appearance');
-                        }}
-                        colors={colors}
-                        rightIcon={<CaretRight size={16} color={colors.icon} />}
-                        noBackground
-                        borderRadius={DesignSystem.radius.lg}
-                    />
-                </Card>
-
-                {hasUpdate && (
-                    <Card style={[styles.card, { marginBottom: 32, borderColor: colors.tint, borderWidth: 1.2 }]} padding="none">
+                <ScalePressable
+                    onPress={() => {
+                        triggerHaptic();
+                        router.push('/settings/appearance');
+                    }}
+                    scaleTo={0.97}
+                    style={{ width: '100%', marginBottom: 8 }}
+                    innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                >
+                    <Card style={styles.card} padding="none">
                         <MenuOption
-                            label={`Update Available: ${latestVersion}`}
-                            description="A new version of Reloom is ready."
-                            icon={<CloudArrowUp size={24} color={colors.tint} weight="duotone" />}
-                            onPress={() => {
-                                triggerHaptic();
-                                Linking.openURL('https://github.com/voilry/Reloom/releases/latest');
-                            }}
+                            label="Appearance"
+                            icon={<PaintBrush size={24} color={colors.tint} weight="duotone" />}
                             colors={colors}
-                            rightIcon={<ExternalLink size={16} color={colors.tint} />}
+                            rightIcon={<CaretRight size={16} color={colors.icon} />}
                             noBackground
-                            borderRadius={DesignSystem.radius.lg}
                         />
                     </Card>
+                </ScalePressable>
+
+                {theme === 'dark' && (
+                    <Card style={[styles.card, { marginBottom: 32 }]} padding="none">
+                        <SettingRow
+                            label={
+                                <ThemedText style={styles.settingLabel}>
+                                    A<ThemedText style={[styles.settingLabel, { fontVariant: ['small-caps'], fontSize: 14 }]}>moled</ThemedText> Mode
+                                </ThemedText>
+                            }
+                            icon={<CircleHalf size={20} color={colors.tint} weight="duotone" />}
+                            colors={colors}
+                            style={[styles.paddingBox, { paddingVertical: 23 }]}
+                        >
+                            <Toggle
+                                value={settings.amoledEnabled}
+                                onValueChange={(v) => {
+                                    triggerHaptic();
+                                    updateSetting('amoledEnabled', v);
+                                }}
+                            />
+                        </SettingRow>
+                    </Card>
+                )}
+
+                {hasUpdate && (
+                    <ScalePressable
+                        onPress={() => {
+                            triggerHaptic();
+                            Linking.openURL('https://github.com/voilry/Reloom/releases/latest');
+                        }}
+                        scaleTo={0.97}
+                        style={{ width: '100%', marginBottom: 32 }}
+                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                    >
+                        <Card style={[styles.card, { borderColor: colors.tint + '40', borderWidth: 1.2 }]} padding="none">
+                            <MenuOption
+                                label={`Update Available: ${latestVersion}`}
+                                description="A new version of Reloom is ready."
+                                icon={<CloudArrowUp size={24} color={colors.tint} weight="duotone" />}
+                                colors={colors}
+                                rightIcon={<ExternalLink size={16} color={colors.tint} />}
+                                noBackground
+                            />
+                        </Card>
+                    </ScalePressable>
                 )}
 
                 <Section title="App Dynamics">
@@ -359,20 +392,25 @@ export default function SettingsScreen() {
                 </Section>
 
                 <Section title="Privacy & Security">
-                    <Card style={[styles.card, { marginBottom: 32 }]} padding="none">
-                        <MenuOption
-                            label="App Lock & Passcode"
-                            icon={<LockKey size={24} color={colors.tint} weight="duotone" />}
-                            onPress={() => {
-                                triggerHaptic();
-                                router.push('/settings/privacy');
-                            }}
-                            colors={colors}
-                            rightIcon={<CaretRight size={16} color={colors.icon} />}
-                            noBackground
-                            borderRadius={DesignSystem.radius.lg}
-                        />
-                    </Card>
+                    <ScalePressable
+                        onPress={() => {
+                            triggerHaptic();
+                            router.push('/settings/privacy');
+                        }}
+                        scaleTo={0.97}
+                        style={{ width: '100%', marginBottom: 32 }}
+                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                    >
+                        <Card style={styles.card} padding="none">
+                            <MenuOption
+                                label="App Lock & Passcode"
+                                icon={<LockKey size={24} color={colors.tint} weight="duotone" />}
+                                colors={colors}
+                                rightIcon={<CaretRight size={16} color={colors.icon} />}
+                                noBackground
+                            />
+                        </Card>
+                    </ScalePressable>
                 </Section>
 
                 <Section title="Data Management">
@@ -543,7 +581,7 @@ function ThemeOption({ label, selected, onPress, icon, colors }: any) {
 
 function SettingRow({ label, description, icon, children, colors, style }: any) {
     return (
-        <View style={[styles.settingRow, style, !description && { paddingVertical: 12 }]}>
+        <View style={[styles.settingRow, !description && { paddingVertical: 12 }, style]}>
             <View style={styles.settingInfo}>
                 <View style={[styles.settingTitleGroup, !description && { marginBottom: 0 }]}>
                     {icon}
@@ -558,15 +596,9 @@ function SettingRow({ label, description, icon, children, colors, style }: any) 
     );
 }
 
-function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground, borderRadius }: any) {
-    return (
-        <ScalePressable
-            onPress={onPress}
-            style={[styles.optionRow, !description && { paddingVertical: 12 }]}
-            innerStyle={{ borderRadius: borderRadius || DesignSystem.radius.sm }}
-            scale={true}
-            scaleTo={0.96}
-        >
+function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground, borderRadius, scale = true }: any) {
+    const content = (
+        <View style={[styles.optionRow, !description && { paddingVertical: 12 }]}>
             <View style={styles.optionLabelGroup}>
                 <View style={[
                     styles.menuIconContainer,
@@ -581,6 +613,19 @@ function MenuOption({ label, description, icon, onPress, colors, isDestructive, 
                 </View>
             </View>
             {rightIcon}
+        </View>
+    );
+
+    if (!onPress) return content;
+
+    return (
+        <ScalePressable
+            onPress={onPress}
+            innerStyle={{ borderRadius: borderRadius || DesignSystem.radius.sm }}
+            scale={scale}
+            scaleTo={0.96}
+        >
+            {content}
         </ScalePressable>
     );
 }
