@@ -40,7 +40,7 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
             <View style={styles.modalOverlay}>
                 <Animated.View
                     entering={FadeIn.duration(250)}
-                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}
                 />
                 <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={onClose}>
                     <Animated.View
@@ -77,7 +77,14 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                                         return (
                                             <ScalePressable
                                                 key={g.id}
-                                                style={[styles.groupOption, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                                                style={[
+                                                    styles.groupOption,
+                                                    {
+                                                        backgroundColor: colors.surface,
+                                                        borderColor: isSelected ? groupColor + '40' : colors.border,
+                                                        borderWidth: 1
+                                                    }
+                                                ]}
                                                 onPress={() => {
                                                     triggerHaptic();
                                                     onToggleGroup(g.id);
@@ -165,7 +172,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 16,
+        padding: 14,
+        borderRadius: DesignSystem.radius.lg,
+        marginBottom: 10,
     },
     groupIconBox: {
         width: 44,

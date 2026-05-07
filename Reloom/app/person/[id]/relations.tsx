@@ -217,12 +217,12 @@ export default function RelationsScreen() {
                                         innerStyle={{ borderRadius: DesignSystem.radius.lg }}
                                     >
                                         <Card style={styles.relCard}>
-                                            <Avatar name={other.name} uri={other.avatarUri} size={46} />
+                                            <Avatar name={other.name} uri={other.avatarUri} size={48} />
                                             <View style={styles.relInfo}>
                                                 <ThemedText style={styles.relName}>{other.name}</ThemedText>
                                                 {rel.relationType ? (
-                                                    <View style={[styles.roleBadge, { backgroundColor: colors.surface }]}>
-                                                        <ThemedText type="tiny" style={{ color: colors.secondary, fontWeight: '700' }}>
+                                                    <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
+                                                        <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 9, letterSpacing: 0.3, textTransform: 'uppercase' }}>
                                                             {rel.relationType}
                                                         </ThemedText>
                                                     </View>
@@ -482,19 +482,27 @@ const styles = StyleSheet.create({
     // List
     listContent: {
         paddingHorizontal: 20,
-        gap: 12,
     },
 
     // Connection cards
     relCard: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: DesignSystem.radius.lg,
         gap: 14,
-        padding: 14,
-        marginBottom: 0,
+        marginBottom: 10,
     },
-    relInfo: { flex: 1 },
-    relName: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
+    relInfo: { 
+        flex: 1,
+        marginTop: 2, // Shift names down slightly
+    },
+    relName: { 
+        fontSize: 16, 
+        fontWeight: '700', 
+        marginBottom: 0, // Tighten gap to tag
+    },
 
     // Swipe delete
     swipeDelete: {
@@ -569,10 +577,10 @@ const styles = StyleSheet.create({
     personPickerName: { fontSize: 16, fontWeight: '700' },
     roleBadge: {
         alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 6,
-        marginTop: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: DesignSystem.radius.full,
+        marginTop: 1, // Tucked closer to name
     },
     noResults: {
         alignItems: 'center',
