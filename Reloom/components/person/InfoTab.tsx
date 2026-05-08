@@ -116,7 +116,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
             <ScalePressable
                 style={[styles.relationshipCard, { borderColor: isAcrylic ? 'transparent' : colors.border, backgroundColor: acrylicBg ?? colors.card }]}
                 innerStyle={{ borderRadius: DesignSystem.radius.lg }}
-                scale={false}
+                scaleTo={0.94}
                 onPress={() => {
                     router.push(`/person/${person.id}/relations`);
                 }}

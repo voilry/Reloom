@@ -2,6 +2,7 @@ import { View, StyleSheet, Modal, ScrollView, Pressable, Platform } from 'react-
 import { ScalePressable } from '../ui/ScalePressable';
 import { ThemedText } from '../ui/ThemedText';
 import { DesignSystem } from '../../constants/DesignSystem';
+import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Check, Folder } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
@@ -57,7 +58,7 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                         <Pressable onPress={(e) => e.stopPropagation()}>
                             <View style={styles.handle} />
                             <View style={styles.sheetHeader}>
-                                <ThemedText type="sectionHeader" style={{ fontSize: 22 }}>Manage Groups</ThemedText>
+                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Manage Groups</ThemedText>
                                 <ThemedText type="small" style={{ color: colors.secondary, marginTop: 4 }}>
                                     Add or remove {personName} from groups
                                 </ThemedText>

@@ -14,6 +14,7 @@ import { DeleteModal } from '../ui/DeleteModal';
 import { EntryRepository, EntryType } from '../../db/repositories/EntryRepository';
 import { useSettings } from '../../store/SettingsContext';
 import { ScreenHeader } from '../ui/ScreenHeader';
+import { Typography } from '../../constants/Typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScalePressable } from '../ui/ScalePressable';
 import { opacity } from 'react-native-reanimated/lib/typescript/Colors';
@@ -222,10 +223,14 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <StatusBar style="auto" />
                 <ScreenHeader
-                    title="New Note"
                     onBack={handleClose}
                     backButtonIcon={<X size={22} color={colors.text} />}
                     backButtonStyle={{ backgroundColor: 'transparent' }}
+                    centerContent={
+                        <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
+                            New Note
+                        </ThemedText>
+                    }
                     rightContent={
                         <ScalePressable
                             onPress={handleSave}

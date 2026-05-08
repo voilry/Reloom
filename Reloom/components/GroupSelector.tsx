@@ -4,6 +4,7 @@ import { ThemedText } from './ui/ThemedText';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { useAppTheme } from '../hooks/useAppTheme';
+import { Typography } from '../constants/Typography';
 import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Rocket, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
@@ -213,7 +214,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.modalHeader}>
-                            <ThemedText type="sectionHeader">New Group</ThemedText>
+                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>New Group</ThemedText>
                         </View>
 
                         <View style={styles.modalContent}>
@@ -299,7 +300,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                     <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.modalHeader}>
                             <View>
-                                <ThemedText type="sectionHeader">Edit Group</ThemedText>
+                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Edit Group</ThemedText>
                                 <ThemedText type="small" style={{ opacity: 0.6 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
                             </View>
                             {onManageMembers && (
@@ -312,7 +313,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                     }}
                                     style={{ padding: 8 }}
                                     innerStyle={{ borderRadius: 8 }}
-                                    scaleTo={0.9}
+                                    scaleTo={0.92}
                                     overlayColor="transparent"
                                 >
                                     <ThemedText type="defaultSemiBold" style={{ color: colors.tint, fontSize: 13 }}>Manage Group →</ThemedText>

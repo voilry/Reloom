@@ -8,6 +8,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import type { Person } from '../../db/repositories/PersonRepository';
 import * as Haptics from 'expo-haptics';
 import { DesignSystem } from '../../constants/DesignSystem';
+import { Typography } from '../../constants/Typography';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { ScalePressable } from '../ui/ScalePressable';
 
@@ -41,10 +42,14 @@ export function PersonPickerModal({ visible, people, onSelect, onClose, title = 
          statusBarTranslucent>
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <ScreenHeader
-                    title={title}
                     onBack={onClose}
                     backButtonIcon={<X size={22} color={colors.text} />}
                     backButtonStyle={{ backgroundColor: 'transparent' }}
+                    centerContent={
+                        <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
+                            {title}
+                        </ThemedText>
+                    }
                 />
 
                 <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>

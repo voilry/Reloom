@@ -7,6 +7,7 @@ import { ScalePressable } from '../ui/ScalePressable';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DesignSystem } from '../../constants/DesignSystem';
+import { Typography } from '../../constants/Typography';
 import { Phone, EnvelopeSimple, InstagramLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, X } from 'phosphor-react-native';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -69,7 +70,7 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                     <View style={styles.sheetHeader}>
                         <View style={[styles.handleIndicator, { backgroundColor: colors.border }]} />
                         <View style={styles.headerTitleRow}>
-                            <ThemedText style={styles.headerTitle}>Add Contact Info</ThemedText>
+                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Add Contact Info</ThemedText>
                             <ScalePressable 
                                 onPress={onClose} 
                                 style={[styles.closeButton, { backgroundColor: colors.surface }]}

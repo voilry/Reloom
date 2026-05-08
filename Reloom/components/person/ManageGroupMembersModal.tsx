@@ -116,7 +116,7 @@ export const ManageGroupMembersModal = ({
                             </ScalePressable>
 
                             <View style={styles.headerTitleContainer}>
-                                <ThemedText type="display" style={[styles.headerTitle, { marginBottom: -14, marginTop: 10 }]}>
+                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif, marginBottom: -14, marginTop: 10 }}>
                                     {isAddingMode ? 'Add People' : 'Group Members'}
                                 </ThemedText>
                                 <View style={[styles.groupBadge, { backgroundColor: groupColor + '10', borderColor: groupColor + '20' }]}>

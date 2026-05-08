@@ -117,7 +117,7 @@ export default function RelationsScreen() {
     // ─── Swipe-to-delete (matches EntriesTab pattern) ────────────────────────
     const renderRightActions = (relId: number, dragX: RNAnimated.AnimatedInterpolation<number>) => {
         const trans = dragX.interpolate({
-            inputRange: [-80, 0],
+            inputRange: [-64, 0],
             outputRange: [1, 0],
             extrapolate: 'clamp',
         });
@@ -163,9 +163,10 @@ export default function RelationsScreen() {
                 rightContent={
                     <ScalePressable
                         onPress={openPicker}
-                        style={[styles.linkCapsule, { backgroundColor: colors.tint + '15', borderColor: colors.tint + '30' }]}
+                        style={[styles.linkCapsule, { backgroundColor: colors.tint + '20' }]}
                         innerStyle={{ borderRadius: 20 }}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        scaleTo={0.92}
                     >
                         <Plus size={14} color={colors.tint} weight="bold" />
                         <ThemedText style={[styles.linkCapsuleText, { color: colors.tint }]}>Link</ThemedText>
@@ -204,6 +205,7 @@ export default function RelationsScreen() {
                                 key={rel.id}
                                 entering={FadeInDown.delay(index * 40).duration(350)}
                                 layout={Layout.springify()}
+                                style={{ marginBottom: 10 }}
                             >
                                 <Swipeable
                                     renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
@@ -219,16 +221,15 @@ export default function RelationsScreen() {
                                         <Card style={styles.relCard}>
                                             <Avatar name={other.name} uri={other.avatarUri} size={48} />
                                             <View style={styles.relInfo}>
-                                                <ThemedText style={styles.relName}>{other.name}</ThemedText>
-                                                {rel.relationType ? (
-                                                    <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
-                                                        <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 9, letterSpacing: 0.3, textTransform: 'uppercase' }}>
-                                                            {rel.relationType}
-                                                        </ThemedText>
-                                                    </View>
-                                                ) : null}
+                                                <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
                                             </View>
-                                            <CaretRight size={16} color={colors.icon} style={{ opacity: 0.4 }} />
+                                            {rel.relationType ? (
+                                                <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
+                                                    <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
+                                                        {rel.relationType}
+                                                    </ThemedText>
+                                                </View>
+                                            ) : null}
                                         </Card>
                                     </ScalePressable>
                                 </Swipeable>
@@ -259,18 +260,16 @@ export default function RelationsScreen() {
                                 <View style={styles.modalHeader}>
                                     <ScalePressable
                                         onPress={resetModal}
-                                        style={[styles.closeBtn, { backgroundColor: colors.surface }]}
+                                        style={styles.closeBtn}
                                         innerStyle={{ borderRadius: 20 }}
                                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                        overlayColor="transparent"
                                     >
-                                        <X size={20} color={colors.text} />
+                                        <X size={24} color={colors.text} />
                                     </ScalePressable>
-                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40, marginTop: 12 }}>
-                                        <ThemedText style={{ fontSize: 22, color: colors.text, fontFamily: Typography.fontFamily.display }}>
-                                            Add Connection
-                                        </ThemedText>
-                                        <ThemedText type="small" style={{ color: colors.secondary, marginTop: -4 }}>
-                                            Who is {person.name} connected to?
+                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40, marginLeft: 12 }}>
+                                        <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
+                                            Who are they connected to?
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -299,20 +298,22 @@ export default function RelationsScreen() {
                                         {filteredPeople.map(p => (
                                             <ScalePressable
                                                 key={p.id}
-                                                style={[styles.personPickerItem, { borderColor: colors.border }]}
+                                                style={styles.personPickerItem}
                                                 innerStyle={{ borderRadius: 12 }}
                                                 onPress={() => handleSelectTarget(p)}
                                             >
-                                                <Avatar name={p.name} uri={p.avatarUri} size={42} />
-                                                <View style={styles.personPickerInfo}>
-                                                    <ThemedText style={styles.personPickerName}>{p.name}</ThemedText>
-                                                    {p.elevatorPitch ? (
-                                                        <ThemedText type="tiny" style={{ color: colors.secondary }} numberOfLines={1}>
-                                                            {p.elevatorPitch}
-                                                        </ThemedText>
-                                                    ) : null}
+                                                <View style={[styles.personPickerItemInner, { borderBottomColor: colors.border }]}>
+                                                    <Avatar name={p.name} uri={p.avatarUri} size={42} />
+                                                    <View style={styles.personPickerInfo}>
+                                                        <ThemedText style={styles.personPickerName}>{p.name}</ThemedText>
+                                                        {p.elevatorPitch ? (
+                                                            <ThemedText type="tiny" style={{ color: colors.secondary }} numberOfLines={1}>
+                                                                {p.elevatorPitch}
+                                                            </ThemedText>
+                                                        ) : null}
+                                                    </View>
+                                                    <CaretRight size={20} color={colors.icon} style={{ opacity: 0.4 }} />
                                                 </View>
-                                                <CaretRight size={20} color={colors.icon} style={{ opacity: 0.4 }} />
                                             </ScalePressable>
                                         ))}
                                         {filteredPeople.length === 0 && (
@@ -341,17 +342,14 @@ export default function RelationsScreen() {
                                     >
                                         <X size={20} color={colors.text} />
                                     </ScalePressable>
-                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40, marginTop: 12 }}>
-                                        <ThemedText style={{ fontSize: 22, color: colors.text, fontFamily: Typography.fontFamily.display }}>
+                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                                        <ThemedText style={{ fontSize: 22, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
                                             Define Link
-                                        </ThemedText>
-                                        <ThemedText type="small" style={{ color: colors.secondary, marginTop: -4 }}>
-                                            Label this connection
                                         </ThemedText>
                                     </View>
                                 </View>
 
-                                <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+                                <ScrollView contentContainerStyle={[styles.modalContent, { paddingHorizontal: 20 }]} keyboardShouldPersistTaps="handled">
                                     {/* Both people + connector visual */}
                                     <View style={styles.connectionVisual}>
                                         {/* Person A */}
@@ -381,7 +379,7 @@ export default function RelationsScreen() {
                                     </View>
 
                                     {/* Relation Label */}
-                                    <ThemedText style={styles.sectionLabel}>HOW ARE THEY CONNECTED?</ThemedText>
+                                    <ThemedText style={styles.sectionLabel}>How are they connected?</ThemedText>
 
                                     {/* Quick Chips */}
                                     <ScrollView
@@ -418,11 +416,17 @@ export default function RelationsScreen() {
 
                                     <View style={{ height: 24 }} />
 
-                                    <Input
-                                        placeholder="Or describe the connection..."
-                                        value={relationType}
-                                        onChangeText={setRelationType}
-                                    />
+                                    <View style={{ position: 'relative' }}>
+                                        <Input
+                                            placeholder="Or describe the connection..."
+                                            value={relationType}
+                                            onChangeText={setRelationType}
+                                            maxLength={25}
+                                        />
+                                        <ThemedText style={{ position: 'absolute', right: 12, bottom: -8, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
+                                            {relationType.length}/25
+                                        </ThemedText>
+                                    </View>
 
                                     {/* Confirm */}
                                     <ScalePressable
@@ -434,7 +438,7 @@ export default function RelationsScreen() {
                                         innerStyle={{ borderRadius: DesignSystem.radius.lg }}
                                     >
                                         <Check size={20} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />
-                                        <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontSize: 14, fontFamily: Typography.fontFamily.display, marginLeft: 4 }}>
+                                        <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontSize: 14, fontFamily: Typography.fontFamily.bold, marginLeft: 4 }}>
                                             Confirm
                                         </ThemedText>
                                     </ScalePressable>
@@ -442,8 +446,8 @@ export default function RelationsScreen() {
                                     <ScalePressable
                                         onPress={() => setStep('pick')}
                                         style={styles.backLink}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        scaleTo={0.96}
+                                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                        scaleTo={0.93}
                                         overlayColor="transparent"
                                     >
                                         <ThemedText style={{ color: colors.secondary, fontSize: 15 }}>
@@ -472,11 +476,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 7,
         borderRadius: 20,
-        borderWidth: 1,
     },
     linkCapsuleText: {
         fontSize: 13,
-        fontWeight: '700',
+        fontFamily: Typography.fontFamily.bold,
     },
 
     // List
@@ -492,15 +495,14 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderRadius: DesignSystem.radius.lg,
         gap: 14,
-        marginBottom: 10,
     },
-    relInfo: { 
+    relInfo: {
         flex: 1,
-        marginTop: 2, // Shift names down slightly
+        justifyContent: 'center',
     },
-    relName: { 
-        fontSize: 16, 
-        fontWeight: '700', 
+    relName: {
+        fontSize: 16,
+        fontFamily: Typography.fontFamily.bold,
         marginBottom: 0, // Tighten gap to tag
     },
 
@@ -508,10 +510,9 @@ const styles = StyleSheet.create({
     swipeDelete: {
         justifyContent: 'center',
         alignItems: 'center',
-        width: 72,
+        width: 60,
         borderRadius: DesignSystem.radius.lg,
         marginLeft: 10,
-        marginBottom: 0,
     },
 
     // Empty
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        borderBottomColor: 'transparent',
     },
     closeBtn: {
         width: 40,
@@ -549,7 +550,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        padding: 24,
+        paddingVertical: 10,
     },
 
     // Person picker
@@ -557,30 +558,34 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderRadius: DesignSystem.radius.md,
-        paddingHorizontal: 14,
-        height: 52,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 48,
+        marginHorizontal: 20,
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
-        fontWeight: '500',
+        fontFamily: Typography.fontFamily.medium,
     },
     personPickerItem: {
+        width: 'auto',
+        marginHorizontal: 8,
+    },
+    personPickerItemInner: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
-        paddingVertical: 14,
+        paddingVertical: 12,
+        marginHorizontal: 12,
         borderBottomWidth: 1,
     },
     personPickerInfo: { flex: 1 },
-    personPickerName: { fontSize: 16, fontWeight: '700' },
+    personPickerName: { fontSize: 16, fontFamily: Typography.fontFamily.bold },
     roleBadge: {
-        alignSelf: 'flex-start',
         paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: DesignSystem.radius.full,
-        marginTop: 1, // Tucked closer to name
+        borderRadius: 8,
     },
     noResults: {
         alignItems: 'center',
@@ -603,7 +608,7 @@ const styles = StyleSheet.create({
     connectionPersonName: {
         marginTop: 10,
         fontSize: 15,
-        fontWeight: '700',
+        fontFamily: Typography.fontFamily.bold,
         textAlign: 'center',
     },
     connectorBridge: {
@@ -627,12 +632,12 @@ const styles = StyleSheet.create({
 
     // Label step: chips
     sectionLabel: {
-        fontSize: 10,
-        fontWeight: '800',
+        fontSize: 14,
+        fontFamily: Typography.fontFamily.serif,
         letterSpacing: 0.5,
         opacity: 0.5,
         marginBottom: 12,
-        textTransform: 'uppercase',
+        textTransform: 'none',
     },
     chipScroll: {
         gap: 8,
@@ -645,7 +650,7 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: 13,
-        fontWeight: '600',
+        fontFamily: Typography.fontFamily.semibold,
     },
 
     // Confirm button
