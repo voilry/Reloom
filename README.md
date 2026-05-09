@@ -1,12 +1,12 @@
 <div align="center">
   <img src="Reloom/assets/reloom-icon.png" alt="Reloom Logo" width="120" />
   <h1>Reloom</h1>
-  <p>A private social registry and personal CRM, built for the long term.</p>
+  <p>People notes, journal and contacts. A private social registry built for networking and remembering.</p>
 </div>
 
 <br />
 
-Reloom is more than a contact book,it’s a personal registry built to capture the context often lost in a generic list. It is designed for those who want to remember the details about people , manage different contacts and journal alongside.
+Reloom is more than a contact book,it’s a personal registry built to capture the context often lost in a generic list. It is designed for those who want to remember the details about people, manage different contacts and journal alongside.
 
 The core of Reloom is a frictionless workflow that lets you log information on the go and find it exactly when you need it. Every interaction and note is stored in a secure, local vault on your device, keeping your data private and your network organized.
 
