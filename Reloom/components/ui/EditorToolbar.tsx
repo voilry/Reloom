@@ -3,7 +3,7 @@ import { View, ScrollView, TouchableOpacity, StyleSheet, Keyboard, Platform } fr
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
-import { X } from '@/components/ui/Icon';
+import { X, Quotes as Quote, Code, Minus } from '@/components/ui/Icon';
 
 interface EditorToolbarProps {
     onInsertFormatting: (prefix: string, suffix?: string) => void;
@@ -20,31 +20,38 @@ export function EditorToolbar({ onInsertFormatting }: EditorToolbarProps) {
                 contentContainerStyle={styles.toolbarScroll}
                 keyboardShouldPersistTaps="always"
             >
-                <TouchableOpacity onPressIn={() => onInsertFormatting('**', '**')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('**', '**')} style={styles.toolbarButton}>
                     <ThemedText style={styles.toolbarTextBold}>B</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPressIn={() => onInsertFormatting('*', '*')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('*', '*')} style={styles.toolbarButton}>
                     <ThemedText style={styles.toolbarTextItalic}>I</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPressIn={() => onInsertFormatting('~~', '~~')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('~~', '~~')} style={styles.toolbarButton}>
                     <ThemedText style={[styles.toolbarText, { textDecorationLine: 'line-through' }]}>S</ThemedText>
                 </TouchableOpacity>
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                <TouchableOpacity onPressIn={() => onInsertFormatting('# ')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('# ')} style={styles.toolbarButton}>
                     <ThemedText style={styles.toolbarText}>H1</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPressIn={() => onInsertFormatting('## ')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('## ')} style={styles.toolbarButton}>
                     <ThemedText style={styles.toolbarText}>H2</ThemedText>
                 </TouchableOpacity>
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                <TouchableOpacity onPressIn={() => onInsertFormatting('\n- ')} style={styles.toolbarButton}>
+                <TouchableOpacity onPress={() => onInsertFormatting('> ')} style={styles.toolbarButton}>
+                    <Quote size={18} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => onInsertFormatting('- ')} style={styles.toolbarButton}>
                     <View style={styles.bulletIcon} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                    onPressIn={() => onInsertFormatting('\n[ ] ')}
-                    style={styles.toolbarButton}
-                >
+                <TouchableOpacity onPress={() => onInsertFormatting('[ ] ')} style={styles.toolbarButton}>
                     <View style={styles.checkboxIcon} />
+                </TouchableOpacity>
+                <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
+                <TouchableOpacity onPress={() => onInsertFormatting('`', '`')} style={styles.toolbarButton}>
+                    <Code size={18} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => onInsertFormatting('---')} style={styles.toolbarButton}>
+                    <Minus size={18} color={colors.text} />
                 </TouchableOpacity>
             </ScrollView>
             <TouchableOpacity onPress={() => Keyboard.dismiss()} style={[styles.toolbarButton, { paddingLeft: 8 }]}>
@@ -67,7 +74,7 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
     toolbarButton: {
-        width: 40,
+        width: 36,
         height: 40,
         justifyContent: 'center',
         alignItems: 'center',
@@ -89,7 +96,7 @@ const styles = StyleSheet.create({
     toolbarDivider: {
         width: 1,
         height: 20,
-        marginHorizontal: 12,
+        marginHorizontal: 8,
     },
     bulletIcon: {
         width: 14,

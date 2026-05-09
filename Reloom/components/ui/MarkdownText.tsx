@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, Platform } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
@@ -33,6 +33,17 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style }) =>
                 <ThemedText key={index} style={[styles.h2, { color: colors.text }]}>
                     {renderInline(line.substring(3), [styles.h2, { color: colors.text }])}
                 </ThemedText>
+            );
+        }
+
+        // Handle Blockquotes
+        if (line.startsWith('> ')) {
+            return (
+                <View key={index} style={[styles.blockquote, { borderLeftColor: colors.tint + '60', backgroundColor: colors.tint + '10' }]}>
+                    <ThemedText style={[styles.paragraph, { color: colors.secondary }, style]}>
+                        {renderInline(line.substring(2), [styles.paragraph, { color: colors.secondary }, style])}
+                    </ThemedText>
+                </View>
             );
         }
 
@@ -82,9 +93,9 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style }) =>
         const parts = [];
         let lastIdx = 0;
 
-        // Regex for Bold (**), Italic (*), Strikethrough (~~)
+        // Regex for Bold (**), Italic (*), Strikethrough (~~), Inline Code (`)
         // Order matters for overlapping markers
-        const regex = /(\*\*.*?\*\*|\*.*?\*|~~.*?~~)/g;
+        const regex = /(\*\*.*?\*\*|\*.*?\*|~~.*?~~|`.*?`)/g;
         let match;
 
         while ((match = regex.exec(text)) !== null) {
@@ -110,6 +121,14 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style }) =>
                     <Text key={match.index} style={[baseStyle, { textDecorationLine: 'line-through', opacity: 0.7 }]}>
                         {matchStr.substring(2, matchStr.length - 2)}
                     </Text>
+                );
+            } else if (matchStr.startsWith('`') && matchStr.endsWith('`')) {
+                parts.push(
+                    <View key={match.index} style={[styles.inlineCodeContainer, { backgroundColor: colors.surface }]}>
+                        <Text style={[baseStyle, styles.inlineCode, { color: colors.tint }]}>
+                            {matchStr.substring(1, matchStr.length - 1)}
+                        </Text>
+                    </View>
                 );
             }
             lastIdx = regex.lastIndex;
@@ -174,5 +193,25 @@ const styles = StyleSheet.create({
         width: '100%',
         marginVertical: 14,
         opacity: 0.6,
+    },
+    blockquote: {
+        borderLeftWidth: 4,
+        paddingLeft: 16,
+        paddingVertical: 8,
+        paddingRight: 8,
+        marginVertical: 8,
+        borderRadius: 4,
+    },
+    inlineCodeContainer: {
+        paddingHorizontal: 6,
+        paddingTop: 3,
+        paddingBottom: 1,
+        borderRadius: 6,
+        marginHorizontal: 2,
+        alignSelf: 'flex-start',
+    },
+    inlineCode: {
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        fontSize: 14,
     },
 });

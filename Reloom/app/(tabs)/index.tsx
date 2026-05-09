@@ -1325,13 +1325,13 @@ const styles = StyleSheet.create({
     personName: {
         fontSize: Typography.size.lg,
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: -1,
         letterSpacing: -0.2,
         fontFamily: Typography.fontFamily.medium,
     },
     personPitch: {
         opacity: 0.7,
-        fontSize: Typography.size.sm,
+        fontSize: 12,
         lineHeight: 20,
         fontFamily: Typography.fontFamily.regular,
     },

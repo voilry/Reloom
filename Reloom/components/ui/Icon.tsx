@@ -174,3 +174,6 @@ export const GraduationCap = (props: any) => <Icon name={props.weight === 'fill'
 export const Palette = (props: any) => <Icon name={props.weight === 'fill' ? 'palette_fill' : 'palette_line'} {...props} />;
 export const MusicNotes = (props: any) => <Icon name={props.weight === 'fill' ? 'music_fill' : 'music_line'} {...props} />;
 export const FirstAid = (props: any) => <Icon name={props.weight === 'fill' ? 'medicine_fill' : 'medicine_line'} {...props} />;
+export const Quotes = (props: any) => <Icon name={props.weight === 'fill' ? 'blockquote_fill' : 'blockquote_line'} {...props} />;
+export const Code = (props: any) => <Icon name={props.weight === 'fill' ? 'code_fill' : 'code_line'} {...props} />;
+export const Minus = (props: any) => <Icon name={props.weight === 'fill' ? 'minimize_fill' : 'minimize_line'} {...props} />;

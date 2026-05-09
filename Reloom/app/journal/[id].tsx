@@ -1,4 +1,8 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, KeyboardAvoidingView, Alert, Modal, Pressable, Keyboard, BackHandler } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, KeyboardAvoidingView, Alert, Modal, Pressable, Keyboard, BackHandler, UIManager, LayoutAnimation } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -51,12 +55,15 @@ export default function JournalEditorScreen() {
     const [isEditing, setIsEditing] = useState(() => edit === 'true' || id === 'new');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const contentRef = useRef('');
     const [selectedPeople, setSelectedPeople] = useState<number[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [kavKey, setKavKey] = useState(0);
     const [selection, setSelection] = useState({ start: 0, end: 0 });
+    const selectionRef = useRef({ start: 0, end: 0 });
     const [tagSearch, setTagSearch] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [originalTitle, setOriginalTitle] = useState('');
@@ -68,6 +75,8 @@ export default function JournalEditorScreen() {
     const scrollViewRef = useRef<ScrollView>(null);
     const editorRef = useRef<TextInput>(null);
     const tagSearchRef = useRef<TextInput>(null);
+    const contentHeightRef = useRef(0);
+    const editorYRef = useRef(0);
 
     const showAlert = (title: string, description: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', onClose?: () => void) => {
         setAlertConfig({ visible: true, title, description, type, onClose });
@@ -102,14 +111,26 @@ export default function JournalEditorScreen() {
 
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
             setIsKeyboardVisible(true);
+            // Scroll to cursor position after keyboard opens
+            setTimeout(() => {
+                const sel = selectionRef.current;
+                const totalChars = Math.max(1, contentRef.current.length);
+                const cursorRatio = sel.start / totalChars;
+                // Offset adjusted to 220px to keep cursor closer to keyboard
+                const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
+                scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 220), animated: true });
+            }, 300);
         });
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setIsKeyboardVisible(false);
+            setKavKey(prev => prev + 1);
+        });
 
         return () => {
             keyboardDidShowListener.remove();
             keyboardDidHideListener.remove();
         };
-    }, [id]);
+    }, [id, isEditing, journalFontSize]);
 
     const loadData = async () => {
         const people = await PersonRepository.getPeopleSortedByActivity();
@@ -127,6 +148,7 @@ export default function JournalEditorScreen() {
             } as Journal);
             setTitle('');
             setContent('');
+            contentRef.current = '';
             setTaggedPeople([]);
             setSelectedPeople([]);
             return;
@@ -141,6 +163,7 @@ export default function JournalEditorScreen() {
             setJournal(j);
             setTitle(j.title || '');
             setContent(j.content || '');
+            contentRef.current = j.content || '';
             setOriginalTitle(j.title || '');
             setOriginalContent(j.content || '');
             const initialTagIds = tags ? tags.map((t: any) => t.person.id) : [];
@@ -386,9 +409,10 @@ export default function JournalEditorScreen() {
             />
 
             <KeyboardAvoidingView
+                key={`kav-${kavKey}`}
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
             >
                 <ScrollView
                     ref={scrollViewRef}
@@ -399,7 +423,6 @@ export default function JournalEditorScreen() {
                     ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    automaticallyAdjustKeyboardInsets={true}
                 >
                     <ThemedText type="tiny" style={styles.fullDate}>{formattedDate}</ThemedText>
 
@@ -413,28 +436,40 @@ export default function JournalEditorScreen() {
                                 style={[styles.titleInput, { color: colors.text }]}
                                 selectionColor={colors.tint}
                             />
-                            <TextInput
-                                ref={editorRef}
-                                value={content}
-                                onChangeText={setContent}
-                                onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-                                multiline
-                                placeholder="Pour your thoughts..."
-                                placeholderTextColor={colors.secondary}
-                                style={[
-                                    styles.editor,
-                                    {
-                                        color: colors.text,
-                                        fontSize: journalFontSize,
-                                        lineHeight: Math.round(journalFontSize * 1.6)
-                                    }
-                                ]}
-                                selectionColor={colors.tint}
-                                scrollEnabled={false}
-                                keyboardType="default"
-                                returnKeyType="default"
-                                onFocus={() => setIsKeyboardVisible(true)}
-                            />
+                            <View onLayout={(e) => { editorYRef.current = e.nativeEvent.layout.y; }}>
+                                <TextInput
+                                    ref={editorRef}
+                                    value={content}
+                                    onChangeText={(text) => {
+                                        setContent(text);
+                                        contentRef.current = text;
+                                    }}
+                                    onSelectionChange={(e) => {
+                                        setSelection(e.nativeEvent.selection);
+                                        selectionRef.current = e.nativeEvent.selection;
+                                    }}
+                                    onContentSizeChange={(e) => {
+                                        contentHeightRef.current = e.nativeEvent.contentSize.height;
+                                    }}
+                                    multiline
+                                    placeholder="Pour your thoughts..."
+                                    placeholderTextColor={colors.secondary}
+                                    style={[
+                                        styles.editor,
+                                        {
+                                            color: colors.text,
+                                            fontSize: journalFontSize,
+                                            lineHeight: Math.round(journalFontSize * 1.6)
+                                        }
+                                    ]}
+                                    selectionColor={colors.tint}
+                                    scrollEnabled={false}
+                                    autoFocus={kavKey === 0}
+                                    keyboardType="default"
+                                    returnKeyType="default"
+                                    onFocus={() => setIsKeyboardVisible(true)}
+                                />
+                            </View>
                         </>
                     ) : (
                         <>

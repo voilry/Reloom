@@ -1,4 +1,8 @@
-import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, Keyboard, BackHandler } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, Keyboard, BackHandler, UIManager, LayoutAnimation } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../components/ui/ThemedView';
 import { ThemedText } from '../components/ui/ThemedText';
@@ -14,6 +18,7 @@ import { DeleteModal } from '../components/ui/DeleteModal';
 import { AlertModal } from '../components/ui/AlertModal';
 import { EditorToolbar } from '../components/ui/EditorToolbar';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { ScalePressable } from '../components/ui/ScalePressable';
 import { Badge } from '../components/ui/Badge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -29,6 +34,7 @@ export default function EditorScreen() {
     const { settings } = useSettings();
 
     const [content, setContent] = useState('');
+    const contentRef = useRef('');
     const [title, setTitle] = useState('');
     const [originalContent, setOriginalContent] = useState('');
     const [originalTitle, setOriginalTitle] = useState('');
@@ -37,10 +43,14 @@ export default function EditorScreen() {
     const [isEditing, setIsEditing] = useState(edit === 'true');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [selection, setSelection] = useState({ start: 0, end: 0 });
+    const selectionRef = useRef({ start: 0, end: 0 });
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean, title: string, description: string, type: 'success' | 'error' | 'info' | 'warning', onClose?: () => void } | null>(null);
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [kavKey, setKavKey] = useState(0);
+    const contentHeightRef = useRef(0);
+    const editorYRef = useRef(0);
     const scrollViewRef = useRef<ScrollView>(null);
     const editorRef = useRef<TextInput>(null);
 
@@ -77,14 +87,26 @@ export default function EditorScreen() {
 
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
             setIsKeyboardVisible(true);
+            // Scroll to cursor position after keyboard opens
+            setTimeout(() => {
+                const sel = selectionRef.current;
+                const totalChars = Math.max(1, contentRef.current.length);
+                const cursorRatio = sel.start / totalChars;
+                // Offset adjusted to 220px to keep cursor closer to keyboard
+                const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
+                scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 220), animated: true });
+            }, 300);
         });
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setIsKeyboardVisible(false);
+            setKavKey(prev => prev + 1);
+        });
 
         return () => {
             keyboardDidShowListener.remove();
             keyboardDidHideListener.remove();
         };
-    }, [id, type]);
+    }, [id, type, isEditing, settings.editorFontSize]);
 
     const loadData = async () => {
         if (!id) return;
@@ -93,6 +115,7 @@ export default function EditorScreen() {
             const p = await PersonRepository.getById(Number(id));
             if (p) {
                 setContent(p.description || '');
+                contentRef.current = p.description || '';
                 setOriginalContent(p.description || '');
                 setTitle(p.name);
                 setOriginalTitle(p.name);
@@ -102,6 +125,7 @@ export default function EditorScreen() {
             const e = await EntryRepository.getById(Number(id));
             if (e) {
                 setContent(e.content);
+                contentRef.current = e.content;
                 setOriginalContent(e.content);
                 setTitle(e.type);
                 setOriginalTitle(e.type);
@@ -188,7 +212,16 @@ export default function EditorScreen() {
     const renderHeader = () => (
         <ScreenHeader
             onBack={handleBack}
-            backButtonIcon={isEditing ? <X size={20} color={colors.text} /> : <ChevronLeft size={22} color={colors.text} />}
+            backButtonIcon={isEditing ? (
+                <ScalePressable 
+                    onPress={handleBack}
+                    scaleTo={0.9}
+                    hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
+                    overlayColor="transparent"
+                >
+                    <X size={20} color={colors.text} />
+                </ScalePressable>
+            ) : <ChevronLeft size={22} color={colors.text} />}
             backButtonStyle={{ backgroundColor: colors.border + '20' }}
             title={undefined}
             borderBottom={false}
@@ -225,7 +258,7 @@ export default function EditorScreen() {
             }
             rightContent={
                 isEditing ? (
-                    <TouchableOpacity
+                    <ScalePressable
                         onPress={handleSave}
                         disabled={isSaving}
                         style={[
@@ -235,19 +268,22 @@ export default function EditorScreen() {
                                 opacity: isSaving ? 0.7 : 1
                             }
                         ]}
+                        scaleTo={0.9}
+                        hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                     >
                         <Check size={20} color={hasChanges ? colors.tintContrast : colors.secondary} weight="bold" />
-                    </TouchableOpacity>
+                    </ScalePressable>
                 ) : (
-                    <TouchableOpacity
+                    <ScalePressable
                         onPress={() => {
                             setIsEditing(true);
-                            if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         }}
                         style={[styles.iconButton, { backgroundColor: colors.tint + '10' }]}
+                        scaleTo={0.9}
+                        hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                     >
                         <Edit3 size={18} color={colors.tint} />
-                    </TouchableOpacity>
+                    </ScalePressable>
                 )
             }
         />
@@ -260,41 +296,52 @@ export default function EditorScreen() {
             {renderHeader()}
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                key={`kav-${kavKey}`}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+                keyboardVerticalOffset={0}
             >
                 <ScrollView
                     ref={scrollViewRef}
                     contentContainerStyle={[styles.scrollContent, !isEditing && { paddingTop: 32 }]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
-                    automaticallyAdjustKeyboardInsets={true}
                 >
                     {isEditing ? (
-                        <TextInput
-                            ref={editorRef}
-                            style={[
-                                styles.editor,
-                                {
-                                    color: colors.text,
-                                    fontSize: settings.editorFontSize,
-                                    lineHeight: Math.round(settings.editorFontSize * 1.5)
-                                }
-                            ]}
-                            multiline
-                            value={content}
-                            onChangeText={setContent}
-                            onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-                            placeholder="Start writing..."
-                            placeholderTextColor={colors.icon + '80'}
-                            autoFocus
-                            selectionColor={colors.tint}
-                            scrollEnabled={false}
-                            keyboardType="default"
-                            returnKeyType="default"
-                            onFocus={() => setIsKeyboardVisible(true)}
-                        />
+                        <View onLayout={(e) => { editorYRef.current = e.nativeEvent.layout.y; }}>
+                            <TextInput
+                                ref={editorRef}
+                                style={[
+                                    styles.editor,
+                                    {
+                                        color: colors.text,
+                                        fontSize: settings.editorFontSize,
+                                        lineHeight: Math.round(settings.editorFontSize * 1.5)
+                                    }
+                                ]}
+                                multiline
+                                value={content}
+                                onChangeText={(text) => {
+                                    setContent(text);
+                                    contentRef.current = text;
+                                }}
+                                onSelectionChange={(e) => {
+                                    setSelection(e.nativeEvent.selection);
+                                    selectionRef.current = e.nativeEvent.selection;
+                                }}
+                                onContentSizeChange={(e) => {
+                                    contentHeightRef.current = e.nativeEvent.contentSize.height;
+                                }}
+                                placeholder="Start writing..."
+                                placeholderTextColor={colors.icon + '80'}
+                                autoFocus={kavKey === 0}
+                                selectionColor={colors.tint}
+                                scrollEnabled={false}
+                                keyboardType="default"
+                                returnKeyType="default"
+                                onFocus={() => setIsKeyboardVisible(true)}
+                            />
+                        </View>
                     ) : (
                         <View style={styles.viewContent}>
                             <MarkdownText
