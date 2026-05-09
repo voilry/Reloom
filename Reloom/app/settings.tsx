@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf } from 'phosphor-react-native';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf } from '@/components/ui/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -650,7 +650,6 @@ function ThemeCard({ label, active, onPress, icon: Icon, colors, theme }: any) {
         >
             <View style={styles.themeCardMain}>
                 <Icon
-                    key={active ? 'fill' : 'regular'}
                     color={active ? colors.tint : (theme === 'dark' ? 'rgba(255,255,255,0.45)' : colors.icon)}
                     weight={active ? 'fill' : 'regular'}
                     size={32}

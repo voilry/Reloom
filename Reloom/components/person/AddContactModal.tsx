@@ -8,7 +8,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
-import { Phone, EnvelopeSimple, InstagramLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, X } from 'phosphor-react-native';
+import { Phone, EnvelopeSimple, InstagramLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, X } from '@/components/ui/Icon';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import * as Haptics from 'expo-haptics';

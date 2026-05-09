@@ -10,7 +10,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { Avatar } from '../../components/ui/Avatar';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, CaretLeft as ChevronLeft, Trash } from 'phosphor-react-native';
+import { Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, CaretLeft as ChevronLeft, Trash } from '@/components/ui/Icon';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { DesignSystem } from '../../constants/DesignSystem';

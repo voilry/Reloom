@@ -6,7 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { ThemedText } from '../ui/ThemedText';
 import { Card } from '../ui/Card';
 import { Colors } from '../../constants/Colors';
-import { BookOpen, Trash } from 'phosphor-react-native';
+import { BookOpen, Trash } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';

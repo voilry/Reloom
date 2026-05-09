@@ -10,7 +10,7 @@ import { DesignSystem } from '../../constants/DesignSystem';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Book, Plus, X, MagnifyingGlass as Search, Tag, User, Trash, Calendar, CaretRight as ChevronRight, Pencil as PenTool } from 'phosphor-react-native';
+import { Book, Plus, X, MagnifyingGlass as Search, Tag, User, Trash, Calendar, CaretRight as ChevronRight, Pencil as PenTool } from '@/components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { Card } from '../../components/ui/Card';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

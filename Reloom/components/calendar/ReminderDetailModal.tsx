@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../ui/ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Bell, Calendar, Clock, X, CheckCircle, RadioButton, Trash, PencilSimple as Pencil, User } from 'phosphor-react-native';
+import { Bell, Calendar, Clock, X, CheckCircle, RadioButton, Trash, PencilSimple as Pencil, User } from '@/components/ui/Icon';
 import { Reminder } from '../../db/repositories/ReminderRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
 import Animated, { FadeIn, SlideInDown, FadeInDown } from 'react-native-reanimated';

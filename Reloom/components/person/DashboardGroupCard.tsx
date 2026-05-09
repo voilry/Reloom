@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '../ui/ThemedText';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { ScalePressable } from '../ui/ScalePressable';
-import { CaretRight, Users } from 'phosphor-react-native';
+import { CaretRight, Users } from '@/components/ui/Icon';
 import { getGroupIcon } from '../../constants/GroupIcons';
 
 interface DashboardGroupCardProps {

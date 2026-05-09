@@ -17,7 +17,7 @@ import { JournalRepository } from '../../db/repositories/JournalRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Button } from '../../components/ui/Button';
-import { Plus, MagnifyingGlass as Search, Camera, X, Check, CaretRight, CaretLeft, Faders as Filter, Gear as Settings, User as UserIcon, Folder, Calendar, PencilLine as PenLine, Bell, Book, PushPin, MapPin } from 'phosphor-react-native';
+import { Plus, MagnifyingGlass as Search, Camera, X, Check, CaretRight, CaretLeft, Faders as Filter, Gear as Settings, User as UserIcon, Folder, Calendar, PencilLine as PenLine, Bell, Book, PushPin, MapPin } from '@/components/ui/Icon';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -40,7 +40,7 @@ import { useSettings } from '../../store/SettingsContext';
 import { AddReminderModal } from '../../components/calendar/AddReminderModal';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ContactRepository } from '../../db/repositories/ContactRepository';
-import { AddressBook } from 'phosphor-react-native';
+import { AddressBook } from '@/components/ui/Icon';
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
 import { UpdateModal } from '../../components/ui/UpdateModal';
 
@@ -114,13 +114,13 @@ export default function PeopleScreen() {
         onScroll: (event) => {
             const currentY = event.contentOffset.y;
             const diff = currentY - scrollY.value;
-            
+
             if (Math.abs(diff) > 5) {
                 scrollDirection.value = diff > 0 ? 'down' : 'up';
                 isScrolling.value = currentY > 400;
             }
             scrollY.value = currentY;
-            
+
             runOnJS(startHideTimer)();
         },
     });
@@ -222,7 +222,7 @@ export default function PeopleScreen() {
             setShowQuickNoteModal(false);
             const name = selectedPersonForNote.name;
             setSelectedPersonForNote(null);
-            
+
             const { showToast } = require('../../components/ui/Toast');
             showToast(`Note added for ${name}`);
             // Optional: feedback
@@ -456,7 +456,7 @@ export default function PeopleScreen() {
         resetForm();
         setShowAddModal(false);
         loadPeople();
-        
+
         // Show success feedback
         setAlertConfig({
             visible: true,
@@ -1173,14 +1173,14 @@ export default function PeopleScreen() {
                         style={{ flex: 1, justifyContent: 'flex-end' }}
                         onPress={() => setShowPersonManageModal(false)}
                     >
-                        <Animated.View 
+                        <Animated.View
                             entering={SlideInDown.duration(300).springify()}
                             style={[
-                                styles.bottomSheet, 
-                                { 
-                                    backgroundColor: colors.card, 
-                                    paddingBottom: insets.bottom + 160, 
-                                    marginBottom: -120 
+                                styles.bottomSheet,
+                                {
+                                    backgroundColor: colors.card,
+                                    paddingBottom: insets.bottom + 160,
+                                    marginBottom: -120
                                 }
                             ]}
                             onStartShouldSetResponder={() => true}
@@ -1214,15 +1214,15 @@ export default function PeopleScreen() {
                     </Pressable>
                 </View>
             </Modal>
-            <QuickScrollButton 
-                isScrolling={isScrolling} 
-                direction={scrollDirection} 
-                onPress={handleQuickScroll} 
+            <QuickScrollButton
+                isScrolling={isScrolling}
+                direction={scrollDirection}
+                onPress={handleQuickScroll}
             />
-            <UpdateModal 
-                visible={showUpdateModal} 
-                version={latestVersion} 
-                onClose={() => setShowUpdateModal(false)} 
+            <UpdateModal
+                visible={showUpdateModal}
+                version={latestVersion}
+                onClose={() => setShowUpdateModal(false)}
             />
         </ThemedView>
     );

@@ -7,7 +7,7 @@ import { ThemedText } from '../../components/ui/ThemedText';
 import { useSettings, ThemeMode } from '../../store/SettingsContext';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, Clock, ArrowUp, ArrowDown, List, ArrowsDownUp } from 'phosphor-react-native';
+import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, Clock, ArrowUp, ArrowDown, List, ArrowsDownUp } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

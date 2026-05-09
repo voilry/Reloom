@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, MagnifyingGlass as Search } from 'phosphor-react-native';
+import { X, MagnifyingGlass as Search } from '@/components/ui/Icon';
 import { ThemedText } from '../ui/ThemedText';
 import { Avatar } from '../ui/Avatar';
 import { useAppTheme } from '../../hooks/useAppTheme';

@@ -6,7 +6,7 @@ import { ThemedText } from '../ui/ThemedText';
 import { AlertModal } from '../ui/AlertModal';
 import { Card } from '../ui/Card';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Plus, Trash, PencilSimple, Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe } from 'phosphor-react-native';
+import { Plus, Trash, PencilSimple, Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe } from '@/components/ui/Icon';
 import { Button } from '../ui/Button';
 
 export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcrylic, colors }: any) {
@@ -134,10 +134,12 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
             {contacts.map((contact: any, index: number) => (
                 <Animated.View
                     key={contact.id}
-                    entering={FadeInDown.delay(index * 60).duration(400)}
                     layout={Layout.springify()}
                 >
-                    <Swipeable
+                    <Animated.View
+                        entering={FadeInDown.delay(index * 60).duration(400)}
+                    >
+                        <Swipeable
                         renderRightActions={(_prog, dragX) => renderRightActions(contact.id, dragX)}
                         overshootRight={false}
                         friction={3}
@@ -168,6 +170,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                         </ScalePressable>
                     </Swipeable>
                 </Animated.View>
+            </Animated.View>
             ))}
 
             <AlertModal

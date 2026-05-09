@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ScalePressable } from '../ui/ScalePressable';
 import { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { PushPin } from 'phosphor-react-native';
+import { PushPin } from '@/components/ui/Icon';
 import { Typography } from '../../constants/Typography';
 
 interface GalleryPersonCardProps {

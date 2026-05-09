@@ -5,7 +5,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
-import { CheckCircle, XCircle, Info, WarningCircle } from 'phosphor-react-native';
+import { CheckCircle, XCircle, Info, WarningCircle } from '@/components/ui/Icon';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScalePressable } from './ScalePressable';

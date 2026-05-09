@@ -9,7 +9,7 @@ import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSettings } from '../../store/SettingsContext';
-import { CaretLeft as ChevronLeft, Pencil as Edit3, Check, Calendar, UserPlus, Trash as Trash2, DotsThreeVertical as MoreVertical, ShareNetwork as ShareIcon, X, MagnifyingGlass as Search } from 'phosphor-react-native';
+import { CaretLeft as ChevronLeft, Pencil as Edit3, Check, Calendar, UserPlus, Trash as Trash2, DotsThreeVertical as MoreVertical, ShareNetwork as ShareIcon, X, MagnifyingGlass as Search } from '@/components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { MarkdownText } from '../../components/ui/MarkdownText';
 import { DeleteModal } from '../../components/ui/DeleteModal';
@@ -387,8 +387,8 @@ export default function JournalEditorScreen() {
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={0}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
             >
                 <ScrollView
                     ref={scrollViewRef}
@@ -399,6 +399,7 @@ export default function JournalEditorScreen() {
                     ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
+                    automaticallyAdjustKeyboardInsets={true}
                 >
                     <ThemedText type="tiny" style={styles.fullDate}>{formattedDate}</ThemedText>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, Platform } from 'react-native';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { MagnifyingGlass as Search, X } from 'phosphor-react-native';
+import { MagnifyingGlass as Search, X } from '@/components/ui/Icon';
 import { ScalePressable } from './ScalePressable';
 
 interface SearchBarProps {

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, FlatList } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Calendar } from 'phosphor-react-native';
+import { Calendar } from '@/components/ui/Icon';
 import { BlurView } from 'expo-blur';
 import { DesignSystem } from '../../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';

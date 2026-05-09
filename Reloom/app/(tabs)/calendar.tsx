@@ -9,7 +9,7 @@ import { JournalRepository, Journal } from '../../db/repositories/JournalReposit
 import { ReminderRepository, Reminder } from '../../db/repositories/ReminderRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
-import { CaretLeft, CaretRight, Calendar, MapPin, Cake, ClockCounterClockwise as History, Book, Plus, Target, X, Bell, Trash, CheckCircle, RadioButton, Graph as Network } from 'phosphor-react-native';
+import { CaretLeft, CaretRight, Calendar, MapPin, Cake, ClockCounterClockwise as History, Book, Plus, Target, X, Bell, Trash, CheckCircle, RadioButton, Graph as Network } from '@/components/ui/Icon';
 import { AddReminderModal } from '../../components/calendar/AddReminderModal';
 import { ReminderDetailModal } from '../../components/calendar/ReminderDetailModal';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -257,25 +257,7 @@ export default function CalendarScreen() {
         const today = new Date();
         setCurrentDate(today);
         setSelectedDate(today);
-        
-        if (!settings.showJournalTab) {
-            setShowAddReminder(true);
-        } else {
-            const selStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            const existingJournal = journals.find(j => j.date === selStr);
-            if (existingJournal) {
-                router.push(`/journal/${existingJournal.id}`);
-            } else {
-                router.push({
-                    pathname: '/journal/[id]',
-                    params: {
-                        id: 'new',
-                        date: selStr,
-                        edit: 'true'
-                    }
-                });
-            }
-        }
+        setShowDetailModal(true);
     };
 
     const handleQuickAddJournal = () => {

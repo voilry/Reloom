@@ -8,7 +8,7 @@ import { useState, useEffect, memo, useRef, useCallback } from 'react';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { MapTrifold as Map, Globe } from 'phosphor-react-native';
+import { MapTrifold as Map, Globe } from '@/components/ui/Icon';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
 import * as Haptics from 'expo-haptics';
@@ -93,32 +93,36 @@ export default function LocationsScreen() {
 
     const CityItem = memo(({ item, index, onPress }: any) => (
         <Animated.View
-            entering={FadeInDown.delay(Math.min(index, 6) * 60).duration(500)}
+            key={item.name}
             layout={Layout.springify()}
             style={{ flex: 1, maxWidth: '48%' }}
         >
-            <ScalePressable
-                onPress={onPress}
-                style={styles.locationItem}
-                innerStyle={{ borderRadius: 24 }}
+            <Animated.View
+                entering={FadeInDown.delay(Math.min(index, 6) * 60).duration(500)}
             >
-                <Card style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]} padding="none">
-                    <View style={styles.locationCardInner}>
-                        <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
-                            <Globe size={24} color={colors.tint} weight="duotone" />
+                <ScalePressable
+                    onPress={onPress}
+                    style={styles.locationItem}
+                    innerStyle={{ borderRadius: 24 }}
+                >
+                    <Card style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]} padding="none">
+                        <View style={styles.locationCardInner}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
+                                <Globe size={24} color={colors.tint} weight="duotone" />
+                            </View>
+                            
+                            <View style={styles.locationInfo}>
+                                <ThemedText style={styles.cityName} numberOfLines={1}>
+                                    {item.name}
+                                </ThemedText>
+                                <ThemedText style={[styles.peopleCount, { color: colors.secondary }]}>
+                                    {item.count} {item.count === 1 ? 'person' : 'people'}
+                                </ThemedText>
+                            </View>
                         </View>
-                        
-                        <View style={styles.locationInfo}>
-                            <ThemedText style={styles.cityName} numberOfLines={1}>
-                                {item.name}
-                            </ThemedText>
-                            <ThemedText style={[styles.peopleCount, { color: colors.secondary }]}>
-                                {item.count} {item.count === 1 ? 'person' : 'people'}
-                            </ThemedText>
-                        </View>
-                    </View>
-                </Card>
-            </ScalePressable>
+                    </Card>
+                </ScalePressable>
+            </Animated.View>
         </Animated.View>
     ));
 

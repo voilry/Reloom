@@ -65,7 +65,7 @@ export function ScalePressable({
         if (scale) {
             scaleValue.value = withSpring(scaleTo, springConfig || DesignSystem.animation.springs.heavy);
         }
-        highlightOpacity.value = withTiming(1, { duration: 50 });
+        highlightOpacity.value = withTiming(1, { duration: 120 });
     };
 
     const handlePressOut = () => {
@@ -101,7 +101,7 @@ export function ScalePressable({
             style={[styles.container, style, containerAnimatedStyle]}
         >
             {children}
-            {/* Custom opacity fade overlay for all platforms */}
+            {/* Smooth animated overlay for all platforms (avoids Android foreground ripple bug) */}
             <Animated.View
                 pointerEvents="none"
                 style={[
@@ -116,8 +116,8 @@ export function ScalePressable({
 
 const styles = StyleSheet.create({
     container: {
-        // Rule 2 (learnings.md): NEVER add overflow:'hidden' here.
-        // It erases nested phosphor SVG icons on Android.
+        // Re-enforcing Rule 2: NEVER add overflow: 'hidden' here on Android.
+        // Even with font icons, it causes rendering glitches in complex layouts like the Profile Tabs.
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,

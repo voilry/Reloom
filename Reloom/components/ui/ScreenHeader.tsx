@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CaretLeft } from 'phosphor-react-native';
+import { CaretLeft } from '@/components/ui/Icon';
 import { ThemedText } from './ThemedText';
 import { ScalePressable } from './ScalePressable';
 import { useRouter } from 'expo-router';

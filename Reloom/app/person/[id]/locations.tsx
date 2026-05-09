@@ -11,7 +11,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { ScalePressable } from '../../../components/ui/ScalePressable';
 import { useAppTheme } from '../../../hooks/useAppTheme';
-import { House as Home, Briefcase, Airplane as Plane, MapPin, X, Check, NavigationArrow as Navigation } from 'phosphor-react-native';
+import { House as Home, Briefcase, Airplane as Plane, MapPin, X, Check, NavigationArrow as Navigation } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';

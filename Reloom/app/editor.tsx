@@ -8,7 +8,7 @@ import { PersonRepository } from '../db/repositories/PersonRepository';
 import { EntryRepository } from '../db/repositories/EntryRepository';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft as ChevronLeft, Check, Trash as Trash2, Pencil as Edit3, TextT as Type, X, FloppyDisk as Save } from 'phosphor-react-native';
+import { CaretLeft as ChevronLeft, Check, Trash as Trash2, Pencil as Edit3, TextT as Type, X, FloppyDisk as Save } from '@/components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { DeleteModal } from '../components/ui/DeleteModal';
 import { AlertModal } from '../components/ui/AlertModal';
@@ -22,7 +22,7 @@ import { useAppTheme } from '../hooks/useAppTheme';
 import { useSettings } from '../store/SettingsContext';
 
 export default function EditorScreen() {
-    const { id, type } = useLocalSearchParams();
+    const { id, type, edit } = useLocalSearchParams();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors, theme, hapticsEnabled } = useAppTheme();
@@ -34,7 +34,7 @@ export default function EditorScreen() {
     const [originalTitle, setOriginalTitle] = useState('');
     const [editingTitle, setEditingTitle] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(edit === 'true');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showDiscardModal, setShowDiscardModal] = useState(false);
@@ -260,15 +260,16 @@ export default function EditorScreen() {
             {renderHeader()}
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={0}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
             >
                 <ScrollView
                     ref={scrollViewRef}
                     contentContainerStyle={[styles.scrollContent, !isEditing && { paddingTop: 32 }]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
+                    automaticallyAdjustKeyboardInsets={true}
                 >
                     {isEditing ? (
                         <TextInput

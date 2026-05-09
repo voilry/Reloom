@@ -3,7 +3,7 @@ import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform, TextIn
 import { ThemedText } from '../ui/ThemedText';
 import { ThemedView } from '../ui/ThemedView';
 import { Avatar } from '../ui/Avatar';
-import { X, UserPlus, CheckCircle, MagnifyingGlass, PlusCircle, ArrowLeft, MagnifyingGlassPlus, Plus } from 'phosphor-react-native';
+import { X, UserPlus, CheckCircle, MagnifyingGlass, PlusCircle, ArrowLeft, MagnifyingGlassPlus, Plus } from '@/components/ui/Icon';
 import { Person } from '../../db/repositories/PersonRepository';
 import { Group } from '../../db/repositories/GroupRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -13,7 +13,7 @@ import { ScalePressable } from '../ui/ScalePressable';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, Layout, useAnimatedStyle, useAnimatedScrollHandler, useSharedValue, interpolate, Extrapolate } from 'react-native-reanimated';
 import { Button } from '../ui/Button';
-import { UsersThree } from 'phosphor-react-native';
+import { UsersThree } from '@/components/ui/Icon';
 
 interface ManageGroupMembersModalProps {
     visible: boolean;
@@ -106,9 +106,9 @@ export const ManageGroupMembersModal = ({
                         <View style={[styles.header, { borderBottomColor: 'transparent' }]}>
                             <ScalePressable
                                 onPress={handleBack}
-                                style={styles.headerCircleAction}
+                                style={[styles.headerCircleAction, { backgroundColor: colors.surface }]}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                overlayColor="transparent"
+                                overlayColor={colors.tint + '10'}
                                 scaleTo={0.9}
                                 innerStyle={{ borderRadius: 22 }}
                             >
@@ -116,11 +116,12 @@ export const ManageGroupMembersModal = ({
                             </ScalePressable>
 
                             <View style={styles.headerTitleContainer}>
-                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif, marginBottom: -14, marginTop: 10 }}>
+                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif, marginBottom: -9, marginTop: 10 }}>
                                     {isAddingMode ? 'Add People' : 'Group Members'}
                                 </ThemedText>
-                                <View style={[styles.groupBadge, { backgroundColor: groupColor + '10', borderColor: groupColor + '20' }]}>
-                                    <ThemedText type="tiny" style={{ color: groupColor, fontWeight: '700', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>{group.name}</ThemedText>
+                                <View style={[styles.groupBadge, { backgroundColor: groupColor + '10', borderColor: groupColor + '15' }]}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: groupColor, marginRight: 6 }} />
+                                    <ThemedText type="tiny" style={{ color: groupColor, fontWeight: '800', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>{group.name}</ThemedText>
                                 </View>
                             </View>
 
@@ -131,13 +132,13 @@ export const ManageGroupMembersModal = ({
                                             if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                             setIsAddingMode(true);
                                         }}
-                                        style={[styles.headerCircleAction, { backgroundColor: groupColor + '20' }]}
+                                        style={[styles.headerCircleAction, { backgroundColor: colors.surface }]}
                                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        overlayColor={groupColor + '25'}
-                                        scaleTo={0.88}
+                                        overlayColor={colors.tint + '10'}
+                                        scaleTo={0.9}
                                         innerStyle={{ borderRadius: 22 }}
                                     >
-                                        <UserPlus size={22} color={groupColor} weight="bold" />
+                                        <UserPlus size={22} color={colors.text} />
                                     </ScalePressable>
                                 ) : (
                                     <View style={{ width: 44 }} />
@@ -168,10 +169,10 @@ export const ManageGroupMembersModal = ({
                             </View>
                         ) : (
                             <View style={styles.statsSection}>
-                                <ThemedText type="sectionHeader" style={{ color: colors.secondary, letterSpacing: 1, fontSize: 13 }}>
+                                <ThemedText type="sectionHeader" style={{ color: colors.secondary, fontSize: 16, opacity: 0.9 }}>
                                     Member List
                                 </ThemedText>
-                                <ThemedText type="small" style={{ opacity: 0.5, fontSize: 12 }}>
+                                <ThemedText type="small" style={{ opacity: 0.5, fontSize: 12, marginTop: -5 }}>
                                     {members.length} Member{members.length !== 1 ? 's' : ''}
                                 </ThemedText>
                             </View>
@@ -384,11 +385,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     groupBadge: {
-        marginTop: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 10,
+        marginTop: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 20,
         borderWidth: 1,
         maxWidth: 200,
+        flexDirection: 'row',
+        alignItems: 'center',
     }
 });

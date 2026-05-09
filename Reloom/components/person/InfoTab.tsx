@@ -8,7 +8,7 @@ import { Avatar } from '../ui/Avatar';
 import { MarkdownText } from '../ui/MarkdownText';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Colors } from '../../constants/Colors';
-import { User, Calendar, Clock, MapPin, CaretRight as ChevronRight, PencilSimple as Edit, ArrowsOutSimple as Expand, House as Home, Briefcase, Airplane as Plane, Globe } from 'phosphor-react-native';
+import { User, Calendar, Clock, MapPin, CaretRight as ChevronRight, PencilSimple as Edit, ArrowsOutSimple as Expand, House as Home, Briefcase, Airplane as Plane, Globe } from '@/components/ui/Icon';
 import { Person } from '../../db/repositories/PersonRepository';
 import { Relationship } from '../../db/repositories/RelationshipRepository';
 import { useRouter } from 'expo-router';
@@ -86,7 +86,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                         <MapPin size={18} color={colors.icon} />
                     </View>
                     <View style={styles.infoTextContainer}>
-                        <ScalePressable 
+                        <ScalePressable
                             onPress={() => router.push(`/person/${person.id}/locations`)}
                             style={{ flexDirection: 'row', alignItems: 'center' }}
                             overlayColor="transparent"
@@ -159,7 +159,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                 <ScalePressable
                     onPress={() => router.push({
                         pathname: '/editor',
-                        params: { id: person.id, type: 'description' }
+                        params: { id: person.id, type: 'description', edit: 'true' }
                     })}
                 >
                     <Edit size={16} color={colors.tint} />
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     infoValue: { fontFamily: Typography.fontFamily.semibold, fontSize: 14, textAlign: 'right', opacity: 0.9 },
     infoValueWrapper: { alignItems: 'flex-end', marginLeft: 2 },
     infoIconContainer: { width: 32, alignItems: 'center', justifyContent: 'center' },
-    infoTextContainer: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginLeft: 8 },
+    infoTextContainer: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginLeft: 8, paddingRight: 8 },
     ageTag: {
         paddingHorizontal: 6,
         paddingVertical: 2,

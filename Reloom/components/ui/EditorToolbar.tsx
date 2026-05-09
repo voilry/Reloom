@@ -3,7 +3,7 @@ import { View, ScrollView, TouchableOpacity, StyleSheet, Keyboard, Platform } fr
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
-import { X } from 'phosphor-react-native';
+import { X } from '@/components/ui/Icon';
 
 interface EditorToolbarProps {
     onInsertFormatting: (prefix: string, suffix?: string) => void;

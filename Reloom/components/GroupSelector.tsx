@@ -5,7 +5,7 @@ import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { Typography } from '../constants/Typography';
-import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Rocket, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile } from 'phosphor-react-native';
+import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Rocket, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile, Trash } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Animated, { FadeIn, Layout, ZoomIn } from 'react-native-reanimated';
@@ -218,13 +218,19 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                         </View>
 
                         <View style={styles.modalContent}>
-                            <Input
-                                label="Group Name"
-                                placeholder="e.g. Hiking Buddies"
-                                value={newGroupName}
-                                onChangeText={setNewGroupName}
-                                autoFocus
-                            />
+                            <View style={{ position: 'relative' }}>
+                                <Input
+                                    label="Group Name"
+                                    placeholder="e.g. Hiking Buddies"
+                                    value={newGroupName}
+                                    onChangeText={setNewGroupName}
+                                    autoFocus
+                                    maxLength={25}
+                                />
+                                <ThemedText style={{ position: 'absolute', right: 0, bottom: -4, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
+                                    {newGroupName.length}/25
+                                </ThemedText>
+                            </View>
 
                             <ThemedText style={styles.label}>Select color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
@@ -266,7 +272,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                                 <ScalePressable
                                     onPress={() => setShowCreateModal(false)}
-                                    style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 0.5, borderColor: colors.border }]}
+                                    style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1 }]}
                                     innerStyle={{ borderRadius: 12 }}
                                 >
                                     <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
@@ -301,7 +307,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                         <View style={styles.modalHeader}>
                             <View>
                                 <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Edit Group</ThemedText>
-                                <ThemedText type="small" style={{ opacity: 0.6 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
+                                <ThemedText type="small" style={{ opacity: 0.6, marginTop: -2, fontSize: 12 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
                             </View>
                             {onManageMembers && (
                                 <ScalePressable
@@ -322,12 +328,18 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                         </View>
 
                         <View style={styles.modalContent}>
-                            <Input
-                                label="Group Name"
-                                placeholder="..."
-                                value={editName}
-                                onChangeText={setEditName}
-                            />
+                            <View style={{ position: 'relative' }}>
+                                <Input
+                                    label="Group Name"
+                                    placeholder="..."
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                    maxLength={25}
+                                />
+                                <ThemedText style={{ position: 'absolute', right: 0, bottom: -4, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
+                                    {editName.length}/25
+                                </ThemedText>
+                            </View>
 
                             <ThemedText style={styles.label}>Update color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
@@ -370,7 +382,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 <View style={{ flexDirection: 'row', gap: 10 }}>
                                     <ScalePressable
                                         onPress={() => setSelectedGroupToEdit(null)}
-                                        style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1, borderWidth: 0.5, borderColor: colors.border }]}
+                                        style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1 }]}
                                         innerStyle={{ borderRadius: 12 }}
                                     >
                                         <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
@@ -388,10 +400,12 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
 
                                 <ScalePressable
                                     onPress={handleDelete}
-                                    style={[styles.actionBtn, { backgroundColor: colors.error + '10' }]}
+                                    style={[styles.actionBtn, { backgroundColor: colors.error + '25', marginTop: 4 }]}
                                     innerStyle={{ borderRadius: 12 }}
+                                    scaleTo={0.95}
                                 >
-                                    <ThemedText style={{ color: colors.error, fontWeight: '700' }}>Delete Group</ThemedText>
+                                    <Trash size={18} color={colors.error} weight="bold" />
+                                    <ThemedText style={{ color: colors.error, fontWeight: '800', fontSize: 14 }}>Delete Group</ThemedText>
                                 </ScalePressable>
                             </View>
                         </View>
@@ -476,7 +490,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     actionBtn: {
-        height: 44,
+        height: 48,
         borderRadius: 12,
         flexDirection: 'row',
         justifyContent: 'center',

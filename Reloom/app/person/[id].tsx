@@ -12,7 +12,7 @@ import { RelationshipRepository } from '../../db/repositories/RelationshipReposi
 
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
-import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, Check, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, AddressBook } from 'phosphor-react-native';
+import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, Check, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, AddressBook } from '@/components/ui/Icon';
 import { GroupRepository, Group } from '../../db/repositories/GroupRepository';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -318,11 +318,14 @@ export default function PersonDetailScreen() {
 
 
                 {settings.profileBlurBackground && person.avatarUri ? (
-                    <BlurView
-                        intensity={40}
-                        tint={theme === 'dark' ? 'dark' : 'default'}
+                    <View 
                         style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`, borderWidth: theme === 'light' ? 1 : 0 }]}
                     >
+                        <BlurView
+                            intensity={40}
+                            tint={theme === 'dark' ? 'dark' : 'default'}
+                            style={StyleSheet.absoluteFill}
+                        />
                         {orderedTabs.map(tab => (
                             <TabItem
                                 key={tab}
@@ -334,7 +337,7 @@ export default function PersonDetailScreen() {
                                 isAcrylic={true}
                             />
                         ))}
-                    </BlurView>
+                    </View>
                 ) : (
                     <View style={[styles.tabContainer, { backgroundColor: theme === 'dark' ? colors.surface : colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}>
                         {orderedTabs.map(tab => (
@@ -584,12 +587,11 @@ function TabItem({ active, icon: Icon, onPress, colors, theme, isAcrylic }: any)
             ]}
             innerStyle={{ borderRadius: 10 }}
         >
-            <View style={styles.tabContent}>
+            <View style={styles.tabContent} collapsable={false}>
                 <Icon
-                    key={active ? 'bold' : 'regular'}
                     color={active ? colors.tint : colors.icon}
                     size={18}
-                    weight={active ? 'bold' : 'regular'}
+                    weight={active ? 'fill' : 'regular'}
                 />
             </View>
         </ScalePressable>

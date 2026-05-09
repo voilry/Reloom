@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Avatar } from '../ui/Avatar';
 import { DatePicker } from '../ui/DatePicker';
-import { X, Camera, Check } from 'phosphor-react-native';
+import { X, Camera, Check } from '@/components/ui/Icon';
 import * as ImagePicker from 'expo-image-picker';
 import { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';

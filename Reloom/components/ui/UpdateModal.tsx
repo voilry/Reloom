@@ -4,7 +4,7 @@ import { ThemedText } from './ThemedText';
 import { Button } from './Button';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { CloudArrowUp, X } from 'phosphor-react-native';
+import { CloudArrowUp, X } from '@/components/ui/Icon';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 interface UpdateModalProps {

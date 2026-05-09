@@ -5,7 +5,7 @@ import { ThemedText } from '../ui/ThemedText';
 import { Avatar } from '../ui/Avatar';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Colors } from '../../constants/Colors';
-import { PencilSimple as Edit, Clock } from 'phosphor-react-native';
+import { PencilSimple as Edit, Clock } from '@/components/ui/Icon';
 import type { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
 

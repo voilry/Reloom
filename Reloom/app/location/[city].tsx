@@ -18,7 +18,7 @@ import {
     MapTrifold as MapEmpty,
     Users,
     PushPin,
-} from 'phosphor-react-native';
+} from '@/components/ui/Icon';
 import Animated, { FadeIn, FadeInDown, Layout, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
@@ -98,10 +98,13 @@ export default function CityDetailScreen() {
 
     const renderItem = ({ item: person, index }: { item: Person, index: number }) => (
         <Animated.View
-            entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(500)}
+            key={`city-person-${person.id}`}
             layout={Layout.springify()}
         >
-            <ScalePressable
+            <Animated.View
+                entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(500)}
+            >
+                <ScalePressable
                 onPress={() => {
                     if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
                     router.push(`/person/${person.id}`);
@@ -137,6 +140,7 @@ export default function CityDetailScreen() {
                 </Card>
             </ScalePressable>
         </Animated.View>
+    </Animated.View>
     );
 
     return (

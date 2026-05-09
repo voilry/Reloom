@@ -10,7 +10,7 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSettings } from '../../store/SettingsContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LockKey, Fingerprint, Backspace } from 'phosphor-react-native';
+import { LockKey, Fingerprint, Backspace } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';

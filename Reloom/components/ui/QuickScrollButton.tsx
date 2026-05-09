@@ -6,7 +6,7 @@ import Animated, {
     withTiming,
     SharedValue
 } from 'react-native-reanimated';
-import { CaretUp, CaretDown } from 'phosphor-react-native';
+import { CaretUp, CaretDown } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { ScalePressable } from './ScalePressable';
 import * as Haptics from 'expo-haptics';

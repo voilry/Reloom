@@ -6,7 +6,7 @@ import { BlurView } from 'expo-blur';
 import { ThemedText } from './ui/ThemedText';
 import { useSettings } from '../store/SettingsContext';
 import { useAppTheme } from '../hooks/useAppTheme';
-import { LockKey, LockKeyOpen, Fingerprint, Check, Backspace } from 'phosphor-react-native';
+import { LockKey, LockKeyOpen, Fingerprint, Check, Backspace } from '@/components/ui/Icon';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';

@@ -10,7 +10,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ReminderRepository, Reminder } from '../../db/repositories/ReminderRepository';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
-import { Bell, Calendar, Clock, X, User, MagnifyingGlass, Check, CaretRight } from 'phosphor-react-native';
+import { Bell, Calendar, Clock, X, User, MagnifyingGlass, Check, CaretRight } from '@/components/ui/Icon';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { DatePicker } from '../ui/DatePicker';
 import { TimePicker } from '../ui/TimePicker';

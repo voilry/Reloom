@@ -9,7 +9,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee, House as Home, Briefcase, Airplane as Plane, Gift, Target, Tag, Trash } from 'phosphor-react-native';
+import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee, House as Home, Briefcase, Airplane as Plane, Gift, Target, Tag, Trash } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -138,53 +138,56 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                 filteredEntries.map((entry, index) => (
                     <Animated.View
                         key={entry.id}
-                        entering={FadeInDown.delay(Math.min(index, 5) * 50).duration(400)}
                         layout={Layout.springify()}
                     >
-                        <Swipeable
-                            renderRightActions={(_progress, dragX) => renderRightActions(entry.id, dragX)}
-                            overshootRight={false}
-                            friction={3}
-                            overshootFriction={8}
-                            rightThreshold={60}
+                        <Animated.View
+                            entering={FadeInDown.delay(Math.min(index, 5) * 50).duration(400)}
                         >
-                        <ScalePressable
-                            onPress={() => router.push({
-                                pathname: '/editor',
-                                params: { id: entry.id, type: 'entry' }
-                            })}
-                            style={{ marginBottom: 16 }}
-                            innerStyle={{ borderRadius: 16 }}
-                        >
-                                <Card style={[{ backgroundColor: acrylicBg ?? colors.surface, borderRadius: 16 }]} padding="md">
-                                    <View style={styles.entryHeader}>
-                                        <View style={[styles.categoryBadge, { backgroundColor: colors.tint + '15' }]}>
-                                            {getCategoryIcon(entry.type)}
-                                            <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', textTransform: 'uppercase', marginLeft: 6 }}>{entry.type}</ThemedText>
+                            <Swipeable
+                                renderRightActions={(_progress, dragX) => renderRightActions(entry.id, dragX)}
+                                overshootRight={false}
+                                friction={3}
+                                overshootFriction={8}
+                                rightThreshold={60}
+                            >
+                            <ScalePressable
+                                onPress={() => router.push({
+                                    pathname: '/editor',
+                                    params: { id: entry.id, type: 'entry' }
+                                })}
+                                style={{ marginBottom: 16 }}
+                                innerStyle={{ borderRadius: 16 }}
+                            >
+                                    <Card style={[{ backgroundColor: acrylicBg ?? colors.surface, borderRadius: 16 }]} padding="md">
+                                        <View style={styles.entryHeader}>
+                                            <View style={[styles.categoryBadge, { backgroundColor: colors.tint + '15' }]}>
+                                                {getCategoryIcon(entry.type)}
+                                                <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', textTransform: 'uppercase', marginLeft: 6 }}>{entry.type}</ThemedText>
+                                            </View>
+                                            <ThemedText type="tiny" style={{ color: colors.secondary, fontWeight: '700' }}>
+                                                {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </ThemedText>
                                         </View>
-                                        <ThemedText type="tiny" style={{ color: colors.secondary, fontWeight: '700' }}>
-                                            {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        <ThemedText numberOfLines={4} style={[styles.entryContent, { color: colors.text }]}>
+                                            {entry.content
+                                                .split('\n')
+                                                .filter((l: string) => !/^(-{3,}|\*{3,}|_{3,})$/.test(l.trim()))
+                                                .map((l: string) =>
+                                                    l.replace(/#{1,6}\s/, '')
+                                                     .replace(/\*\*(.+?)\*\*/g, '$1')
+                                                     .replace(/\*(.+?)\*/g, '$1')
+                                                     .replace(/~~(.+?)~~/g, '$1')
+                                                     .replace(/^[-*]\s/, '')
+                                                     .replace(/^\[[ xX]\]\s/, '')
+                                                )
+                                                .join(' ')
+                                                .trim()
+                                            }
                                         </ThemedText>
-                                    </View>
-                                    <ThemedText numberOfLines={4} style={[styles.entryContent, { color: colors.text }]}>
-                                        {entry.content
-                                            .split('\n')
-                                            .filter((l: string) => !/^(-{3,}|\*{3,}|_{3,})$/.test(l.trim()))
-                                            .map((l: string) =>
-                                                l.replace(/#{1,6}\s/, '')
-                                                 .replace(/\*\*(.+?)\*\*/g, '$1')
-                                                 .replace(/\*(.+?)\*/g, '$1')
-                                                 .replace(/~~(.+?)~~/g, '$1')
-                                                 .replace(/^[-*]\s/, '')
-                                                 .replace(/^\[[ xX]\]\s/, '')
-                                            )
-                                            .join(' ')
-                                            .trim()
-                                        }
-                                    </ThemedText>
-                                </Card>
-                        </ScalePressable>
-                        </Swipeable>
+                                    </Card>
+                            </ScalePressable>
+                            </Swipeable>
+                        </Animated.View>
                     </Animated.View>
                 ))
             )}

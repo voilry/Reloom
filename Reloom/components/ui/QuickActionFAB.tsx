@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Dimensions, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, Extrapolation, runOnJS } from 'react-native-reanimated';
-import { Plus, UserPlus, FileText, Bell, X } from 'phosphor-react-native';
+import { Plus, UserPlus, FileText, Bell, X } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';

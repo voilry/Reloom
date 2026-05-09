@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Users, Calendar, BookOpen, Plus, User as UserIcon, PencilLine as PenLine, AddressBook, Bell, Book, X } from 'phosphor-react-native';
+import { Users, Calendar, BookOpen, Plus, User as UserIcon, PencilLine as PenLine, AddressBook, Bell, Book, X } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Platform, View, TouchableOpacity, StyleSheet, Modal, DeviceEventEmitter, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -196,7 +196,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                                         backgroundColor: isFocused ? colors.tint + '25' : 'transparent',
                                     }}>
                                         <Icon
-                                            key={isFocused ? 'fill' : 'regular'}
                                             size={22}
                                             color={isFocused ? activeColor : inactiveColor}
                                             weight={isFocused ? 'fill' : 'regular'}
@@ -255,7 +254,6 @@ export default function TabLayout() {
             }}
         >
             <Tabs.Screen name="index" options={{ title: 'People' }} />
-            <Tabs.Screen name="graph" options={{ href: null }} />
             <Tabs.Screen name="calendar" options={{ 
                 title: 'Calendar',
                 href: settings.showCalendarTab ? undefined : null

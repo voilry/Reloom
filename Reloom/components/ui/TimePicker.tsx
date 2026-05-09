@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Clock, Check, X } from 'phosphor-react-native';
+import { Clock, Check, X } from '@/components/ui/Icon';
 import { BlurView } from 'expo-blur';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { ScalePressable } from './ScalePressable';

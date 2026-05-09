@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { ThemedText } from '../ui/ThemedText';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { X, Check } from 'phosphor-react-native';
+import { X, Check } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import * as FileSystem from 'expo-file-system';

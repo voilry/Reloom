@@ -16,7 +16,7 @@ import { Card } from '../../../components/ui/Card';
 import {
     Trash, Plus, Link, CaretRight, MagnifyingGlass as Search,
     ArrowsLeftRight, X, Check
-} from 'phosphor-react-native';
+} from '@/components/ui/Icon';
 import { useAppTheme } from '../../../hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
@@ -152,10 +152,10 @@ export default function RelationsScreen() {
                 alignCenter={false}
                 centerContent={
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 0 }}>
-                        <ThemedText type="display" style={{ fontSize: 28, lineHeight: 32, color: colors.text }}>
+                        <ThemedText type="display" style={{ fontSize: 25, lineHeight: 30, color: colors.text }}>
                             Social Web
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 10, color: colors.secondary, marginTop: -6, fontFamily: Typography.fontFamily.medium }}>
+                        <ThemedText style={{ fontSize: 10, color: colors.secondary, marginTop: -7, fontFamily: Typography.fontFamily.medium }}>
                             {person.name}'s circle
                         </ThemedText>
                     </View>
@@ -175,15 +175,21 @@ export default function RelationsScreen() {
             />
 
             {/* ─── Connections Count ─────────────────────────────────────────── */}
-            <View style={{ paddingHorizontal: 20, paddingBottom: 13, marginTop: 12 }}>
-                <ThemedText type="sectionHeader" style={{ color: colors.secondary, fontSize: 13 }}>
-                    ({relationships.length}) CONNECTIONS
-                </ThemedText>
-            </View>
+            {relationships.length > 0 && (
+                <View style={{ paddingHorizontal: 20, paddingBottom: 13, marginTop: 12 }}>
+                    <ThemedText type="sectionHeader" style={{ color: colors.secondary, fontSize: 13 }}>
+                        ({relationships.length})
+                    </ThemedText>
+                </View>
+            )}
 
             {/* ─── Connections List ─────────────────────────────────────────── */}
             <ScrollView
-                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]}
+                contentContainerStyle={[
+                    styles.listContent,
+                    relationships.length === 0 && { flexGrow: 1, justifyContent: 'center', paddingBottom: insets.bottom + 120 },
+                    relationships.length > 0 && { paddingBottom: insets.bottom + 40 }
+                ]}
                 showsVerticalScrollIndicator={false}
             >
                 {relationships.length === 0 ? (
@@ -191,9 +197,9 @@ export default function RelationsScreen() {
                         <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
                             <ArrowsLeftRight size={28} color={colors.icon} />
                         </View>
-                        <ThemedText type="sectionHeader" style={{ marginTop: 16, opacity: 0.9 }}>No Connections</ThemedText>
-                        <ThemedText style={{ fontSize: 13, color: colors.secondary, marginTop: 2, textAlign: 'center', lineHeight: 17 }}>
-                            Tap Link to start building{'\n'}{person.name}'s social web.
+                        <ThemedText type="sectionHeader" style={{ marginTop: 1, opacity: 0.9, fontSize: 18 }}>No Connections</ThemedText>
+                        <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
+                            tap link to add
                         </ThemedText>
                     </Animated.View>
                 ) : (
@@ -203,36 +209,39 @@ export default function RelationsScreen() {
                         return (
                             <Animated.View
                                 key={rel.id}
-                                entering={FadeInDown.delay(index * 40).duration(350)}
                                 layout={Layout.springify()}
                                 style={{ marginBottom: 10 }}
                             >
-                                <Swipeable
-                                    renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
-                                    overshootRight={false}
-                                    friction={3}
-                                    overshootFriction={8}
-                                    rightThreshold={60}
+                                <Animated.View
+                                    entering={FadeInDown.delay(index * 40).duration(350)}
                                 >
-                                    <ScalePressable
-                                        onPress={() => router.push(`/person/${other.id}`)}
-                                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                    <Swipeable
+                                        renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
+                                        overshootRight={false}
+                                        friction={3}
+                                        overshootFriction={8}
+                                        rightThreshold={60}
                                     >
-                                        <Card style={styles.relCard}>
-                                            <Avatar name={other.name} uri={other.avatarUri} size={48} />
-                                            <View style={styles.relInfo}>
-                                                <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
-                                            </View>
-                                            {rel.relationType ? (
-                                                <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
-                                                    <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
-                                                        {rel.relationType}
-                                                    </ThemedText>
+                                        <ScalePressable
+                                            onPress={() => router.push(`/person/${other.id}`)}
+                                            innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                        >
+                                            <Card style={styles.relCard}>
+                                                <Avatar name={other.name} uri={other.avatarUri} size={48} />
+                                                <View style={styles.relInfo}>
+                                                    <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
                                                 </View>
-                                            ) : null}
-                                        </Card>
-                                    </ScalePressable>
-                                </Swipeable>
+                                                {rel.relationType ? (
+                                                    <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
+                                                        <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
+                                                            {rel.relationType}
+                                                        </ThemedText>
+                                                    </View>
+                                                ) : null}
+                                            </Card>
+                                        </ScalePressable>
+                                    </Swipeable>
+                                </Animated.View>
                             </Animated.View>
                         );
                     })
@@ -418,7 +427,7 @@ export default function RelationsScreen() {
 
                                     <View style={{ position: 'relative' }}>
                                         <Input
-                                            placeholder="Or describe the connection..."
+                                            placeholder="describe the connection..."
                                             value={relationType}
                                             onChangeText={setRelationType}
                                             maxLength={25}
@@ -518,8 +527,6 @@ const styles = StyleSheet.create({
     // Empty
     emptyState: {
         alignItems: 'center',
-        paddingTop: 60,
-        paddingHorizontal: 40,
     },
     emptyCircle: {
         width: 64,

@@ -3,7 +3,7 @@ import {
     GraduationCap, Briefcase, Folder, Airplane,
     Palette, MusicNotes, Star, FirstAid, Plus,
     Lightning, Coffee, MusicNote, BookOpen, Smiley
-} from 'phosphor-react-native';
+} from '@/components/ui/Icon';
 
 export const GROUP_ICONS: Record<string, React.ComponentType<any>> = {
     Users,

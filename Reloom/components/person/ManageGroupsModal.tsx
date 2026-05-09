@@ -4,7 +4,7 @@ import { ThemedText } from '../ui/ThemedText';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Check, Folder } from 'phosphor-react-native';
+import { Check, Folder } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

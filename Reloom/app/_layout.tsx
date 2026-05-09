@@ -56,6 +56,7 @@ function RootLayoutContent() {
     'Display-ExtraBold': BricolageGrotesque_800ExtraBold,
     'Serif-Bold': Fraunces_700Bold,
     'Serif-Black': Fraunces_900Black,
+    'MingCute': require('../assets/fonts/MingCute.ttf'),
   });
 
   const { success: migrationSuccess, error: migrationError } = useMigrations(db, migrations);
@@ -158,12 +159,10 @@ function RootLayoutContent() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
           <Stack.Screen name="index" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="+not-found" />
           <Stack.Screen name="journal/[id]" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="person/[id]" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="person/[id]/locations" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="person/[id]/relations" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="graph" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false, presentation: 'card' }} />
           <Stack.Screen
