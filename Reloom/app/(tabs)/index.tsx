@@ -241,7 +241,7 @@ export default function PeopleScreen() {
     };
 
     useEffect(() => {
-        if (hasUpdate && !hasShownUpdateRef.current) {
+        if (hasUpdate && settings.checkForUpdatesEnabled && !hasShownUpdateRef.current) {
             const timer = setTimeout(() => {
                 setShowUpdateModal(true);
                 hasShownUpdateRef.current = true;
@@ -547,7 +547,7 @@ export default function PeopleScreen() {
                         springConfig={DesignSystem.animation.springs.fast}
                     >
                         <Settings size={22} color={colors.text} />
-                        {hasUpdate && (
+                        {hasUpdate && settings.checkForUpdatesEnabled && (
                             <View style={{
                                 position: 'absolute',
                                 top: 2,

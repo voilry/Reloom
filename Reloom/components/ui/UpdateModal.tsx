@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, Modal, Pressable, Linking } from 'react-native';
+import { View, StyleSheet, Modal, Pressable, Linking, Image } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Button } from './Button';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { CloudArrowUp, X } from '@/components/ui/Icon';
+import { X } from '@/components/ui/Icon';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 interface UpdateModalProps {
@@ -36,11 +36,15 @@ export function UpdateModal({ visible, version, onClose }: UpdateModalProps) {
                     style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
                 >
                     <View style={styles.iconContainer}>
-                        <CloudArrowUp size={50} color={colors.tint} weight="duotone" />
+                        <Image
+                            source={require('../../assets/update-icon.png')}
+                            style={{ width: 150, height: 150 }}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     <ThemedText type="sectionHeader" style={styles.title}>Update Available</ThemedText>
-                    <ThemedText style={[styles.description, { color: colors.secondary, fontSize: 14, marginTop: -6 }]}>
+                    <ThemedText style={[styles.description, { color: colors.secondary, fontSize: 14, marginTop: -7 }]}>
                         A new version {version ? `(${version})` : ''} of Reloom is available on GitHub.
                     </ThemedText>
 
@@ -79,15 +83,16 @@ const styles = StyleSheet.create({
         ...DesignSystem.shadows.xl,
     },
     iconContainer: {
-        width: 64,
-        height: 64,
+        width: 150,
+        height: 150,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 20,
+        marginTop: 8,
     },
     title: {
         fontSize: 22,
-        marginBottom: 12,
+        marginBottom: 16,
         textAlign: 'center',
     },
     description: {

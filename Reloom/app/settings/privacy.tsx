@@ -224,19 +224,22 @@ export default function PrivacySettingsScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <ScreenHeader
-                title="Passcode & App Lock"
+                title="App Lock"
                 onBack={() => router.back()}
             />
 
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
                 <Card style={styles.card} padding="none">
-                    <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border + '50' }]}>
+                    <View style={[
+                        styles.settingRow,
+                        (settings.appLockEnabled && hasBiometrics) && { borderBottomWidth: 1, borderBottomColor: colors.border + '50' }
+                    ]}>
                         <View style={styles.settingIconText}>
-                            <LockKey 
+                            <LockKey
                                 key={settings.appLockEnabled ? 'locked' : 'unlocked'}
-                                size={22} 
-                                color={settings.appLockEnabled ? colors.tint : colors.text} 
-                                weight={settings.appLockEnabled ? "duotone" : "regular"} 
+                                size={22}
+                                color={settings.appLockEnabled ? colors.tint : colors.text}
+                                weight={settings.appLockEnabled ? "duotone" : "regular"}
                             />
                             <View>
                                 <ThemedText style={styles.settingLabel}>App Lock</ThemedText>
@@ -252,15 +255,15 @@ export default function PrivacySettingsScreen() {
                     {settings.appLockEnabled && hasBiometrics && (
                         <View style={[styles.settingRow]}>
                             <View style={styles.settingIconText}>
-                                <Fingerprint 
+                                <Fingerprint
                                     key={settings.biometricEnabled ? 'active' : 'inactive'}
-                                    size={22} 
-                                    color={colors.text} 
-                                    weight={settings.biometricEnabled ? "duotone" : "regular"} 
+                                    size={22}
+                                    color={colors.text}
+                                    weight={settings.biometricEnabled ? "duotone" : "regular"}
                                 />
                                 <View>
-                                    <ThemedText style={styles.settingLabel}>Security Fallback</ThemedText>
-                                    <ThemedText style={styles.settingSub}>Fingerprint or FaceID support</ThemedText>
+                                    <ThemedText style={styles.settingLabel}>Biometric unlock</ThemedText>
+                                    <ThemedText style={styles.settingSub}>Always use Fingerprint or FaceID</ThemedText>
                                 </View>
                             </View>
                             <Toggle

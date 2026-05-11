@@ -29,6 +29,7 @@ interface Settings {
     hasUpdate: boolean;
     latestVersion: string;
     amoledEnabled: boolean;
+    checkForUpdatesEnabled: boolean;
 }
 
 interface SettingsContextType {
@@ -69,6 +70,7 @@ const DEFAULT_SETTINGS: Settings = {
     hasUpdate: false,
     latestVersion: '',
     amoledEnabled: true,
+    checkForUpdatesEnabled: true,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -90,20 +92,35 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     const isVersionGreater = (latest: string, current: string) => {
-        const parse = (v: string) => v.replace(/[^0-9.]/g, '').split('.').map(Number);
-        const v1 = parse(latest);
-        const v2 = parse(current);
+        const normalize = (v: string) => v.toLowerCase().replace(/^v/, '').trim();
+        const l = normalize(latest);
+        const c = normalize(current);
+
+        // 1. Exact match means no update
+        if (l === c) return false;
+
+        // 2. Numeric comparison
+        const parse = (v: string) => v.replace(/[^0-9.]/g, '').split('.').filter(x => x !== '').map(Number);
+        const v1 = parse(l);
+        const v2 = parse(c);
+
         for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
             const num1 = v1[i] || 0;
             const num2 = v2[i] || 0;
             if (num1 > num2) return true;
             if (num1 < num2) return false;
         }
+
+        // 3. Numeric parts are equal, check for stable vs pre-release
+        // If latest is stable (no dash) and current is pre-release (has dash), it's an update
+        if (!l.includes('-') && c.includes('-')) return true;
+
         return false;
     };
 
     const checkForUpdates = async (force = false) => {
         if (Platform.OS === 'web') return;
+        if (!settings.checkForUpdatesEnabled && !force) return;
         
         // Don't check more than once a day unless forced
         const now = Date.now();
@@ -174,6 +191,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             if (stored.hasUpdate !== undefined) merged.hasUpdate = stored.hasUpdate === 'true';
             if (stored.latestVersion) merged.latestVersion = stored.latestVersion;
             if (stored.amoledEnabled !== undefined) merged.amoledEnabled = stored.amoledEnabled === 'true';
+            if (stored.checkForUpdatesEnabled !== undefined) merged.checkForUpdatesEnabled = stored.checkForUpdatesEnabled === 'true';
 
             setSettings(merged);
         } catch (e) {

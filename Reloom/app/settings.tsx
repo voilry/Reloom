@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf } from '@/components/ui/Icon';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf, Mosaic } from '@/components/ui/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,7 @@ import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { Toggle } from '../components/ui/Toggle';
 import { AlertModal } from '../components/ui/AlertModal';
 import { ScalePressable } from '../components/ui/ScalePressable';
+import { APP_VERSION } from '../constants/Version';
 
 export default function SettingsScreen() {
     const { settings, updateSetting, resetSettings, refreshApp, hasUpdate, latestVersion } = useSettings();
@@ -251,7 +252,7 @@ export default function SettingsScreen() {
                     </Card>
                 )}
 
-                {hasUpdate && (
+                {hasUpdate && settings.checkForUpdatesEnabled && (
                     <ScalePressable
                         onPress={() => {
                             triggerHaptic();
@@ -265,7 +266,7 @@ export default function SettingsScreen() {
                             <MenuOption
                                 label={`Update Available: ${latestVersion}`}
                                 description="A new version of Reloom is ready."
-                                icon={<CloudArrowUp size={24} color={colors.tint} weight="duotone" />}
+                                icon={null}
                                 colors={colors}
                                 rightIcon={<ExternalLink size={16} color={colors.tint} />}
                                 noBackground
@@ -389,6 +390,26 @@ export default function SettingsScreen() {
                             />
                         </SettingRow>
                     </Card>
+
+                    <ScalePressable
+                        onPress={() => {
+                            triggerHaptic();
+                            router.push('/settings/extra');
+                        }}
+                        scaleTo={0.97}
+                        style={{ width: '100%', marginTop: 12 }}
+                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                    >
+                        <Card style={styles.card} padding="none">
+                            <MenuOption
+                                label="Extra"
+                                icon={<Mosaic size={24} color={colors.tint} weight="duotone" />}
+                                colors={colors}
+                                rightIcon={<CaretRight size={16} color={colors.icon} />}
+                                noBackground
+                            />
+                        </Card>
+                    </ScalePressable>
                 </Section>
 
                 <Section title="Privacy & Security">
@@ -403,7 +424,7 @@ export default function SettingsScreen() {
                     >
                         <Card style={styles.card} padding="none">
                             <MenuOption
-                                label="App Lock & Passcode"
+                                label="App Lock"
                                 icon={<LockKey size={24} color={colors.tint} weight="duotone" />}
                                 colors={colors}
                                 rightIcon={<CaretRight size={16} color={colors.icon} />}
@@ -456,7 +477,7 @@ export default function SettingsScreen() {
                         <View style={styles.infoRow}>
                             <Heart size={16} color={colors.error} weight="fill" />
                             <View style={{ marginLeft: 16 }}>
-                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v0.4.0-alpha</ThemedText>
+                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v{APP_VERSION}</ThemedText>
                                 <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 1 }}>Build with love by zash</ThemedText>
                             </View>
                         </View>
@@ -600,14 +621,16 @@ function MenuOption({ label, description, icon, onPress, colors, isDestructive, 
     const content = (
         <View style={[styles.optionRow, !description && { paddingVertical: 12 }]}>
             <View style={styles.optionLabelGroup}>
-                <View style={[
-                    styles.menuIconContainer,
-                    { backgroundColor: noBackground ? 'transparent' : colors.surface },
-                    noBackground && { width: 32, alignItems: 'flex-start' }
-                ]}>
-                    {icon}
-                </View>
-                <View style={{ marginLeft: noBackground ? 8 : 16 }}>
+                {icon && (
+                    <View style={[
+                        styles.menuIconContainer,
+                        { backgroundColor: noBackground ? 'transparent' : colors.surface },
+                        noBackground && { width: 32, alignItems: 'flex-start' }
+                    ]}>
+                        {icon}
+                    </View>
+                )}
+                <View style={{ marginLeft: icon ? (noBackground ? 8 : 16) : 0 }}>
                     <ThemedText style={[styles.optionLabel, isDestructive && { color: colors.error }]}>{label}</ThemedText>
                     {description ? <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 2 }}>{description}</ThemedText> : null}
                 </View>
