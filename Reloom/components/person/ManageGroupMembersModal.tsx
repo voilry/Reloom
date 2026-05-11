@@ -3,7 +3,7 @@ import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform, TextIn
 import { ThemedText } from '../ui/ThemedText';
 import { ThemedView } from '../ui/ThemedView';
 import { Avatar } from '../ui/Avatar';
-import { X, UserPlus, CheckCircle, MagnifyingGlass, PlusCircle, ArrowLeft, MagnifyingGlassPlus, Plus } from '@/components/ui/Icon';
+import { X, UserPlus, CheckCircle, MagnifyingGlass, PlusCircle, CaretLeft as ChevronLeft, MagnifyingGlassPlus, Plus } from '@/components/ui/Icon';
 import { Person } from '../../db/repositories/PersonRepository';
 import { Group } from '../../db/repositories/GroupRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -112,16 +112,16 @@ export const ManageGroupMembersModal = ({
                                 scaleTo={0.9}
                                 innerStyle={{ borderRadius: 22 }}
                             >
-                                {isAddingMode ? <ArrowLeft size={22} color={colors.text} /> : <X size={22} color={colors.text} />}
+                                {isAddingMode ? <ChevronLeft size={22} color={colors.text} /> : <X size={22} color={colors.text} />}
                             </ScalePressable>
 
                             <View style={styles.headerTitleContainer}>
-                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif, marginBottom: -9, marginTop: 10 }}>
+                                <ThemedText style={{ fontSize: 22, color: colors.text, fontFamily: Typography.fontFamily.serif, marginBottom: -7, marginTop: 10 }}>
                                     {isAddingMode ? 'Add People' : 'Group Members'}
                                 </ThemedText>
-                                <View style={[styles.groupBadge, { backgroundColor: groupColor + '10', borderColor: groupColor + '15' }]}>
+                                <View style={styles.groupBadge}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: groupColor, marginRight: 6 }} />
-                                    <ThemedText type="tiny" style={{ color: groupColor, fontWeight: '800', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>{group.name}</ThemedText>
+                                    <ThemedText type="tiny" style={{ color: groupColor, fontWeight: '800', fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase' }}>{group.name}</ThemedText>
                                 </View>
                             </View>
 
@@ -167,16 +167,7 @@ export const ManageGroupMembersModal = ({
                                     )}
                                 </View>
                             </View>
-                        ) : (
-                            <View style={styles.statsSection}>
-                                <ThemedText type="sectionHeader" style={{ color: colors.secondary, fontSize: 16, opacity: 0.9 }}>
-                                    Member List
-                                </ThemedText>
-                                <ThemedText type="small" style={{ opacity: 0.5, fontSize: 12, marginTop: -5 }}>
-                                    {members.length} Member{members.length !== 1 ? 's' : ''}
-                                </ThemedText>
-                            </View>
-                        )}
+                        ) : null}
                     </View>
                 </Animated.View>
 
@@ -190,7 +181,7 @@ export const ManageGroupMembersModal = ({
                         contentContainerStyle={{
                             paddingHorizontal: 16,
                             paddingBottom: insets.bottom + 40,
-                            paddingTop: insets.top + (isAddingMode ? 166 : 150)
+                            paddingTop: insets.top + (isAddingMode ? 140 : 74)
                         }}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
@@ -198,6 +189,14 @@ export const ManageGroupMembersModal = ({
                         scrollEventThrottle={16}
                     >
                         <Animated.View layout={Layout.springify()}>
+                            {!isAddingMode && members.length > 0 && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 1 }}>
+                                    <ThemedText style={{ color: colors.secondary, fontSize: 15, fontFamily: Typography.fontFamily.semibold, opacity: 0.8 }}>
+                                        Members
+                                    </ThemedText>
+                                    <ThemedText style={{ color: colors.tint, fontSize: 14, fontWeight: '800', marginLeft: 8 }}>{members.length}</ThemedText>
+                                </View>
+                            )}
                             {isAddingMode ? (
                                 filteredAllPeople.length === 0 ? (
                                     <View style={styles.emptyState}>
@@ -386,10 +385,10 @@ const styles = StyleSheet.create({
     },
     groupBadge: {
         marginTop: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 0,
         paddingVertical: 3,
-        borderRadius: 20,
-        borderWidth: 1,
+        borderRadius: 0,
+        borderWidth: 0,
         maxWidth: 200,
         flexDirection: 'row',
         alignItems: 'center',

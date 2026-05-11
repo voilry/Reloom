@@ -1,8 +1,4 @@
-import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, Keyboard, BackHandler, UIManager, LayoutAnimation } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, Keyboard, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../components/ui/ThemedView';
 import { ThemedText } from '../components/ui/ThemedText';
@@ -42,7 +38,6 @@ export default function EditorScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(edit === 'true');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-    const [selection, setSelection] = useState({ start: 0, end: 0 });
     const selectionRef = useRef({ start: 0, end: 0 });
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean, title: string, description: string, type: 'success' | 'error' | 'info' | 'warning', onClose?: () => void } | null>(null);
@@ -87,15 +82,20 @@ export default function EditorScreen() {
 
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
             setIsKeyboardVisible(true);
-            // Scroll to cursor position after keyboard opens
-            setTimeout(() => {
-                const sel = selectionRef.current;
-                const totalChars = Math.max(1, contentRef.current.length);
-                const cursorRatio = sel.start / totalChars;
-                // Offset adjusted to 220px to keep cursor closer to keyboard
-                const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
-                scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 220), animated: true });
-            }, 300);
+            // Scroll to cursor position after keyboard opens, but only if cursor is not at the top
+            if (selectionRef.current.start > 40) {
+                setTimeout(() => {
+                    const sel = selectionRef.current;
+                    const totalChars = Math.max(1, contentRef.current.length);
+                    const cursorRatio = sel.start / totalChars;
+                    const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
+                    
+                    // Only scroll if the cursor is significantly down the page
+                    if (cursorY > 200) {
+                        scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 180), animated: true });
+                    }
+                }, 100);
+            }
         });
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
             setIsKeyboardVisible(false);
@@ -184,7 +184,7 @@ export default function EditorScreen() {
     const insertFormatting = (prefix: string, suffix: string = '') => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-        const { start, end } = selection;
+        const { start, end } = selectionRef.current;
         const selectedText = content.substring(start, end);
         const newText =
             content.substring(0, start) +
@@ -297,7 +297,7 @@ export default function EditorScreen() {
 
             <KeyboardAvoidingView
                 key={`kav-${kavKey}`}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 style={{ flex: 1 }}
                 keyboardVerticalOffset={0}
             >
@@ -308,40 +308,37 @@ export default function EditorScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {isEditing ? (
-                        <View onLayout={(e) => { editorYRef.current = e.nativeEvent.layout.y; }}>
-                            <TextInput
-                                ref={editorRef}
-                                style={[
-                                    styles.editor,
-                                    {
-                                        color: colors.text,
-                                        fontSize: settings.editorFontSize,
-                                        lineHeight: Math.round(settings.editorFontSize * 1.5)
-                                    }
-                                ]}
-                                multiline
-                                value={content}
-                                onChangeText={(text) => {
-                                    setContent(text);
-                                    contentRef.current = text;
-                                }}
-                                onSelectionChange={(e) => {
-                                    setSelection(e.nativeEvent.selection);
-                                    selectionRef.current = e.nativeEvent.selection;
-                                }}
-                                onContentSizeChange={(e) => {
-                                    contentHeightRef.current = e.nativeEvent.contentSize.height;
-                                }}
-                                placeholder="Start writing..."
-                                placeholderTextColor={colors.icon + '80'}
-                                autoFocus={kavKey === 0}
-                                selectionColor={colors.tint}
-                                scrollEnabled={false}
-                                keyboardType="default"
-                                returnKeyType="default"
-                                onFocus={() => setIsKeyboardVisible(true)}
-                            />
-                        </View>
+                        <TextInput
+                            ref={editorRef}
+                            style={[
+                                styles.editor,
+                                {
+                                    color: colors.text,
+                                    fontSize: settings.editorFontSize,
+                                    lineHeight: Math.round(settings.editorFontSize * 1.5)
+                                }
+                            ]}
+                            multiline
+                            value={content}
+                            onChangeText={(text) => {
+                                setContent(text);
+                                contentRef.current = text;
+                            }}
+                            onSelectionChange={(e) => {
+                                selectionRef.current = e.nativeEvent.selection;
+                            }}
+                            onContentSizeChange={(e) => {
+                                contentHeightRef.current = e.nativeEvent.contentSize.height;
+                            }}
+                            placeholder="Start writing..."
+                            placeholderTextColor={colors.icon + '80'}
+                            autoFocus={kavKey === 0}
+                            selectionColor={colors.tint}
+                            scrollEnabled={false}
+                            keyboardType="default"
+                            returnKeyType="default"
+                            onFocus={() => setIsKeyboardVisible(true)}
+                        />
                     ) : (
                         <View style={styles.viewContent}>
                             <MarkdownText
@@ -430,17 +427,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     scrollContent: {
-        flexGrow: 1,
         paddingHorizontal: 20,
         paddingTop: 20,
-        paddingBottom: 120, // More space for bottom cropping fix
+        paddingBottom: 120,
     },
     editor: {
         fontSize: 15,
         lineHeight: 23,
         fontFamily: Typography.fontFamily.regular,
         textAlignVertical: 'top',
-        minHeight: 300,
+        includeFontPadding: false,
+        minHeight: 500,
     },
     viewContent: {
         paddingBottom: 40,

@@ -36,29 +36,29 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('Folder');
-    const [selectedColor, setSelectedColor] = useState('#CA8A04');
+    const [selectedColor, setSelectedColor] = useState('#EAB308');
 
     // Edit Group State
     const [selectedGroupToEdit, setSelectedGroupToEdit] = useState<Group | null>(null);
     const [editName, setEditName] = useState('');
     const [editIcon, setEditIcon] = useState('Folder');
-    const [editColor, setEditColor] = useState('#CA8A04');
+    const [editColor, setEditColor] = useState('#EAB308');
     const [memberCount, setMemberCount] = useState<number>(0);
 
     const COLORS = [
-        '#CA8A04', // Yellow 700
-        '#4338CA', // Indigo 700
-        '#BE123C', // Rose 700
-        '#047857', // Emerald 700
-        '#B45309', // Amber 700
-        '#334155', // Slate 700
-        '#6D28D9', // Violet 700
-        '#C2410C', // Orange 700
-        '#B91C1C', // Red 700
-        '#0E7490', // Cyan 700
-        '#A21CAF', // Fuchsia 700
-        '#BE185D', // Pink 700
-        '#65A30D', // Lime 700
+        '#EAB308', // Yellow 500
+        '#6366F1', // Indigo 500
+        '#F43F5E', // Rose 500
+        '#10B981', // Emerald 500
+        '#F59E0B', // Amber 500
+        '#64748B', // Slate 500
+        '#8B5CF6', // Violet 500
+        '#F97316', // Orange 500
+        '#EF4444', // Red 500
+        '#06B6D4', // Cyan 500
+        '#D946EF', // Fuchsia 500
+        '#EC4899', // Pink 500
+        '#84CC16', // Lime 500
     ];
 
     const handleCreate = () => {
@@ -73,7 +73,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
         setSelectedGroupToEdit(group);
         setEditName(group.name);
         setEditIcon(group.icon || 'Folder');
-        setEditColor(group.color || '#4338CA');
+        setEditColor(group.color || '#6366F1');
 
         // Fetch member count
         const peopleInGroup = await GroupRepository.getPeopleInGroup(group.id);

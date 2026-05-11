@@ -174,15 +174,6 @@ export default function RelationsScreen() {
                 }
             />
 
-            {/* ─── Connections Count ─────────────────────────────────────────── */}
-            {relationships.length > 0 && (
-                <View style={{ paddingHorizontal: 20, paddingBottom: 13, marginTop: 12 }}>
-                    <ThemedText type="sectionHeader" style={{ color: colors.secondary, fontSize: 13 }}>
-                        ({relationships.length})
-                    </ThemedText>
-                </View>
-            )}
-
             {/* ─── Connections List ─────────────────────────────────────────── */}
             <ScrollView
                 contentContainerStyle={[
@@ -192,6 +183,15 @@ export default function RelationsScreen() {
                 ]}
                 showsVerticalScrollIndicator={false}
             >
+                {relationships.length > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
+                        <ThemedText style={{ color: colors.secondary, fontSize: 14, fontFamily: Typography.fontFamily.semibold, opacity: 0.8 }}>
+                            Connections
+                        </ThemedText>
+                        <ThemedText style={{ color: colors.tint, fontSize: 13, fontWeight: '800', marginLeft: 8 }}>{relationships.length}</ThemedText>
+                    </View>
+                )}
+
                 {relationships.length === 0 ? (
                     <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
                         <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>

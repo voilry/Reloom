@@ -212,10 +212,10 @@ export default function PersonDetailScreen() {
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollY.value = event.contentOffset.y;
-            if (event.contentOffset.y > 100 && !headerVisible) {
+            if (event.contentOffset.y > 220 && !headerVisible) {
                 runOnJS(setHeaderVisible)(true);
             }
-            if (event.contentOffset.y <= 100 && headerVisible) {
+            if (event.contentOffset.y <= 220 && headerVisible) {
                 runOnJS(setHeaderVisible)(false);
             }
         },
@@ -264,7 +264,8 @@ export default function PersonDetailScreen() {
                         styles.topBar,
                         {
                             paddingTop: insets.top + 10,
-                            borderBottomColor: headerVisible ? colors.border : 'transparent',
+                            borderBottomWidth: headerVisible ? 0.75 : 0,
+                            borderBottomColor: colors.border,
                             backgroundColor: headerVisible
                                 ? (settings.profileBlurBackground && person.avatarUri
                                     ? (theme === 'dark' ? `${colors.background}73` : `${colors.background}E6`)
@@ -287,10 +288,12 @@ export default function PersonDetailScreen() {
                         </ScalePressable>
 
                         {headerVisible && (
-                            <Animated.View entering={FadeIn.duration(200)}>
+                            <Animated.View entering={FadeIn.duration(200)} style={{ flex: 1, height: 44, justifyContent: 'center' }}>
                                 <ThemedText style={styles.topBarTitle} numberOfLines={1}>{person.name}</ThemedText>
                             </Animated.View>
                         )}
+
+                        {!headerVisible && <View style={{ flex: 1 }} />}
 
                         <ScalePressable
                             style={[styles.moreButton, { backgroundColor: (headerVisible && !settings.profileBlurBackground) ? 'transparent' : (settings.profileBlurBackground && person.avatarUri ? 'rgba(128,128,128,0.15)' : colors.surface) }]}
@@ -318,7 +321,7 @@ export default function PersonDetailScreen() {
 
 
                 {settings.profileBlurBackground && person.avatarUri ? (
-                    <View 
+                    <View
                         style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`, borderWidth: theme === 'light' ? 1 : 0 }]}
                     >
                         <BlurView
@@ -609,7 +612,6 @@ const styles = StyleSheet.create({
     },
     topBar: {
         justifyContent: 'flex-end',
-        borderBottomWidth: 1,
     },
     topBarContent: {
         flexDirection: 'row',
@@ -621,9 +623,9 @@ const styles = StyleSheet.create({
     topBarTitle: {
         fontSize: 17,
         fontWeight: '800',
-        flex: 1,
         textAlign: 'center',
         marginHorizontal: 12,
+        includeFontPadding: false,
     },
     backButton: {
         width: 44,

@@ -1,8 +1,4 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, KeyboardAvoidingView, Alert, Modal, Pressable, Keyboard, BackHandler, UIManager, LayoutAnimation } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, KeyboardAvoidingView, Alert, Modal, Pressable, Keyboard, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -62,7 +58,6 @@ export default function JournalEditorScreen() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [kavKey, setKavKey] = useState(0);
-    const [selection, setSelection] = useState({ start: 0, end: 0 });
     const selectionRef = useRef({ start: 0, end: 0 });
     const [tagSearch, setTagSearch] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -111,15 +106,20 @@ export default function JournalEditorScreen() {
 
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
             setIsKeyboardVisible(true);
-            // Scroll to cursor position after keyboard opens
-            setTimeout(() => {
-                const sel = selectionRef.current;
-                const totalChars = Math.max(1, contentRef.current.length);
-                const cursorRatio = sel.start / totalChars;
-                // Offset adjusted to 220px to keep cursor closer to keyboard
-                const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
-                scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 220), animated: true });
-            }, 300);
+            // Scroll to cursor position after keyboard opens, but only if cursor is not at the top
+            if (selectionRef.current.start > 40) {
+                setTimeout(() => {
+                    const sel = selectionRef.current;
+                    const totalChars = Math.max(1, contentRef.current.length);
+                    const cursorRatio = sel.start / totalChars;
+                    const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
+                    
+                    // Only scroll if the cursor is significantly down the page
+                    if (cursorY > 200) {
+                        scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 180), animated: true });
+                    }
+                }, 100);
+            }
         });
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
             setIsKeyboardVisible(false);
@@ -254,7 +254,7 @@ export default function JournalEditorScreen() {
     const insertFormatting = (prefix: string, suffix: string = '') => {
         triggerHaptic();
 
-        const { start, end } = selection;
+        const { start, end } = selectionRef.current;
         const selectedText = content.substring(start, end);
         const newText =
             content.substring(0, start) +
@@ -411,7 +411,7 @@ export default function JournalEditorScreen() {
             <KeyboardAvoidingView
                 key={`kav-${kavKey}`}
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
@@ -436,40 +436,37 @@ export default function JournalEditorScreen() {
                                 style={[styles.titleInput, { color: colors.text }]}
                                 selectionColor={colors.tint}
                             />
-                            <View onLayout={(e) => { editorYRef.current = e.nativeEvent.layout.y; }}>
-                                <TextInput
-                                    ref={editorRef}
-                                    value={content}
-                                    onChangeText={(text) => {
-                                        setContent(text);
-                                        contentRef.current = text;
-                                    }}
-                                    onSelectionChange={(e) => {
-                                        setSelection(e.nativeEvent.selection);
-                                        selectionRef.current = e.nativeEvent.selection;
-                                    }}
-                                    onContentSizeChange={(e) => {
-                                        contentHeightRef.current = e.nativeEvent.contentSize.height;
-                                    }}
-                                    multiline
-                                    placeholder="Pour your thoughts..."
-                                    placeholderTextColor={colors.secondary}
-                                    style={[
-                                        styles.editor,
-                                        {
-                                            color: colors.text,
-                                            fontSize: journalFontSize,
-                                            lineHeight: Math.round(journalFontSize * 1.6)
-                                        }
-                                    ]}
-                                    selectionColor={colors.tint}
-                                    scrollEnabled={false}
-                                    autoFocus={kavKey === 0}
-                                    keyboardType="default"
-                                    returnKeyType="default"
-                                    onFocus={() => setIsKeyboardVisible(true)}
-                                />
-                            </View>
+                            <TextInput
+                                ref={editorRef}
+                                value={content}
+                                onChangeText={(text) => {
+                                    setContent(text);
+                                    contentRef.current = text;
+                                }}
+                                onSelectionChange={(e) => {
+                                    selectionRef.current = e.nativeEvent.selection;
+                                }}
+                                onContentSizeChange={(e) => {
+                                    contentHeightRef.current = e.nativeEvent.contentSize.height;
+                                }}
+                                multiline
+                                placeholder="Pour your thoughts..."
+                                placeholderTextColor={colors.secondary}
+                                style={[
+                                    styles.editor,
+                                    {
+                                        color: colors.text,
+                                        fontSize: journalFontSize,
+                                        lineHeight: Math.round(journalFontSize * 1.6)
+                                    }
+                                ]}
+                                selectionColor={colors.tint}
+                                scrollEnabled={false}
+                                autoFocus={kavKey === 0}
+                                keyboardType="default"
+                                returnKeyType="default"
+                                onFocus={() => setIsKeyboardVisible(true)}
+                            />
                         </>
                     ) : (
                         <>
@@ -707,7 +704,8 @@ const styles = StyleSheet.create({
         lineHeight: 26,
         fontFamily: Typography.fontFamily.regular,
         textAlignVertical: 'top',
-        minHeight: 400,
+        includeFontPadding: false,
+        minHeight: 500,
     },
     tagsContainer: {
         marginTop: 64,
