@@ -8,7 +8,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
-import { Phone, EnvelopeSimple, InstagramLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, X } from '@/components/ui/Icon';
+import { Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, X } from '@/components/ui/Icon';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import * as Haptics from 'expo-haptics';
@@ -18,6 +18,7 @@ const PLATFORMS = [
     { id: 'WhatsApp', icon: WhatsappLogo, placeholder: '+1 234 567 8900' },
     { id: 'Email', icon: EnvelopeSimple, placeholder: 'email@example.com' },
     { id: 'Instagram', icon: InstagramLogo, placeholder: '@username' },
+    { id: 'Facebook', icon: FacebookLogo, placeholder: 'username or url' },
     { id: 'TikTok', icon: TiktokLogo, placeholder: '@username' },
     { id: 'LinkedIn', icon: LinkedinLogo, placeholder: 'username or url' },
     { id: 'Website', icon: Globe, placeholder: 'https://example.com' },
@@ -93,8 +94,8 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                                         styles.platformButton,
                                         { 
                                             backgroundColor: isSelected ? colors.tint : colors.surface,
-                                            borderColor: isSelected ? colors.tint : colors.border,
-                                            borderWidth: theme === 'light' ? 1 : 0
+                                            borderColor: colors.tint,
+                                            borderWidth: isSelected && theme === 'light' ? 1.5 : 0
                                         }
                                     ]}
                                     innerStyle={{ borderRadius: 12 }}

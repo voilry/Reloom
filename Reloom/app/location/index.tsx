@@ -105,7 +105,7 @@ export default function LocationsScreen() {
                     style={styles.locationItem}
                     innerStyle={{ borderRadius: 24 }}
                 >
-                    <Card style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]} padding="none">
+                    <Card style={[styles.locationCard, { backgroundColor: colors.card, borderWidth: 0 }]} padding="none">
                         <View style={styles.locationCardInner}>
                             <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
                                 <Globe size={24} color={colors.tint} weight="duotone" />

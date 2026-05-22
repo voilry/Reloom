@@ -151,7 +151,7 @@ export const ManageGroupMembersModal = ({
                     <View style={[styles.topInfo, { paddingBottom: 24 }]}>
                         {isAddingMode ? (
                             <View style={styles.searchSection}>
-                                <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}>
+                                <View style={[styles.searchBar, { backgroundColor: colors.surface, borderWidth: 0 }]}>
                                     <MagnifyingGlass size={20} color={colors.secondary} weight="regular" />
                                     <TextInput
                                         placeholder="Search network..."
@@ -216,8 +216,7 @@ export const ManageGroupMembersModal = ({
                                                         styles.cardRow,
                                                         {
                                                             backgroundColor: colors.card,
-                                                            borderColor: isMember ? groupColor + '40' : colors.border,
-                                                            borderWidth: theme === 'light' ? 1 : 0
+                                                            borderWidth: 0
                                                         }
                                                     ]}
                                                     innerStyle={{ borderRadius: DesignSystem.radius.lg }}
@@ -256,8 +255,7 @@ export const ManageGroupMembersModal = ({
                                                 styles.cardRow,
                                                 {
                                                     backgroundColor: colors.card,
-                                                    borderColor: groupColor + '20',
-                                                    borderWidth: theme === 'light' ? 1 : 0
+                                                    borderWidth: 0
                                                 }
                                             ]}>
                                                 <Avatar name={person.name} uri={person.avatarUri} size={48} />

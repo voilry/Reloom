@@ -54,7 +54,7 @@ const PersonItem = memo(({ item, index, colors, theme, onPress, onLongPress }: a
                 {
                     backgroundColor: colors.card,
                     borderRadius: DesignSystem.radius.lg,
-                    borderWidth: theme === 'light' ? 1 : 0,
+                    borderWidth: 0,
                     borderColor: colors.border,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -661,7 +661,7 @@ export default function PeopleScreen() {
                                             style={{ height: 52, borderRadius: DesignSystem.radius.xl, marginRight: 10 }}
                                         />
                                         <ScalePressable
-                                            style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
+                                            style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                                             onPress={() => setShowSortMenu(!showSortMenu)}
                                             innerStyle={{ borderRadius: DesignSystem.radius.xl }}
                                         >
@@ -708,12 +708,12 @@ export default function PeopleScreen() {
                                                     {upcoming.map((p, idx) => (
                                                         <ScalePressable
                                                             key={`birthday-${p.id}-${idx}`}
-                                                            style={[styles.upcomingCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
+                                                            style={[styles.upcomingCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                                                             onPress={() => router.push(`/person/${p.id}`)}
                                                         >
                                                             <View style={styles.upcomingAvatarContainer}>
                                                                 <Avatar name={p.name} uri={p.avatarUri} size={44} />
-                                                                <View style={[styles.birthdayBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                                                                <View style={[styles.birthdayBadge, { backgroundColor: colors.background, borderColor: theme === 'light' ? colors.card : colors.border }]}>
                                                                     <ThemedText style={{ fontSize: 12 }}>🎂</ThemedText>
                                                                 </View>
                                                             </View>
@@ -737,7 +737,7 @@ export default function PeopleScreen() {
                                                     {reconnects.map((s, idx) => (
                                                         <ScalePressable
                                                             key={`reconnect-${s.person.id}-${idx}`}
-                                                            style={[styles.reconnectCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
+                                                            style={[styles.reconnectCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                                                             onPress={() => router.push(`/person/${s.person.id}`)}
                                                         >
                                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -767,7 +767,7 @@ export default function PeopleScreen() {
                                                     {highlights.map((h, idx) => (
                                                         <ScalePressable
                                                             key={`highlight-${h.id}-${idx}`}
-                                                            style={[styles.highlightCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
+                                                            style={[styles.highlightCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                                                             onPress={() => router.push({ pathname: '/journal/[id]', params: { id: h.id } })}
                                                         >
                                                             <View style={styles.highlightHeader}>

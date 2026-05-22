@@ -2,14 +2,14 @@ export const baseLightColors = {
     text: '#1A1410', // Deep warm espresso black
     textSecondary: '#6B5E55', // Deeper warm brown secondary (readable)
     textTertiary: '#9C928A',
-    background: '#F8F3EB', // Warm linen ivory
+    background: '#F8F3EB', // Warm linen ivory (restored original background)
     tint: '#B45309', // Deep Amber (user's preferred brown)
     icon: '#5C534C', // Warm brown icon tone
     tabIconDefault: '#9C928A',
     tabIconSelected: '#B45309',
-    border: '#E5DFD4', // Warm tan border
-    card: '#EEE8DE', // Slightly darker warm cream for cards
-    surface: '#F2EDE4', // Lighter warm surface (search bar, pills — lighter than cards)
+    border: '#E5DFD4', // Warm tan divider/selected border tone (restored)
+    card: '#EEE8DE', // Warm cream/tan card backdrop (restored)
+    surface: '#F2EDE4', // Warm sand surface (for search bar, pills, secondary buttons) (restored)
     primary: '#1A1410',
     secondary: '#6B5E55', // Deeper warm brown
     error: '#DC2626',
@@ -46,19 +46,19 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
     ocean: {
         light: {
             ...baseLightColors,
-            background: '#F9FAFC', 
-            surface: '#F1F4F8',    
-            card: '#EAEFF4',       
-            border: '#DCE2EA',     
-            text: '#1C212B',       
-            textSecondary: '#4F5968', 
-            textTertiary: '#828C9A',  
-            icon: '#3B4554',       
-            primary: '#1C212B',
-            secondary: '#4F5968',
+            background: '#F2F5FA', // Warm ice-blue-tinted ivory paper (96.5% light)
+            surface: '#E5EAF2',    // Soft ice blue surface (92.4% light)
+            card: '#DDE3EC',       // Rich steel blue card (89.6% light)
+            border: '#D0D7E2',     // Cohesive ocean divider & bottom tab border (85.1% light)
+            text: '#0F141F',       // Deep ocean navy (high contrast, ~9.4% light)
+            textSecondary: '#475160', // Slate blue for improved readability (~32.7% light)
+            textTertiary: '#758090',  // Muted slate for metadata/tiny text (~51.2% light)
+            icon: '#343E4C',       // Subdued navy-slate icon
+            primary: '#0F141F',
+            secondary: '#475160',
             tint: '#0284C7',       
             tabIconSelected: '#0284C7',
-            tabIconDefault: '#828C9A',
+            tabIconDefault: '#758090',
         },
         dark: {
             ...baseDarkColors,
@@ -73,19 +73,19 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
     forest: {
         light: {
             ...baseLightColors,
-            background: '#F9FCFA', 
-            surface: '#F1F7F4',    
-            card: '#E9F2EC',       
-            border: '#D8E5DD',
-            text: '#1C2621',       
-            textSecondary: '#4E5C53', 
-            textTertiary: '#818F86',
-            icon: '#394A41',
-            primary: '#1C2621',
-            secondary: '#4E5C53',
+            background: '#F2F7F4', // Warm mint-tinted ivory paper (96.1% light)
+            surface: '#E3EBE6',    // Soft mint surface (91.8% light)
+            card: '#DBE4DE',       // Rich sage green card (89.6% light)
+            border: '#CED7D1',     // Cohesive forest divider & bottom tab border (84.7% light)
+            text: '#0E1712',       // Deep forest black (high contrast, ~7.5% light)
+            textSecondary: '#445249', // Sage green for improved readability (~29.4% light)
+            textTertiary: '#718076',  // Muted sage for metadata/tiny text (~47.5% light)
+            icon: '#324037',       // Subdued forest-green icon
+            primary: '#0E1712',
+            secondary: '#445249',
             tint: '#059669',       
             tabIconSelected: '#059669',
-            tabIconDefault: '#818F86',
+            tabIconDefault: '#718076',
         },
         dark: {
             ...baseDarkColors,
@@ -100,19 +100,19 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
     rose: {
         light: {
             ...baseLightColors,
-            background: '#FFFBFB', 
-            surface: '#FAEBEE',    
-            card: '#FFF9FA',       // Lightest floating card
-            border: '#F2D8DC',     
-            text: '#3B141C',       
-            textSecondary: '#6A4349', 
-            textTertiary: '#9E7A80',  
-            icon: '#5D2F37',       
-            primary: '#3B141C',
-            secondary: '#6A4349',
+            background: '#FCEEEF', // Warm rose-tinted ivory paper (96.9% light)
+            surface: '#F5E2E4',    // Soft rose surface (92.4% light)
+            card: '#F1DADB',       // Rich rose card (90.0% light)
+            border: '#E8CCD0',     // Cohesive rose border/divider (85.1% light)
+            text: '#23070C',       // Deep rose-tinted espresso (high contrast, ~8.2% light)
+            textSecondary: '#5E383E', // Burgundy for improved readability (~29.4% light)
+            textTertiary: '#8C676D',  // Muted rose for metadata/tiny text (~47.8% light)
+            icon: '#4E242B',       // Subdued rose-espresso icon
+            primary: '#23070C',
+            secondary: '#5E383E',
             tint: '#F43F5E',       
             tabIconSelected: '#F43F5E',
-            tabIconDefault: '#9E7A80',
+            tabIconDefault: '#8C676D',
         },
         dark: {
             ...baseDarkColors,
@@ -122,6 +122,33 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
             border: '#332C2C',     
             tint: '#FB7185',       
             tabIconSelected: '#FB7185',
+        }
+    },
+    lavender: {
+        light: {
+            ...baseLightColors,
+            background: '#F5F2FC', // Warm lilac-tinted ivory paper (96.9% light)
+            surface: '#EBE5F7',    // Soft lilac surface (93.3% light)
+            card: '#E3DBF3',       // Rich lavender card (90.6% light)
+            border: '#D7CCEB',     // Cohesive lavender border/divider (85.3% light)
+            text: '#120A1E',       // Deep lavender-tinted black (high contrast, ~7.5% light)
+            textSecondary: '#4A4057', // Plum for improved readability (~29.4% light)
+            textTertiary: '#776C87',  // Muted lavender for metadata/tiny text (~47.8% light)
+            icon: '#3B3147',       // Subdued lavender-plum icon
+            primary: '#120A1E',
+            secondary: '#4A4057',
+            tint: '#8B5CF6',       
+            tabIconSelected: '#8B5CF6',
+            tabIconDefault: '#776C87',
+        },
+        dark: {
+            ...baseDarkColors,
+            background: '#121115', // Almost imperceptible Purple/Lavender shift
+            card: '#1B1A1E',       
+            surface: '#242229', 
+            border: '#33303B',     
+            tint: '#A78BFA',       
+            tabIconSelected: '#A78BFA',
         }
     }
 };

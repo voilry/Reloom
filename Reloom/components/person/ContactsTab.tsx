@@ -82,20 +82,41 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
     }
 
     const handlePress = (platform: string, value: string) => {
+        const trimmedValue = value.trim();
+        const cleanValue = trimmedValue.replace('@', '');
         let url = '';
-        const cleanValue = value.replace('@', '').trim();
-        switch (platform.toLowerCase()) {
-            case 'phone': url = `tel:${cleanValue}`; break;
-            case 'email': url = `mailto:${cleanValue}`; break;
-            case 'whatsapp':
-                const waPhone = cleanValue.replace(/[^\d+]/g, '');
-                url = `https://wa.me/${waPhone.startsWith('+') ? waPhone.substring(1) : waPhone}`;
-                break;
-            case 'instagram': url = `https://instagram.com/${cleanValue}`; break;
-            case 'facebook': url = `https://facebook.com/${cleanValue}`; break;
-            case 'tiktok': url = `https://tiktok.com/@${cleanValue}`; break;
-            case 'linkedin': url = value.startsWith('http') ? value : `https://linkedin.com/in/${cleanValue}`; break;
-            default: url = value.startsWith('http') ? value : `https://${value}`; break;
+
+        if (trimmedValue.toLowerCase().startsWith('http://') || trimmedValue.toLowerCase().startsWith('https://')) {
+            url = trimmedValue;
+        } else {
+            switch (platform.toLowerCase()) {
+                case 'phone': 
+                    url = `tel:${cleanValue}`; 
+                    break;
+                case 'email': 
+                    url = `mailto:${cleanValue}`; 
+                    break;
+                case 'whatsapp':
+                    const waPhone = cleanValue.replace(/[^\d+]/g, '');
+                    url = `https://wa.me/${waPhone.startsWith('+') ? waPhone.substring(1) : waPhone}`;
+                    break;
+                case 'instagram': 
+                    url = `https://instagram.com/${cleanValue}`; 
+                    break;
+                case 'facebook': 
+                    url = `https://facebook.com/${cleanValue}`; 
+                    break;
+                case 'tiktok': 
+                    url = `https://tiktok.com/@${cleanValue}`; 
+                    break;
+                case 'linkedin': 
+                    url = `https://linkedin.com/in/${cleanValue}`; 
+                    break;
+                case 'website':
+                default: 
+                    url = `https://${trimmedValue}`; 
+                    break;
+            }
         }
 
         Linking.openURL(url).catch(err => {
@@ -114,6 +135,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
             case 'tiktok': return <TiktokLogo size={size} color={color} weight="fill" />;
             case 'whatsapp': return <WhatsappLogo size={size} color={color} weight="fill" />;
             case 'linkedin': return <LinkedinLogo size={size} color={color} weight="fill" />;
+            case 'website': return <Globe size={size} color={color} weight="fill" />;
             default: return <Globe size={size} color={color} weight="fill" />;
         }
     };
@@ -155,8 +177,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                                 styles.contactCard,
                                 {
                                     backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.7)') : colors.card,
-                                    borderColor: colors.border,
-                                    borderWidth: theme === 'light' ? 1 : 0
+                                    borderWidth: 0
                                 }
                             ]}>
                                 <View style={[styles.iconContainer, { backgroundColor: colors.surface }]}>

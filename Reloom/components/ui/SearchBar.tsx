@@ -21,8 +21,8 @@ export function SearchBar({ value, onChangeText, placeholder = 'Search...', styl
             styles.searchBar, 
             { 
                 backgroundColor: backgroundColor || colors.surface, 
-                borderColor: borderColor || (theme === 'light' ? colors.border : 'transparent'),
-                borderWidth: theme === 'light' ? 1 : 0,
+                borderColor: borderColor || 'transparent',
+                borderWidth: 0,
             }, 
             style
         ]}>

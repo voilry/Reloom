@@ -158,8 +158,7 @@ export default function ContactEditorScreen() {
                                 styles.personContext, 
                                 { 
                                     backgroundColor: colors.surface,
-                                    borderColor: colors.border,
-                                    borderWidth: theme === 'light' ? 1 : 0
+                                    borderWidth: 0
                                 }
                             ]}
                         >
@@ -187,8 +186,8 @@ export default function ContactEditorScreen() {
                                             styles.platformOption,
                                             {
                                                 backgroundColor: isSelected ? colors.tint : colors.surface,
-                                                borderColor: isSelected ? colors.tint : colors.border,
-                                                borderWidth: theme === 'light' ? 1 : 0
+                                                borderColor: colors.tint,
+                                                borderWidth: isSelected && theme === 'light' ? 1.5 : 0
                                             }
                                         ]}
                                         innerStyle={{ borderRadius: 16 }}

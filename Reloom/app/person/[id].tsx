@@ -322,7 +322,7 @@ export default function PersonDetailScreen() {
 
                 {settings.profileBlurBackground && person.avatarUri ? (
                     <View
-                        style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`, borderWidth: theme === 'light' ? 1 : 0 }]}
+                        style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`, borderWidth: 0 }]}
                     >
                         <BlurView
                             intensity={40}
@@ -342,7 +342,7 @@ export default function PersonDetailScreen() {
                         ))}
                     </View>
                 ) : (
-                    <View style={[styles.tabContainer, { backgroundColor: theme === 'dark' ? colors.surface : colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}>
+                    <View style={[styles.tabContainer, { backgroundColor: theme === 'dark' ? colors.surface : colors.card, borderWidth: 0 }]}>
                         {orderedTabs.map(tab => (
                             <TabItem
                                 key={tab}

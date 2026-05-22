@@ -55,7 +55,7 @@ export function Button({
                 };
             case 'secondary':
                 return {
-                    container: { backgroundColor: theme === 'light' ? '#F3F4F6' : '#27272A', borderWidth: 0 },
+                    container: { backgroundColor: theme === 'light' ? colors.surface : '#27272A', borderWidth: 0 },
                     text: { color: colors.text }
                 };
             case 'surface':

@@ -346,28 +346,7 @@ export default function JournalEditorScreen() {
                         router.back();
                     }
                 }}
-                backButtonIcon={isEditing ? (
-                    <ScalePressable
-                        onPress={() => {
-                            if (hasChanges) {
-                                setShowDiscardModal(true);
-                            } else {
-                                if (id === 'new') {
-                                    router.back();
-                                } else {
-                                    setIsEditing(false);
-                                    setTitle(journal.title || '');
-                                    setContent(journal.content || '');
-                                    setSelectedPeople(taggedPeople.map((t: any) => t.person.id));
-                                }
-                            }
-                        }}
-                        overlayColor="transparent"
-                        scaleTo={0.9}
-                    >
-                        <X size={20} color={colors.text} />
-                    </ScalePressable>
-                ) : <ChevronLeft size={22} color={colors.text} />}
+                backButtonIcon={isEditing ? <X size={20} color={colors.text} /> : <ChevronLeft size={22} color={colors.text} />}
                 backButtonStyle={{ backgroundColor: colors.border + '20' }}
                 title={undefined}
                 borderBottom={false}
@@ -635,10 +614,14 @@ export default function JournalEditorScreen() {
                 description="Are you sure you want to discard your edits?"
                 onCancel={() => setShowDiscardModal(false)}
                 onDelete={() => {
-                    setContent(originalContent);
-                    setTitle(originalTitle);
-                    setIsEditing(false);
                     setShowDiscardModal(false);
+                    if (id === 'new') {
+                        router.back();
+                    } else {
+                        setContent(originalContent);
+                        setTitle(originalTitle);
+                        setIsEditing(false);
+                    }
                 }}
                 actionLabel="Discard"
             />

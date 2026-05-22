@@ -445,14 +445,14 @@ export default function CalendarScreen() {
                         <ThemedText type="display" style={styles.title}>Calendar</ThemedText>
                         <ScalePressable 
                             onPress={handleGoToToday} 
-                            style={[styles.todayBtn, { backgroundColor: colors.surface, borderWidth: theme === 'light' ? 1 : 0, borderColor: colors.border }]}
+                            style={[styles.todayBtn, { backgroundColor: colors.surface, borderWidth: 0 }]}
                             scaleTo={0.92}
                         >
                             <Target size={18} color={colors.tint} />
                             <ThemedText style={[styles.todayBtnText, { color: colors.tint }]}>Today</ThemedText>
                         </ScalePressable>
                     </View>
-                    <View style={[styles.monthNav, { backgroundColor: colors.surface, borderWidth: theme === 'light' ? 1 : 0, borderColor: colors.border }]}>
+                    <View style={[styles.monthNav, { backgroundColor: colors.surface, borderWidth: 0 }]}>
                         <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
                             <CaretLeft size={22} color={colors.text} />
                         </TouchableOpacity>
@@ -466,7 +466,7 @@ export default function CalendarScreen() {
                 </View>
 
                 <View style={styles.calendarCardContainer}>
-                    <View style={[styles.calendarCard, { backgroundColor: colors.card, borderWidth: theme === 'light' ? 1 : 0, borderColor: colors.border }]}>
+                    <View style={[styles.calendarCard, { backgroundColor: colors.card, borderWidth: 0 }]}>
                         <View style={styles.calendarGrid}>
                             {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d, i) => (
                                 <View key={i} style={styles.dayCell}>

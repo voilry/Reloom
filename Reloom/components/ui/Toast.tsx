@@ -47,7 +47,7 @@ export function Toast() {
                     {
                         backgroundColor: theme === 'dark' ? '#2A2A2A' : '#FFFFFF',
                         borderColor: colors.border,
-                        borderWidth: theme === 'light' ? 1 : 0,
+                        borderWidth: 0,
                         ...DesignSystem.shadows.md,
                     }
                 ]}

@@ -42,8 +42,7 @@ export const GalleryPersonCard = memo(({ person, colors, onPress, onLongPress }:
                 styles.container,
                 {
                     backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderWidth: theme === 'light' ? 1 : 0,
+                    borderWidth: 0,
                 }
             ]}
             innerStyle={{ borderRadius: 22 }}

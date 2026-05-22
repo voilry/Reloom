@@ -37,7 +37,7 @@ export const DashboardGroupCard = memo(({ title, description, iconName, color, i
                     borderColor: isAddCard 
                         ? (colors.theme === 'light' ? colors.border : colors.text + '20') 
                         : (isMaster ? colors.tint + '20' : color + '20'),
-                    borderWidth: colors.theme === 'light' ? 1.5 : (isAddCard ? 1.5 : 0),
+                    borderWidth: isAddCard ? 1.5 : 0,
                     borderStyle: isAddCard ? 'dashed' : 'solid',
                     minHeight: isMaster ? 130 : 120,
                     padding: 18,
@@ -49,7 +49,7 @@ export const DashboardGroupCard = memo(({ title, description, iconName, color, i
         >
             {isAddCard ? (
                 <>
-                    <View style={[styles.iconContainer, { backgroundColor: colors.surface, width: 44, height: 44, borderRadius: 22, borderWidth: colors.theme === 'light' ? 1.5 : 0, borderColor: colors.border }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: colors.surface, width: 44, height: 44, borderRadius: 22, borderWidth: 0 }]}>
                         <IconComponent size={20} color={colors.text} weight="bold" />
                     </View>
                     <ThemedText style={{ marginTop: 10, fontSize: 13, fontWeight: '700', color: colors.secondary }}>Create</ThemedText>

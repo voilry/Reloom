@@ -33,7 +33,7 @@ export function UpdateModal({ visible, version, onClose }: UpdateModalProps) {
 
                 <Animated.View
                     entering={ZoomIn.duration(300).springify()}
-                    style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0 }]}
+                    style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                 >
                     <View style={styles.iconContainer}>
                         <Image

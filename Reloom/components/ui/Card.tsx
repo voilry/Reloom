@@ -32,7 +32,7 @@ export function Card({ children, style, variant = 'default', padding = 'md' }: C
             default:
                 return {
                     backgroundColor: colors.card,
-                    borderWidth: theme === 'light' ? 1 : 0,
+                    borderWidth: 0,
                     borderColor: colors.border,
                     ...DesignSystem.shadows.none,
                 };

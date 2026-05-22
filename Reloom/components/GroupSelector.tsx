@@ -136,8 +136,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 styles.tab,
                                 {
                                     backgroundColor: selectedGroupId === null ? colors.tint : colors.surface,
-                                    borderWidth: theme === 'light' ? 1 : 0,
-                                    borderColor: colors.border,
+                                    borderWidth: 0,
                                 }
                             ]}
                             innerStyle={{ borderRadius: 20 }}
@@ -150,7 +149,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 All
                             </ThemedText>
                         </ScalePressable>
-
+ 
                         {/* Groups */}
                         {groups.map((group, index) => {
                             const groupColor = group.color || colors.tint;
@@ -167,8 +166,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                             styles.tab,
                                             {
                                                 backgroundColor: isSelected ? groupColor : colors.surface,
-                                                borderWidth: theme === 'light' ? 1 : 0,
-                                                borderColor: isSelected ? groupColor : colors.border,
+                                                borderWidth: 0,
                                             }
                                         ]}
                                         innerStyle={{ borderRadius: 20 }}
@@ -184,7 +182,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 </Animated.View>
                             );
                         })}
-
+ 
                         {/* Add Button - Cleaner */}
                         {groups.length < 8 && (
                             <ScalePressable
@@ -192,7 +190,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                     if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     setShowCreateModal(true);
                                 }}
-                                style={[styles.tab, { backgroundColor: colors.surface, borderWidth: theme === 'light' ? 1 : 0, borderColor: colors.border, paddingHorizontal: 12 }]}
+                                style={[styles.tab, { backgroundColor: colors.surface, borderWidth: 0, paddingHorizontal: 12 }]}
                                 innerStyle={{ borderRadius: 20 }}
                                 scaleTo={0.9}
                             >

@@ -103,7 +103,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
                     {/* The sleek menu card */}
                     <Animated.View entering={FadeInUp.duration(300)} exiting={FadeOutDown.duration(200)} style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}>
-                        <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: theme === 'light' ? 1 : 0, ...DesignSystem.shadows.xl }}>
+                        <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: 0, ...DesignSystem.shadows.xl }}>
 
                             <MenuOption icon={<UserIcon size={22} color={colors.tint} />} title="New Person" onPress={() => handleAction('newPerson')} />
                             <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
