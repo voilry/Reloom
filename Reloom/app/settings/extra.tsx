@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { useSettings } from '../../store/SettingsContext';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { CloudArrowUp } from '@/components/ui/Icon';
+import { CloudArrowUp, Layout } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +55,22 @@ export default function ExtraSettingsScreen() {
                                 }}
                             />
                         </SettingRow>
+                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                        <SettingRow
+                            label="Quick Glance"
+                            description="Show a quick overview panel on the home screen."
+                            icon={<Layout size={20} color={colors.tint} weight="duotone" />}
+                            colors={colors}
+                            style={[styles.paddingBox, { paddingVertical: 18 }]}
+                        >
+                            <Toggle
+                                value={settings.showQuickArray}
+                                onValueChange={(v) => {
+                                    triggerHaptic();
+                                    updateSetting('showQuickArray', v);
+                                }}
+                            />
+                        </SettingRow>
                     </Card>
                 </View>
 
@@ -84,6 +100,7 @@ const styles = StyleSheet.create({
     section: { marginBottom: 32 },
     card: { overflow: 'hidden' },
     paddingBox: { padding: 16 },
+    separator: { height: 1, marginHorizontal: 16, opacity: 0.2 },
     settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     settingInfo: { flex: 1, marginRight: 16 },
     settingTitleGroup: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },

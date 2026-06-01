@@ -137,8 +137,8 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
             icon: '#3B3147',       // Subdued lavender-plum icon
             primary: '#120A1E',
             secondary: '#4A4057',
-            tint: '#8B5CF6',       
-            tabIconSelected: '#8B5CF6',
+            tint: '#8F60FD',       
+            tabIconSelected: '#8F60FD',
             tabIconDefault: '#776C87',
         },
         dark: {
@@ -147,8 +147,8 @@ export const ThemePresets: Record<string, { light: typeof baseLightColors, dark:
             card: '#1B1A1E',       
             surface: '#242229', 
             border: '#33303B',     
-            tint: '#A78BFA',       
-            tabIconSelected: '#A78BFA',
+            tint: '#C4B5FD',       
+            tabIconSelected: '#C4B5FD',
         }
     }
 };

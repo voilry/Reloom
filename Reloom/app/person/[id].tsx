@@ -248,7 +248,7 @@ export default function PersonDetailScreen() {
                 <View style={StyleSheet.absoluteFill}>
                     <Image
                         source={{ uri: person.avatarUri }}
-                        style={[StyleSheet.absoluteFill, { opacity: theme === 'dark' ? 0.4 : 0.6 }]}
+                        style={[StyleSheet.absoluteFill, { opacity: theme === 'dark' ? 0.85 : 0.6 }]}
                         resizeMode="cover"
                         blurRadius={12}
                     />
@@ -258,8 +258,8 @@ export default function PersonDetailScreen() {
 
             <View style={styles.topBarWrapper}>
                 <BlurView
-                    intensity={headerVisible ? (settings.profileBlurBackground && person.avatarUri ? 40 : (theme === 'dark' ? 70 : 30)) : 0}
-                    tint={theme === 'dark' ? 'dark' : 'default'}
+                    intensity={headerVisible ? (settings.profileBlurBackground && person.avatarUri ? 70 : (theme === 'dark' ? 70 : 30)) : 0}
+                    tint={theme === 'dark' ? 'dark' : (settings.profileBlurBackground && person.avatarUri ? 'light' : 'default')}
                     style={[
                         styles.topBar,
                         {
@@ -268,7 +268,7 @@ export default function PersonDetailScreen() {
                             borderBottomColor: colors.border,
                             backgroundColor: headerVisible
                                 ? (settings.profileBlurBackground && person.avatarUri
-                                    ? (theme === 'dark' ? `${colors.background}73` : `${colors.background}E6`)
+                                    ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.surface}90`)
                                     : (theme === 'dark' ? `${colors.background}CC` : `${colors.background}F7`))
                                 : 'transparent'
                         }
@@ -276,7 +276,14 @@ export default function PersonDetailScreen() {
                 >
                     <View style={styles.topBarContent}>
                         <ScalePressable
-                            style={[styles.backButton, { backgroundColor: (headerVisible && !settings.profileBlurBackground) ? 'transparent' : (settings.profileBlurBackground && person.avatarUri ? 'rgba(128,128,128,0.15)' : colors.surface) }]}
+                            style={[
+                                styles.backButton, 
+                                { 
+                                    backgroundColor: (settings.profileBlurBackground && person.avatarUri) 
+                                        ? colors.surface 
+                                        : (headerVisible ? 'transparent' : colors.surface) 
+                                }
+                            ]}
                             onPress={() => {
                                 triggerHaptic();
                                 router.back();
@@ -296,7 +303,14 @@ export default function PersonDetailScreen() {
                         {!headerVisible && <View style={{ flex: 1 }} />}
 
                         <ScalePressable
-                            style={[styles.moreButton, { backgroundColor: (headerVisible && !settings.profileBlurBackground) ? 'transparent' : (settings.profileBlurBackground && person.avatarUri ? 'rgba(128,128,128,0.15)' : colors.surface) }]}
+                            style={[
+                                styles.moreButton, 
+                                { 
+                                    backgroundColor: (settings.profileBlurBackground && person.avatarUri) 
+                                        ? colors.surface 
+                                        : (headerVisible ? 'transparent' : colors.surface) 
+                                }
+                            ]}
                             onPress={() => setShowMoreMenu(true)}
                             innerStyle={{ borderRadius: 22 }}
                         >
@@ -322,7 +336,7 @@ export default function PersonDetailScreen() {
 
                 {settings.profileBlurBackground && person.avatarUri ? (
                     <View
-                        style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`, borderWidth: 0 }]}
+                        style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.surface}BF`, borderWidth: 0 }]}
                     >
                         <BlurView
                             intensity={40}
@@ -408,15 +422,24 @@ export default function PersonDetailScreen() {
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                             {personGroups.map(g => {
                                 const isAcrylic = settings.profileBlurBackground && !!person.avatarUri;
-                                const groupAcrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(180,83,9,0.08)') : colors.surface;
+                                const groupAcrylicBg = isAcrylic 
+                                    ? (theme === 'dark' ? 'rgba(0,0,0,0.65)' : `${colors.tint}33`) 
+                                    : (theme === 'light' ? colors.surface : 'rgba(255,255,255,0.08)');
 
                                 return (
                                     <ScalePressable
                                         key={g.id}
                                         onPress={() => { }} // No action for now but tactile feel
-                                        style={[styles.groupChip, { backgroundColor: theme === 'light' ? colors.surface : 'rgba(255,255,255,0.08)', borderColor: 'transparent', paddingVertical: 6, paddingHorizontal: 12 }]}
+                                        style={[styles.groupChip, { backgroundColor: groupAcrylicBg, borderColor: 'transparent', paddingVertical: 6, paddingHorizontal: 12, overflow: 'hidden' }]}
                                         innerStyle={{ borderRadius: 12 }}
                                     >
+                                        {isAcrylic && (
+                                            <BlurView
+                                                intensity={50}
+                                                tint={theme === 'dark' ? 'dark' : 'light'}
+                                                style={StyleSheet.absoluteFill}
+                                            />
+                                        )}
                                         {getGroupIcon(g.icon, colors.tint, 14)}
                                         <ThemedText style={{ fontSize: 13, color: colors.tint, fontWeight: '700', marginLeft: 6 }}>{g.name}</ThemedText>
                                     </ScalePressable>
@@ -473,7 +496,7 @@ export default function PersonDetailScreen() {
                             }}
                             innerStyle={{ borderRadius: 12 }}
                         >
-                            <Edit size={18} color={colors.text} />
+                            <Edit size={18} color={colors.text} weight="fill" />
                             <ThemedText style={styles.menuText}>Edit Profile</ThemedText>
                         </ScalePressable>
 
@@ -487,7 +510,7 @@ export default function PersonDetailScreen() {
                             }}
                             innerStyle={{ borderRadius: 12 }}
                         >
-                            <Folder size={18} color={colors.text} />
+                            <Folder size={18} color={colors.text} weight="fill" />
                             <ThemedText style={styles.menuText}>Manage Groups</ThemedText>
                         </ScalePressable>
 
@@ -501,7 +524,7 @@ export default function PersonDetailScreen() {
                             }}
                             innerStyle={{ borderRadius: 12 }}
                         >
-                            <Trash size={18} color={colors.error} />
+                            <Trash size={18} color={colors.error} weight="fill" />
                             <ThemedText style={[styles.menuText, { color: colors.error, fontWeight: '700' }]}>Delete Profile</ThemedText>
                         </ScalePressable>
                     </Animated.View>
@@ -554,7 +577,7 @@ export default function PersonDetailScreen() {
 }
 
 const getGroupIcon = (name: string | null, color: string, size = 16) => {
-    const weight = "bold";
+    const weight = "fill";
     switch (name) {
         case 'Star': return <Star size={size} color={color} weight={weight} />;
         case 'Briefcase': return <Briefcase size={size} color={color} weight={weight} />;

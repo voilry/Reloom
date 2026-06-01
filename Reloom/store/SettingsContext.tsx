@@ -188,8 +188,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             if (stored.appLockEnabled !== undefined) merged.appLockEnabled = stored.appLockEnabled === 'true';
             if (stored.biometricEnabled !== undefined) merged.biometricEnabled = stored.biometricEnabled === 'true';
             if (stored.showCalendarTab !== undefined) merged.showCalendarTab = stored.showCalendarTab === 'true';
-            if (stored.hasUpdate !== undefined) merged.hasUpdate = stored.hasUpdate === 'true';
-            if (stored.latestVersion) merged.latestVersion = stored.latestVersion;
+            const lastRunVersion = await SettingsRepository.get('lastRunVersion');
+            if (lastRunVersion !== APP_VERSION) {
+                merged.hasUpdate = false;
+                merged.latestVersion = '';
+                await SettingsRepository.set('hasUpdate', 'false');
+                await SettingsRepository.set('latestVersion', '');
+                await SettingsRepository.set('lastUpdateCheck', '0');
+                await SettingsRepository.set('lastRunVersion', APP_VERSION);
+            } else {
+                if (stored.hasUpdate !== undefined) merged.hasUpdate = stored.hasUpdate === 'true';
+                if (stored.latestVersion) merged.latestVersion = stored.latestVersion;
+            }
             if (stored.amoledEnabled !== undefined) merged.amoledEnabled = stored.amoledEnabled === 'true';
             if (stored.checkForUpdatesEnabled !== undefined) merged.checkForUpdatesEnabled = stored.checkForUpdatesEnabled === 'true';
 

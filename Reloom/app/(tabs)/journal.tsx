@@ -292,7 +292,7 @@ export default function JournalScreen() {
                             innerStyle={{ borderRadius: 22 }}
                             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                         >
-                            <PenTool size={22} color={colors.tint} weight="duotone" />
+                            <PenTool size={22} color={colors.tint} weight="fill" />
                         </ScalePressable>
                     </View>
                 </Animated.View>

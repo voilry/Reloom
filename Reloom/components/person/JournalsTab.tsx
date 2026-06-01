@@ -10,6 +10,7 @@ import { BookOpen, Trash } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { BlurView } from 'expo-blur';
 
 interface JournalsTabProps {
     journals: any[];
@@ -22,7 +23,7 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
     const router = useRouter();
     const { colors, hapticsEnabled, theme } = useAppTheme();
 
-    const acrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(248,242,232,0.85)') : undefined;
+    const acrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`) : undefined;
 
     const renderRightActions = (id: number, dragX: RNAnimated.AnimatedInterpolation<number>) => {
         const trans = dragX.interpolate({
@@ -81,7 +82,14 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
                             style={{ marginBottom: 16 }}
                             innerStyle={{ borderRadius: 16 }}
                         >
-                            <Card style={[{ borderRadius: 16, backgroundColor: acrylicBg ?? colors.surface }]} padding="md">
+                            <Card style={[{ borderRadius: 16, backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, overflow: 'hidden', borderWidth: 0 }]} padding="md">
+                                {isAcrylic && (
+                                    <BlurView
+                                        intensity={40}
+                                        tint={theme === 'dark' ? 'dark' : 'light'}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <View style={styles.entryHeader}>
                                     <View style={[styles.journalDateBadge, { backgroundColor: colors.tint + '15' }]}>
                                         <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800' }}>

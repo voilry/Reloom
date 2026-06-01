@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
+import { BlurView } from 'expo-blur';
 
 interface InfoTabProps {
     person: Person;
@@ -45,14 +46,21 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
 
     return (
         <>
-            <Card style={[styles.infoCard, acrylicBg && { backgroundColor: acrylicBg }]}>
+            <Card style={[styles.infoCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]}>
+                {isAcrylic && (
+                    <BlurView
+                        intensity={40}
+                        tint={theme === 'dark' ? 'dark' : 'light'}
+                        style={StyleSheet.absoluteFill}
+                    />
+                )}
                 <View style={styles.sectionHeader}>
                     <ThemedText type="sectionHeader" style={styles.sectionTitle}>Details</ThemedText>
                 </View>
                 <InfoItem
                     label="Gender"
                     value={person.gender}
-                    icon={<User size={18} color={colors.icon} />}
+                    icon={<User size={18} color={colors.icon} weight="fill" />}
                     placeholder={
                         <ScalePressable onPress={onEditProfile} overlayColor="transparent">
                             <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Gender</ThemedText>
@@ -63,7 +71,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                     label="Birthday"
                     value={person.birthdate}
                     prefix={age !== null ? `${age}` : ''}
-                    icon={<Calendar size={18} color={colors.icon} />}
+                    icon={<Calendar size={18} color={colors.icon} weight="fill" />}
                     placeholder={
                         <ScalePressable onPress={onEditProfile} overlayColor="transparent">
                             <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Birthday</ThemedText>
@@ -73,7 +81,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                 <InfoItem
                     label="First Met"
                     value={person.firstMet}
-                    icon={<Clock size={18} color={colors.icon} />}
+                    icon={<Clock size={18} color={colors.icon} weight="fill" />}
                     placeholder={
                         <ScalePressable onPress={onEditProfile} overlayColor="transparent">
                             <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Set Date</ThemedText>
@@ -83,7 +91,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
 
                 <View style={[styles.infoRow, { borderBottomColor: 'transparent' }]}>
                     <View style={styles.infoIconContainer}>
-                        <MapPin size={18} color={colors.icon} />
+                        <MapPin size={18} color={colors.icon} weight="fill" />
                     </View>
                     <View style={styles.infoTextContainer}>
                         <ScalePressable
@@ -114,13 +122,20 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
             </Card>
 
             <ScalePressable
-                style={[styles.relationshipCard, { borderColor: isAcrylic ? 'transparent' : colors.border, backgroundColor: acrylicBg ?? colors.card }]}
+                style={[styles.relationshipCard, { borderColor: isAcrylic ? 'transparent' : colors.border, backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, overflow: 'hidden', borderWidth: isAcrylic ? 0 : 0.6 }]}
                 innerStyle={{ borderRadius: DesignSystem.radius.lg }}
                 scaleTo={0.94}
                 onPress={() => {
                     router.push(`/person/${person.id}/relations`);
                 }}
             >
+                {isAcrylic && (
+                    <BlurView
+                        intensity={40}
+                        tint={theme === 'dark' ? 'dark' : 'light'}
+                        style={StyleSheet.absoluteFill}
+                    />
+                )}
                 <View style={styles.relLeft}>
                     <View style={styles.avatarStack}>
                         {relationships.slice(0, 3).map((rel, idx) => (
@@ -162,7 +177,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                         params: { id: person.id, type: 'description', edit: 'true' }
                     })}
                 >
-                    <Edit size={16} color={colors.tint} />
+                    <Edit size={16} color={colors.tint} weight="fill" />
                 </ScalePressable>
             </View>
 
@@ -174,7 +189,14 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                 scale={false}
                 innerStyle={{ borderRadius: DesignSystem.radius.md }}
             >
-                <Card style={[styles.descCard, acrylicBg && { backgroundColor: acrylicBg }]} padding="lg">
+                <Card style={[styles.descCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]} padding="lg">
+                    {isAcrylic && (
+                        <BlurView
+                            intensity={40}
+                            tint={theme === 'dark' ? 'dark' : 'light'}
+                            style={StyleSheet.absoluteFill}
+                        />
+                    )}
                     {person.description ? (
                         <MarkdownText content={person.description} style={styles.descText} />
                     ) : (
@@ -183,7 +205,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                         </ThemedText>
                     )}
                     <View style={styles.descIcon}>
-                        <Expand size={14} color={colors.icon} />
+                        <Expand size={14} color={colors.icon} weight="fill" />
                     </View>
                 </Card>
             </ScalePressable>

@@ -31,6 +31,10 @@ export default function EditorScreen() {
 
     const [content, setContent] = useState('');
     const contentRef = useRef('');
+    const [undoStack, setUndoStack] = useState<string[]>([]);
+    const [redoStack, setRedoStack] = useState<string[]>([]);
+    const isHistoryChange = useRef(false);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [title, setTitle] = useState('');
     const [originalContent, setOriginalContent] = useState('');
     const [originalTitle, setOriginalTitle] = useState('');
@@ -114,12 +118,15 @@ export default function EditorScreen() {
         if (type === 'description') {
             const p = await PersonRepository.getById(Number(id));
             if (p) {
-                setContent(p.description || '');
-                contentRef.current = p.description || '';
-                setOriginalContent(p.description || '');
+                const desc = p.description || '';
+                setContent(desc);
+                contentRef.current = desc;
+                setOriginalContent(desc);
                 setTitle(p.name);
                 setOriginalTitle(p.name);
                 setLastUpdated(p.updatedAt);
+                setUndoStack([desc]);
+                setRedoStack([]);
             }
         } else if (type === 'entry') {
             const e = await EntryRepository.getById(Number(id));
@@ -130,6 +137,8 @@ export default function EditorScreen() {
                 setTitle(e.type);
                 setOriginalTitle(e.type);
                 setLastUpdated(e.createdAt);
+                setUndoStack([e.content]);
+                setRedoStack([]);
             }
         }
     };
@@ -181,6 +190,50 @@ export default function EditorScreen() {
         }
     }, [isEditing, hasChanges, router]);
 
+    const handleContentChange = (text: string) => {
+        setContent(text);
+        contentRef.current = text;
+
+        if (isHistoryChange.current) {
+            isHistoryChange.current = false;
+            return;
+        }
+
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        debounceTimer.current = setTimeout(() => {
+            setUndoStack(prev => {
+                if (prev.length > 0 && prev[prev.length - 1] === text) return prev;
+                return [...prev, text];
+            });
+            setRedoStack([]);
+        }, 500);
+    };
+
+    const handleUndo = () => {
+        if (undoStack.length <= 1) return;
+        isHistoryChange.current = true;
+        const current = content;
+        const previous = undoStack[undoStack.length - 2];
+
+        setUndoStack(prev => prev.slice(0, -1));
+        setRedoStack(prev => [current, ...prev]);
+        setContent(previous);
+        contentRef.current = previous;
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    const handleRedo = () => {
+        if (redoStack.length === 0) return;
+        isHistoryChange.current = true;
+        const next = redoStack[0];
+
+        setUndoStack(prev => [...prev, next]);
+        setRedoStack(prev => prev.slice(1));
+        setContent(next);
+        contentRef.current = next;
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
     const insertFormatting = (prefix: string, suffix: string = '') => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -194,6 +247,10 @@ export default function EditorScreen() {
             content.substring(end);
 
         setContent(newText);
+        contentRef.current = newText;
+
+        setUndoStack(prev => [...prev, newText]);
+        setRedoStack([]);
 
         // Calculate new cursor position
         // If we have suffix, we want to be inside it (e.g. inside ****)
@@ -235,7 +292,7 @@ export default function EditorScreen() {
                             setEditingTitle(true);
                             if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         }} style={[styles.titleEditRow, { marginBottom: 2 }]}>
-                            <ThemedText type="defaultSemiBold" style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center' }}>{title}</ThemedText>
+                            <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center', maxWidth: 180 }}>{title}</ThemedText>
                             <Edit3 size={12} color={colors.secondary} />
                         </TouchableOpacity>
                     ) : isEditing && type === 'entry' && editingTitle ? (
@@ -244,12 +301,13 @@ export default function EditorScreen() {
                             onChangeText={setTitle}
                             onBlur={() => setEditingTitle(false)}
                             autoFocus
-                            style={[styles.titleInput, { color: colors.text, borderBottomColor: colors.tint, textAlign: 'center' }]}
+                            style={[styles.titleInput, { color: colors.text, borderBottomColor: colors.tint, textAlign: 'center', minWidth: 120 }]}
                             selectionColor={colors.tint}
                             keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
+                            maxLength={20}
                         />
                     ) : (
-                        <ThemedText type="sectionHeader" style={{ fontSize: 16, letterSpacing: -0.3, marginBottom: -8, textAlign: 'center' }}>{title}</ThemedText>
+                        <ThemedText type="sectionHeader" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, marginBottom: -8, textAlign: 'center', alignSelf: 'stretch' }}>{title}</ThemedText>
                     )}
                     <ThemedText type="small" style={{ color: colors.secondary, fontSize: 10, opacity: 0.6, textAlign: 'center' }}>
                         {isEditing ? `${wordCount} words` : (lastUpdated ? `Last edited ${new Date(lastUpdated).toLocaleDateString()}` : '')}
@@ -320,10 +378,7 @@ export default function EditorScreen() {
                             ]}
                             multiline
                             value={content}
-                            onChangeText={(text) => {
-                                setContent(text);
-                                contentRef.current = text;
-                            }}
+                            onChangeText={handleContentChange}
                             onSelectionChange={(e) => {
                                 selectionRef.current = e.nativeEvent.selection;
                             }}
@@ -353,7 +408,13 @@ export default function EditorScreen() {
                 </ScrollView>
 
                 {isEditing && isKeyboardVisible && (
-                    <EditorToolbar onInsertFormatting={insertFormatting} />
+                    <EditorToolbar 
+                        onInsertFormatting={insertFormatting}
+                        onUndo={handleUndo}
+                        onRedo={handleRedo}
+                        canUndo={undoStack.length > 1}
+                        canRedo={redoStack.length > 0}
+                    />
                 )}
             </KeyboardAvoidingView>
             <DeleteModal
@@ -391,8 +452,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerInfo: {
-        flex: 1,
+        alignSelf: 'stretch',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     headerTitle: {
         fontSize: 15,

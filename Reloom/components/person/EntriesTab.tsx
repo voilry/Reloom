@@ -13,6 +13,7 @@ import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee,
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { BlurView } from 'expo-blur';
 
 interface EntriesTabProps {
     entries: any[];
@@ -27,7 +28,7 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
     const { colors, hapticsEnabled } = useAppTheme();
     const [search, setSearch] = useState('');
 
-    const acrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(248,242,232,0.85)') : undefined;
+    const acrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`) : undefined;
 
     const filteredEntries = entries.filter(e => {
         const q = search.toLowerCase().trim();
@@ -104,7 +105,14 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
     return (
         <View style={styles.entriesSection}>
             <View style={styles.searchRow}>
-                <View style={[styles.searchContainer, { backgroundColor: acrylicBg ?? colors.card, borderColor: isAcrylic ? 'transparent' : colors.border }]}>
+                <View style={[styles.searchContainer, { backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, borderColor: isAcrylic ? 'transparent' : colors.border, overflow: 'hidden' }]}>
+                    {isAcrylic && (
+                        <BlurView
+                            intensity={40}
+                            tint={theme === 'dark' ? 'dark' : 'light'}
+                            style={StyleSheet.absoluteFill}
+                        />
+                    )}
                     <Search size={16} color={colors.icon} style={{ marginRight: 8 }} />
                     <TextInput
                         placeholder="Search notes..."
@@ -120,7 +128,7 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                     style={[styles.addButton, { backgroundColor: colors.tint, ...DesignSystem.shadows.sm }]}
                     innerStyle={{ borderRadius: 14 }}
                 >
-                    <Plus size={24} color={theme === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'} weight="bold" />
+                    <Plus size={24} color={theme === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'} weight="fill" />
                 </ScalePressable>
             </View>
 
@@ -158,7 +166,14 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                                 style={{ marginBottom: 16 }}
                                 innerStyle={{ borderRadius: 16 }}
                             >
-                                    <Card style={[{ backgroundColor: acrylicBg ?? colors.surface, borderRadius: 16 }]} padding="md">
+                                    <Card style={[{ backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, borderRadius: 16, overflow: 'hidden', borderWidth: 0 }]} padding="md">
+                                        {isAcrylic && (
+                                            <BlurView
+                                                intensity={40}
+                                                tint={theme === 'dark' ? 'dark' : 'light'}
+                                                style={StyleSheet.absoluteFill}
+                                            />
+                                        )}
                                         <View style={styles.entryHeader}>
                                             <View style={[styles.categoryBadge, { backgroundColor: colors.tint + '15' }]}>
                                                 {getCategoryIcon(entry.type)}

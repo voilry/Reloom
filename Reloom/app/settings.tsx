@@ -374,21 +374,7 @@ export default function SettingsScreen() {
                                 }}
                             />
                         </SettingRow>
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
-                        <SettingRow
-                            label="Quick Glance"
-                            icon={<Layout size={20} color={colors.tint} weight="duotone" />}
-                            colors={colors}
-                            style={[styles.paddingBox, { paddingVertical: 18, paddingBottom: 20, paddingTop: 20 }]}
-                        >
-                            <Toggle
-                                value={settings.showQuickArray}
-                                onValueChange={(v) => {
-                                    triggerHaptic();
-                                    updateSetting('showQuickArray', v);
-                                }}
-                            />
-                        </SettingRow>
+
                     </Card>
 
                     <ScalePressable

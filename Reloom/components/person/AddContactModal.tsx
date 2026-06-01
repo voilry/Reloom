@@ -94,8 +94,8 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                                         styles.platformButton,
                                         { 
                                             backgroundColor: isSelected ? colors.tint : colors.surface,
-                                            borderColor: colors.tint,
-                                            borderWidth: isSelected && theme === 'light' ? 1.5 : 0
+                                            borderColor: isSelected && theme === 'light' ? colors.tint : 'transparent',
+                                            borderWidth: theme === 'light' ? 1.5 : 0
                                         }
                                     ]}
                                     innerStyle={{ borderRadius: 12 }}

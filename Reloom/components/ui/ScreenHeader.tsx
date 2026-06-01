@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 16,
         overflow: 'visible',
+        alignSelf: 'stretch',
     },
     sideContainer: {
         minWidth: 48,

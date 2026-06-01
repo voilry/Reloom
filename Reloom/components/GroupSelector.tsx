@@ -194,7 +194,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                 innerStyle={{ borderRadius: 20 }}
                                 scaleTo={0.9}
                             >
-                                <Plus size={18} color={colors.text} />
+                                <Plus size={18} color={colors.text} weight="fill" />
                             </ScalePressable>
                         )}
                     </ScrollView>
@@ -216,7 +216,6 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                         </View>
 
                         <View style={styles.modalContent}>
-                            <View style={{ position: 'relative' }}>
                                 <Input
                                     label="Group Name"
                                     placeholder="e.g. Hiking Buddies"
@@ -225,10 +224,6 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                     autoFocus
                                     maxLength={25}
                                 />
-                                <ThemedText style={{ position: 'absolute', right: 0, bottom: -4, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
-                                    {newGroupName.length}/25
-                                </ThemedText>
-                            </View>
 
                             <ThemedText style={styles.label}>Select color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
@@ -326,7 +321,6 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                         </View>
 
                         <View style={styles.modalContent}>
-                            <View style={{ position: 'relative' }}>
                                 <Input
                                     label="Group Name"
                                     placeholder="..."
@@ -334,10 +328,6 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                     onChangeText={setEditName}
                                     maxLength={25}
                                 />
-                                <ThemedText style={{ position: 'absolute', right: 0, bottom: -4, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
-                                    {editName.length}/25
-                                </ThemedText>
-                            </View>
 
                             <ThemedText style={styles.label}>Update color</ThemedText>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>

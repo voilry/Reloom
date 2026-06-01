@@ -138,7 +138,7 @@ export const ManageGroupMembersModal = ({
                                         scaleTo={0.9}
                                         innerStyle={{ borderRadius: 22 }}
                                     >
-                                        <UserPlus size={22} color={colors.text} />
+                                        <UserPlus size={22} color={colors.text} weight="fill" />
                                     </ScalePressable>
                                 ) : (
                                     <View style={{ width: 44 }} />
@@ -232,7 +232,7 @@ export const ManageGroupMembersModal = ({
                                                         {isMember ? (
                                                             <CheckCircle size={26} color={colors.tint} weight="fill" />
                                                         ) : (
-                                                            <PlusCircle size={26} color={colors.secondary + '40'} weight="regular" />
+                                                            <PlusCircle size={26} color={colors.secondary + '40'} weight="fill" />
                                                         )}
                                                     </View>
                                                 </ScalePressable>

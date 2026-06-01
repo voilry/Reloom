@@ -156,6 +156,8 @@ export const Edit = PencilSimple;
 export const Edit3 = Pencil;
 export const Save = FloppyDisk;
 export const History = ClockCounterClockwise;
+export const Undo = (props: any) => <Icon name={props.weight === 'fill' ? 'back_fill' : 'back_line'} {...props} />;
+export const Redo = (props: any) => <Icon name={props.weight === 'fill' ? 'forward_fill' : 'forward_line'} {...props} />;
 export const Network = Graph;
 export const Map = MapTrifold;
 export const Navigation = NavigationArrow;

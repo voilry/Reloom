@@ -168,7 +168,7 @@ export default function RelationsScreen() {
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         scaleTo={0.92}
                     >
-                        <Plus size={14} color={colors.tint} weight="bold" />
+                        <Plus size={14} color={colors.tint} weight="fill" />
                         <ThemedText style={[styles.linkCapsuleText, { color: colors.tint }]}>Link</ThemedText>
                     </ScalePressable>
                 }

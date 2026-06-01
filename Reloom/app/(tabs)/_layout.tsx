@@ -27,19 +27,21 @@ const ICONS: Record<string, any> = {
 
 function MenuOption({ icon, title, onPress }: any) {
     return (
-        <ScalePressable
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 22, paddingHorizontal: 16, borderRadius: 20 }}
-            onPress={onPress}
-            innerStyle={{ borderRadius: 20 }}
-            scaleTo={0.96}
-        >
-            <View style={{ width: 24, alignItems: 'center', marginRight: 16 }}>
-                {icon}
-            </View>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-                <ThemedText style={{ fontSize: 16, fontFamily: Typography.fontFamily.bold, opacity: 0.9 }}>{title}</ThemedText>
-            </View>
-        </ScalePressable>
+        <View style={{ paddingVertical: 6 }}>
+            <ScalePressable
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14 }}
+                onPress={onPress}
+                innerStyle={{ borderRadius: 14 }}
+                scaleTo={0.96}
+            >
+                <View style={{ width: 24, alignItems: 'center', marginRight: 16 }}>
+                    {icon}
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <ThemedText style={{ fontSize: 16, fontFamily: Typography.fontFamily.bold, opacity: 0.9 }}>{title}</ThemedText>
+                </View>
+            </ScalePressable>
+        </View>
     );
 }
 
@@ -105,25 +107,25 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                     <Animated.View entering={FadeInUp.duration(300)} exiting={FadeOutDown.duration(200)} style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}>
                         <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: 0, ...DesignSystem.shadows.xl }}>
 
-                            <MenuOption icon={<UserIcon size={22} color={colors.tint} />} title="New Person" onPress={() => handleAction('newPerson')} />
+                            <MenuOption icon={<UserIcon size={22} color={colors.tint} weight="fill" />} title="New Person" onPress={() => handleAction('newPerson')} />
                             <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
-                            <MenuOption icon={<PenLine size={22} color="#6366f1" />} title="Quick Note" onPress={() => handleAction('quickNote')} />
+                            <MenuOption icon={<PenLine size={22} color="#6366f1" weight="fill" />} title="Quick Note" onPress={() => handleAction('quickNote')} />
                             <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
-                            <MenuOption icon={<AddressBook size={22} color="#f59e0b" />} title="Quick Contact" onPress={() => handleAction('quickContact')} />
+                            <MenuOption icon={<AddressBook size={22} color="#f59e0b" weight="fill" />} title="Quick Contact" onPress={() => handleAction('quickContact')} />
 
                             {settings.showCalendarTab && (
                                 <>
                                     <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
-                                    <MenuOption icon={<Bell size={22} color="#ef4444" />} title="Set Reminder" onPress={() => handleAction('setReminder')} />
+                                    <MenuOption icon={<Bell size={22} color="#ef4444" weight="fill" />} title="Set Reminder" onPress={() => handleAction('setReminder')} />
                                 </>
                             )}
 
                             {settings.showJournalTab && (
                                 <>
                                     <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
-                                    <MenuOption icon={<Book size={22} color="#10b981" />} title="Quick Journal" onPress={() => handleAction('quickJournal')} />
+                                    <MenuOption icon={<Book size={22} color="#10b981" weight="fill" />} title="Quick Journal" onPress={() => handleAction('quickJournal')} />
                                 </>
                             )}
 

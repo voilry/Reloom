@@ -287,6 +287,7 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                                         value={customCategory}
                                         onChangeText={setCustomCategory}
                                         autoFocus
+                                        maxLength={20}
                                     />
                                 </Reanimated.View>
                             )}

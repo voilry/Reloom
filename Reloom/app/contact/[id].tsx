@@ -186,8 +186,8 @@ export default function ContactEditorScreen() {
                                             styles.platformOption,
                                             {
                                                 backgroundColor: isSelected ? colors.tint : colors.surface,
-                                                borderColor: colors.tint,
-                                                borderWidth: isSelected && theme === 'light' ? 1.5 : 0
+                                                borderColor: isSelected && theme === 'light' ? colors.tint : 'transparent',
+                                                borderWidth: theme === 'light' ? 1.5 : 0
                                             }
                                         ]}
                                         innerStyle={{ borderRadius: 16 }}

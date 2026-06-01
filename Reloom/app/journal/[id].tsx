@@ -52,6 +52,10 @@ export default function JournalEditorScreen() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const contentRef = useRef('');
+    const [undoStack, setUndoStack] = useState<string[]>([]);
+    const [redoStack, setRedoStack] = useState<string[]>([]);
+    const isHistoryChange = useRef(false);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [selectedPeople, setSelectedPeople] = useState<number[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -149,6 +153,8 @@ export default function JournalEditorScreen() {
             setTitle('');
             setContent('');
             contentRef.current = '';
+            setUndoStack(['']);
+            setRedoStack([]);
             setTaggedPeople([]);
             setSelectedPeople([]);
             return;
@@ -164,6 +170,8 @@ export default function JournalEditorScreen() {
             setTitle(j.title || '');
             setContent(j.content || '');
             contentRef.current = j.content || '';
+            setUndoStack([j.content || '']);
+            setRedoStack([]);
             setOriginalTitle(j.title || '');
             setOriginalContent(j.content || '');
             const initialTagIds = tags ? tags.map((t: any) => t.person.id) : [];
@@ -251,6 +259,50 @@ export default function JournalEditorScreen() {
         setShowMoreMenu(true);
     };
 
+    const handleContentChange = (text: string) => {
+        setContent(text);
+        contentRef.current = text;
+
+        if (isHistoryChange.current) {
+            isHistoryChange.current = false;
+            return;
+        }
+
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        debounceTimer.current = setTimeout(() => {
+            setUndoStack(prev => {
+                if (prev.length > 0 && prev[prev.length - 1] === text) return prev;
+                return [...prev, text];
+            });
+            setRedoStack([]);
+        }, 500);
+    };
+
+    const handleUndo = () => {
+        if (undoStack.length <= 1) return;
+        isHistoryChange.current = true;
+        const current = content;
+        const previous = undoStack[undoStack.length - 2];
+
+        setUndoStack(prev => prev.slice(0, -1));
+        setRedoStack(prev => [current, ...prev]);
+        setContent(previous);
+        contentRef.current = previous;
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    const handleRedo = () => {
+        if (redoStack.length === 0) return;
+        isHistoryChange.current = true;
+        const next = redoStack[0];
+
+        setUndoStack(prev => [...prev, next]);
+        setRedoStack(prev => prev.slice(1));
+        setContent(next);
+        contentRef.current = next;
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    };
+
     const insertFormatting = (prefix: string, suffix: string = '') => {
         triggerHaptic();
 
@@ -264,6 +316,10 @@ export default function JournalEditorScreen() {
             content.substring(end);
 
         setContent(newText);
+        contentRef.current = newText;
+
+        setUndoStack(prev => [...prev, newText]);
+        setRedoStack([]);
 
         const newCursorPos = start + prefix.length + (selectedText ? selectedText.length : 0);
 
@@ -414,14 +470,12 @@ export default function JournalEditorScreen() {
                                 placeholderTextColor={colors.icon + '80'}
                                 style={[styles.titleInput, { color: colors.text }]}
                                 selectionColor={colors.tint}
+                                maxLength={20}
                             />
                             <TextInput
                                 ref={editorRef}
                                 value={content}
-                                onChangeText={(text) => {
-                                    setContent(text);
-                                    contentRef.current = text;
-                                }}
+                                onChangeText={handleContentChange}
                                 onSelectionChange={(e) => {
                                     selectionRef.current = e.nativeEvent.selection;
                                 }}
@@ -467,7 +521,7 @@ export default function JournalEditorScreen() {
                     {/* Tagged People Section */}
                     <View style={styles.tagsContainer}>
                         <View style={styles.sectionHeader}>
-                            <UserPlus size={16} color={colors.secondary} />
+                            <UserPlus size={16} color={colors.secondary} weight="fill" />
                             <ThemedText type="sectionHeader" style={styles.sectionTitle}>Connections Mentioned</ThemedText>
                         </View>
 
@@ -545,7 +599,13 @@ export default function JournalEditorScreen() {
                 </ScrollView>
 
                 {isEditing && isKeyboardVisible && (
-                    <EditorToolbar onInsertFormatting={insertFormatting} />
+                    <EditorToolbar 
+                        onInsertFormatting={insertFormatting}
+                        onUndo={handleUndo}
+                        onRedo={handleRedo}
+                        canUndo={undoStack.length > 1}
+                        canRedo={redoStack.length > 0}
+                    />
                 )}
             </KeyboardAvoidingView>
 
@@ -564,7 +624,7 @@ export default function JournalEditorScreen() {
                             }}
                             innerStyle={{ borderRadius: 12 }}
                         >
-                            <ShareIcon size={18} color={colors.text} />
+                            <ShareIcon size={18} color={colors.text} weight="fill" />
                             <ThemedText style={styles.menuText}>Share</ThemedText>
                         </ScalePressable>
 
@@ -578,7 +638,7 @@ export default function JournalEditorScreen() {
                             }}
                             innerStyle={{ borderRadius: 12 }}
                         >
-                            <Trash2 size={18} color={colors.error} />
+                            <Trash2 size={18} color={colors.error} weight="fill" />
                             <ThemedText style={[styles.menuText, { color: colors.error }]}>Delete</ThemedText>
                         </ScalePressable>
                     </View>
@@ -657,7 +717,7 @@ const styles = StyleSheet.create({
     fullDate: {
         opacity: 0.4,
         fontFamily: Typography.fontFamily.bold,
-        marginBottom: 32,
+        marginBottom: 12,
         textTransform: 'uppercase',
         letterSpacing: 1.5,
     },

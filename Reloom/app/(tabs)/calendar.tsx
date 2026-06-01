@@ -571,7 +571,7 @@ export default function CalendarScreen() {
                                             if (!settings.showJournalTab || selStr > todayStr) {
                                                 return <Bell size={24} color={theme === 'light' ? '#fff' : '#000'} />;
                                             }
-                                            return <Plus size={24} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />;
+                                            return <Plus size={24} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />;
                                         })()}
                                     </ScalePressable>
                                     <ScalePressable

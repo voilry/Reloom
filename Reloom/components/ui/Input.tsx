@@ -41,7 +41,16 @@ export function Input({ label, error, style, containerStyle, ...rest }: InputPro
                 onBlur={() => setIsFocused(false)}
                 {...rest}
             />
-            {error && <ThemedText type="small" style={{ color: colors.error, marginTop: 4 }}>{error}</ThemedText>}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                {error ? (
+                    <ThemedText type="small" style={{ color: colors.error }}>{error}</ThemedText>
+                ) : <View />}
+                {rest.maxLength && (
+                    <ThemedText type="tiny" style={{ color: colors.secondary, opacity: 0.6, alignSelf: 'flex-end', marginLeft: 'auto' }}>
+                        {String(rest.value || '').length}/{rest.maxLength}
+                    </ThemedText>
+                )}
+            </View>
         </View>
     );
 }

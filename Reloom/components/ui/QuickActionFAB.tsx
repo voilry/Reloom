@@ -69,7 +69,7 @@ export function QuickActionFAB({ onNewPerson, onNewNote, onNewReminder }: QuickA
                 innerStyle={{ borderRadius: ACTION_SIZE / 2 }}
                 scaleTo={0.88}
             >
-                <Icon size={20} color={color} />
+                <Icon size={20} color={color} weight="fill" />
             </ScalePressable>
         </Animated.View>
     );
@@ -100,7 +100,7 @@ export function QuickActionFAB({ onNewPerson, onNewNote, onNewReminder }: QuickA
                     hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                 >
                     <Animated.View style={mainButtonStyle}>
-                        <Plus size={28} color={colors.tintContrast} weight="bold" />
+                        <Plus size={28} color={colors.tintContrast} weight="fill" />
                     </Animated.View>
                 </ScalePressable>
             </View>

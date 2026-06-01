@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Plus, Trash, PencilSimple, Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe } from '@/components/ui/Icon';
 import { Button } from '../ui/Button';
+import { BlurView } from 'expo-blur';
 
 export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcrylic, colors }: any) {
     const [showLinkError, setShowLinkError] = React.useState(false);
@@ -149,7 +150,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                     style={{ padding: 4 }}
                     innerStyle={{ borderRadius: 12 }}
                 >
-                    <Plus size={20} color={colors.tint} weight="bold" />
+                    <Plus size={20} color={colors.tint} weight="fill" />
                 </ScalePressable>
             </View>
 
@@ -176,10 +177,18 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                             <Card style={[
                                 styles.contactCard,
                                 {
-                                    backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.7)') : colors.card,
-                                    borderWidth: 0
+                                    backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.4)' : `${colors.card}B3`) : colors.card,
+                                    borderWidth: 0,
+                                    overflow: 'hidden'
                                 }
                             ]}>
+                                {isAcrylic && (
+                                    <BlurView
+                                        intensity={40}
+                                        tint={theme === 'dark' ? 'dark' : 'light'}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <View style={[styles.iconContainer, { backgroundColor: colors.surface }]}>
                                     {getPlatformIcon(contact.platform)}
                                 </View>

@@ -3,13 +3,23 @@ import { View, ScrollView, TouchableOpacity, StyleSheet, Keyboard, Platform } fr
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
-import { X, Quotes as Quote, Code, Minus } from '@/components/ui/Icon';
+import { X, Quotes as Quote, Code, Minus, Undo, Redo } from '@/components/ui/Icon';
 
 interface EditorToolbarProps {
     onInsertFormatting: (prefix: string, suffix?: string) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
 }
 
-export function EditorToolbar({ onInsertFormatting }: EditorToolbarProps) {
+export function EditorToolbar({ 
+    onInsertFormatting,
+    onUndo,
+    onRedo,
+    canUndo = false,
+    canRedo = false,
+}: EditorToolbarProps) {
     const { colors } = useAppTheme();
 
     return (
@@ -20,6 +30,27 @@ export function EditorToolbar({ onInsertFormatting }: EditorToolbarProps) {
                 contentContainerStyle={styles.toolbarScroll}
                 keyboardShouldPersistTaps="always"
             >
+                {onUndo && (
+                    <TouchableOpacity 
+                        onPress={onUndo} 
+                        disabled={!canUndo} 
+                        style={[styles.toolbarButton, { opacity: canUndo ? 1 : 0.4 }]}
+                    >
+                        <Undo size={18} color={colors.text} />
+                    </TouchableOpacity>
+                )}
+                {onRedo && (
+                    <TouchableOpacity 
+                        onPress={onRedo} 
+                        disabled={!canRedo} 
+                        style={[styles.toolbarButton, { opacity: canRedo ? 1 : 0.4 }]}
+                    >
+                        <Redo size={18} color={colors.text} />
+                    </TouchableOpacity>
+                )}
+                {(onUndo || onRedo) && (
+                    <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
+                )}
                 <TouchableOpacity onPress={() => onInsertFormatting('**', '**')} style={styles.toolbarButton}>
                     <ThemedText style={styles.toolbarTextBold}>B</ThemedText>
                 </TouchableOpacity>
