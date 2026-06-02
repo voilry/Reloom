@@ -21,36 +21,44 @@ export function Input({ label, error, style, containerStyle, ...rest }: InputPro
                     {label}
                 </ThemedText>
             )}
-            <TextInput
-                style={[
-                    styles.input,
-                    {
-                        backgroundColor: colors.surface,
-                        color: colors.text,
-                        borderColor: error ? colors.error : (isFocused ? colors.tint : 'transparent'),
-                        borderWidth: 2,
-                        textAlignVertical: rest.multiline ? 'top' : 'center',
-                        paddingTop: rest.multiline ? 16 : 0,
-                        paddingBottom: rest.multiline ? 16 : 0,
-                        ...(isFocused ? DesignSystem.shadows.sm : {})
-                    },
-                    style,
-                ]}
-                placeholderTextColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                {...rest}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                {error ? (
-                    <ThemedText type="small" style={{ color: colors.error }}>{error}</ThemedText>
-                ) : <View />}
+            <View style={styles.inputWrapper}>
+                <TextInput
+                    style={[
+                        styles.input,
+                        {
+                            backgroundColor: colors.surface,
+                            color: colors.text,
+                            borderColor: error ? colors.error : (isFocused ? colors.tint : 'transparent'),
+                            borderWidth: 2,
+                            textAlignVertical: rest.multiline ? 'top' : 'center',
+                            paddingTop: rest.multiline ? 16 : 0,
+                            paddingBottom: rest.multiline ? (rest.maxLength ? 28 : 16) : 0,
+                            paddingRight: rest.maxLength && !rest.multiline ? 52 : 16,
+                            ...(isFocused ? DesignSystem.shadows.sm : {})
+                        },
+                        style,
+                    ]}
+                    placeholderTextColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    {...rest}
+                />
                 {rest.maxLength && (
-                    <ThemedText type="tiny" style={{ color: colors.secondary, opacity: 0.6, alignSelf: 'flex-end', marginLeft: 'auto' }}>
+                    <ThemedText
+                        type="tiny"
+                        style={[
+                            styles.counter,
+                            { color: colors.secondary },
+                            rest.multiline ? styles.counterMultiline : styles.counterSingle,
+                        ]}
+                    >
                         {String(rest.value || '').length}/{rest.maxLength}
                     </ThemedText>
                 )}
             </View>
+            {error && (
+                <ThemedText type="small" style={{ color: colors.error, marginTop: 4 }}>{error}</ThemedText>
+            )}
         </View>
     );
 }
@@ -66,6 +74,9 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         lineHeight: 16,
     },
+    inputWrapper: {
+        position: 'relative',
+    },
     input: {
         minHeight: 56,
         borderRadius: 16,
@@ -75,5 +86,19 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         textAlignVertical: 'center',
+    },
+    counter: {
+        position: 'absolute',
+        opacity: 0.45,
+        fontSize: 11,
+    },
+    counterSingle: {
+        right: 14,
+        top: '50%',
+        transform: [{ translateY: -7 }],
+    },
+    counterMultiline: {
+        right: 14,
+        bottom: 10,
     },
 });

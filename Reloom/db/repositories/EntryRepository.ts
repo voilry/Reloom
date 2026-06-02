@@ -40,6 +40,21 @@ export class EntryRepository {
             .orderBy(entryTypes.label);
     }
 
+    static async getUsedTypesForPerson(personId: number) {
+        return await db
+            .select({
+                id: entryTypes.id,
+                label: entryTypes.label,
+                isSystem: entryTypes.isSystem,
+                useCount: sql<number>`count(${entries.id})`
+            })
+            .from(entryTypes)
+            .innerJoin(entries, eq(entries.typeId, entryTypes.id))
+            .where(eq(entries.personId, personId))
+            .groupBy(entryTypes.id)
+            .orderBy(desc(sql`count(${entries.id})`), entryTypes.label);
+    }
+
     static async getCustomTypes() {
         return await db
             .select()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Animated as RNAnimated, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Animated as RNAnimated, Alert, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
@@ -38,6 +38,7 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
     const [content, setContent] = useState('');
     const [isCustom, setIsCustom] = useState(false);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const fadeAnim = useRef(new RNAnimated.Value(0)).current;
 
@@ -49,6 +50,8 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
             setCategory('Note');
             setIsCustom(false);
             setCustomCategory('');
+            setCustomCategories([]);
+            setSearchQuery('');
             checkDraft();
             loadCategories();
             RNAnimated.timing(fadeAnim, {
@@ -58,14 +61,20 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
             }).start();
         } else {
             fadeAnim.setValue(0);
+            setCategory('Note');
+            setIsCustom(false);
+            setCustomCategory('');
+            setCustomCategories([]);
+            setContent('');
+            setSearchQuery('');
         }
     }, [visible, personId]);
 
     const loadCategories = async () => {
         try {
             if (personId) {
-                const types = await EntryRepository.getCustomTypesForPerson(personId);
-                setCustomCategories(types);
+                const types = await EntryRepository.getUsedTypesForPerson(personId);
+                setCustomCategories(types as any);
             } else {
                 const types = await EntryRepository.getCustomTypes();
                 setCustomCategories(types);
@@ -157,13 +166,11 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
     };
 
     const selectCategory = (cat: string) => {
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
         setCategory(cat);
         setIsCustom(false);
     };
 
     const enableCustom = () => {
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
         if (isCustom) {
             setIsCustom(false);
             setCategory('Note');
@@ -187,6 +194,8 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
         <ScalePressable
             onPress={onPress}
             style={styles.chipWrapper}
+            scaleTo={0.92}
+            hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
         >
             <LinearGradient
                 colors={
@@ -209,6 +218,24 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                 </ThemedText>
             </LinearGradient>
         </ScalePressable>
+    );
+
+    // Filter and sort Upper List
+    const filteredCustom = customCategories.filter(cat =>
+        cat.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    const noteIndex = filteredCustom.findIndex(cat => cat.label.toLowerCase() === 'note');
+    let finalUpperList = [...filteredCustom];
+    if (noteIndex > -1) {
+        const [noteItem] = finalUpperList.splice(noteIndex, 1);
+        finalUpperList.unshift(noteItem);
+    }
+
+    // Filter Templates List
+    const usedLabels = new Set(customCategories.map(cat => cat.label.toLowerCase()));
+    const filteredTemplates = CATEGORIES.filter(cat =>
+        !usedLabels.has(cat.toLowerCase()) &&
+        cat.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -256,7 +283,18 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={styles.form}>
-                            <ThemedText type="sectionHeader" style={[styles.sectionLabel, { opacity: 0.9 }]}>Category</ThemedText>
+                            <View style={styles.categoryHeader}>
+                                <ThemedText type="sectionHeader" style={[styles.sectionLabel, { marginBottom: 0, opacity: 0.9 }]}>Category</ThemedText>
+                                {customCategories.length > 0 && (
+                                    <TextInput
+                                        placeholder="Search tags..."
+                                        placeholderTextColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                                        value={searchQuery}
+                                        onChangeText={setSearchQuery}
+                                        style={[styles.searchInput, { backgroundColor: colors.surface, color: colors.text }]}
+                                    />
+                                )}
+                            </View>
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -269,13 +307,17 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                                     onPress={enableCustom}
                                 />
 
-                                {customCategories.map(cat => (
-                                    <CategoryChip
+                                {finalUpperList.map((cat, index) => (
+                                    <Reanimated.View
                                         key={cat.id}
-                                        label={cat.label}
-                                        isSelected={category === cat.label}
-                                        onPress={() => selectCategory(cat.label)}
-                                    />
+                                        entering={FadeInDown.delay(index * 40).duration(250).springify()}
+                                    >
+                                        <CategoryChip
+                                            label={cat.label}
+                                            isSelected={category === cat.label}
+                                            onPress={() => selectCategory(cat.label)}
+                                        />
+                                    </Reanimated.View>
                                 ))}
                             </ScrollView>
 
@@ -292,28 +334,33 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                                 </Reanimated.View>
                             )}
 
-                            {!isCustom && (
+                            {!isCustom && filteredTemplates.length > 0 && (
                                 <Reanimated.View entering={FadeInDown.duration(200).springify()}>
-                                    <View style={{ height: 16 }} />
-                                    <ThemedText type="small" style={[styles.recommendedLabel, { color: colors.secondary }]}>Recommended</ThemedText>
+                                    <View style={{ height: 10 }} />
+                                    <ThemedText type="small" style={[styles.recommendedLabel, { color: colors.secondary }]}>Templates</ThemedText>
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
                                         contentContainerStyle={styles.categoryScroll}
                                     >
-                                        {CATEGORIES.map(cat => (
-                                            <CategoryChip
+                                        {filteredTemplates.map((cat, index) => (
+                                            <Reanimated.View
                                                 key={cat}
-                                                label={cat}
-                                                isSelected={category === cat}
-                                                onPress={() => selectCategory(cat)}
-                                            />
+                                                entering={FadeInDown.delay(index * 30).duration(250).springify()}
+                                            >
+                                                <CategoryChip
+                                                    key={cat}
+                                                    label={cat}
+                                                    isSelected={category === cat}
+                                                    onPress={() => selectCategory(cat)}
+                                                />
+                                            </Reanimated.View>
                                         ))}
                                     </ScrollView>
                                 </Reanimated.View>
                             )}
 
-                            <View style={{ height: 24 }} />
+                            <View style={{ height: 14 }} />
 
                             <ThemedText type="sectionHeader" style={[styles.sectionLabel, { opacity: 0.9 }]}>Content</ThemedText>
                             <Input
@@ -367,9 +414,26 @@ const styles = StyleSheet.create({
     },
     form: {
         padding: 20,
+        paddingTop: 8,
     },
     sectionLabel: {
         marginBottom: 10,
+    },
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    searchInput: {
+        flex: 1,
+        marginLeft: 16,
+        marginTop: 6,
+        height: 30,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 0,
+        fontSize: 12,
+        fontWeight: '500',
     },
     recommendedLabel: {
         fontSize: 11,
@@ -383,7 +447,7 @@ const styles = StyleSheet.create({
     categoryScroll: {
         gap: 8,
         paddingRight: 20,
-        marginBottom: 8,
+        marginBottom: 14,
     },
     chipWrapper: {
         borderRadius: 10,
