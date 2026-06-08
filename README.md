@@ -14,7 +14,9 @@ The core of Reloom is a frictionless workflow that lets you log information on t
 
 ## Screenshots
 
+<div align="center">
 <img src="asset/screenshot-1.png" width="150" /> <img src="asset/screenshot-2.png" width="150" /> <img src="asset/screenshot-3.png" width="150" /> <img src="asset/screenshot-4.png" width="150" /> <img src="asset/screenshot-5.png" width="150" /> <img src="asset/screenshot-6.png" width="150" /> <img src="asset/screenshot-7.png" width="150" /> <img src="asset/screenshot-8.png" width="150" />
+</div>
 
 ---
 
