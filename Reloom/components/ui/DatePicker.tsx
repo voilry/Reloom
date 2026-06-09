@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
+import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
+import Animated, { SlideInDown, FadeIn } from 'react-native-reanimated';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Calendar, Check } from '@/components/ui/Icon';
@@ -104,8 +105,18 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const [show, setShow] = useState(false);
 
-    const currentDate = value ? new Date(value) : new Date();
-    const safeDate = isNaN(currentDate.getTime()) ? new Date() : currentDate;
+    const parseLocalDate = (dateStr: string) => {
+        if (!dateStr) return new Date();
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return new Date();
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        const dateObj = new Date(y, m, d);
+        return isNaN(dateObj.getTime()) ? new Date() : dateObj;
+    };
+
+    const safeDate = parseLocalDate(value);
 
     const [tempYear, setTempYear] = useState(safeDate.getFullYear());
     const [tempMonth, setTempMonth] = useState(safeDate.getMonth() + 1);
@@ -113,8 +124,7 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
 
     useEffect(() => {
         if (show) {
-            const d = value ? new Date(value) : new Date();
-            const s = isNaN(d.getTime()) ? new Date() : d;
+            const s = parseLocalDate(value);
             setTempYear(s.getFullYear());
             setTempMonth(s.getMonth() + 1);
             setTempDay(s.getDate());
@@ -130,7 +140,7 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
         onChange(`${y}-${m}-${d}`);
     };
 
-    const displayDate = value ? new Date(value).toLocaleDateString('en-US', {
+    const displayDate = value ? parseLocalDate(value).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
@@ -197,30 +207,35 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
         <View style={styles.container}>
             {label && <ThemedText type="sectionHeader" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>{label}</ThemedText>}
 
-            <TouchableOpacity
-                activeOpacity={0.7}
+            <ScalePressable
                 onPress={() => setShow(true)}
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: 'transparent', borderWidth: 0 }]}
+                style={[styles.input, { backgroundColor: colors.surface }]}
+                innerStyle={{ borderRadius: 16 }}
+                scaleTo={0.97}
             >
                 <ThemedText style={[styles.valueText, !value && { color: colors.text, opacity: 0.3 }]}>
                     {displayDate || placeholder}
                 </ThemedText>
                 <Calendar size={18} color={colors.text} style={{ opacity: 0.5 }} />
-            </TouchableOpacity>
+            </ScalePressable>
 
             {Platform.OS === 'ios' || Platform.OS === 'android' ? (
-                <Modal visible={show} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShow(false)}>
+                <Modal visible={show} transparent animationType="none" statusBarTranslucent onRequestClose={() => setShow(false)}>
                     <View style={styles.modalOverlay}>
-                        <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
+                            <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        </Animated.View>
                         <View style={styles.modalOverlay}>
                             <Pressable style={StyleSheet.absoluteFill} onPress={() => setShow(false)} />
-                            <View
+                            <Animated.View
+                                entering={SlideInDown.duration(300).springify()}
                                 style={[styles.pickerContainer, { backgroundColor: colors.card }]}
                             >
                                     <View style={styles.header}>
                                         <ScalePressable
                                             onPress={() => setShow(false)}
                                             style={[styles.cancelButton, { backgroundColor: colors.surface }]}
+                                            scaleTo={0.93}
                                         >
                                             <ThemedText style={{ color: colors.secondary, fontWeight: '700', fontSize: 13 }}>Cancel</ThemedText>
                                         </ScalePressable>
@@ -231,8 +246,9 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
                                             onPress={handleSave}
                                             style={[styles.doneButton, { backgroundColor: colors.tint + '15' }]}
                                             innerStyle={{ borderRadius: 12 }}
+                                            scaleTo={0.93}
                                         >
-                                            <Check size={20} color={colors.tint} weight="bold" />
+                                            <ThemedText style={{ color: colors.tint, fontWeight: '700', fontSize: 13 }}>Done</ThemedText>
                                         </ScalePressable>
                                     </View>
 
@@ -243,7 +259,7 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
                                         
                                         <View style={[styles.selectionOverlay, { borderColor: colors.border, backgroundColor: colors.tint + '10' }]} pointerEvents="none" />
                                     </View>
-                            </View>
+                            </Animated.View>
                         </View>
                     </View>
                 </Modal>
@@ -285,7 +301,8 @@ const styles = StyleSheet.create({
     pickerContainer: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        paddingBottom: 40,
+        paddingBottom: 100,
+        marginBottom: -60,
         paddingHorizontal: 24,
     },
     header: {
@@ -296,13 +313,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     cancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 12,
     },
     doneButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 12,
     },
     pickerWrapper: {

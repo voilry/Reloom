@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, ScrollView, Platform, Dimensions, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Platform, Dimensions, Alert, DeviceEventEmitter } from 'react-native';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { Card } from '../../components/ui/Card';
@@ -100,6 +100,13 @@ export default function CalendarScreen() {
         }, [])
     );
 
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('refreshCalendar', () => {
+            loadData();
+        });
+        return () => sub.remove();
+    }, []);
+
     const loadData = async () => {
         const [ppl, jrnls, rmds] = await Promise.all([
             PersonRepository.getAll(),
@@ -114,8 +121,7 @@ export default function CalendarScreen() {
         setReminders(rmds || []);
     };
 
-    const handleReminderSuccess = async () => {
-        await loadData();
+    const handleReminderSuccess = () => {
         const { showToast } = require('../../components/ui/Toast');
         showToast(editingReminder ? 'Reminder updated' : 'Reminder set');
         setEditingReminder(null);

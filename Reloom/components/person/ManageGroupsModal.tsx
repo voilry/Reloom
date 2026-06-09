@@ -46,6 +46,7 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                 <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={onClose}>
                     <Animated.View
                         entering={SlideInDown.duration(400).springify()}
+                        onStartShouldSetResponder={() => true}
                         style={[
                             styles.bottomSheet,
                             {
@@ -55,89 +56,84 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                             }
                         ]}
                     >
-                        <Pressable onPress={(e) => e.stopPropagation()}>
-                            <View style={styles.handle} />
-                            <View style={styles.sheetHeader}>
-                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Manage Groups</ThemedText>
-                                <ThemedText type="small" style={{ color: colors.secondary, marginTop: 4 }}>
-                                    Add or remove {personName} from groups
-                                </ThemedText>
-                            </View>
+                        <View style={styles.handle} />
+                        <View style={styles.sheetHeader}>
+                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Manage Groups</ThemedText>
+                            <ThemedText type="small" style={{ color: colors.secondary, marginTop: 4 }}>
+                                Add or remove {personName} from groups
+                            </ThemedText>
+                        </View>
 
-                            <ScrollView
-                                style={{ maxHeight: 500 }}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 20 }}
-                            >
-                                {allGroups.length > 0 ? (
-                                    allGroups.map(g => {
-                                        const isSelected = personGroups.some(pg => pg.id === g.id);
-                                        const groupColor = g.color || colors.tint;
-                                        const IconComponent = getGroupIcon(g.icon);
+                        <ScrollView
+                            style={{ maxHeight: 500 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            {allGroups.length > 0 ? (
+                                allGroups.map(g => {
+                                    const isSelected = personGroups.some(pg => pg.id === g.id);
+                                    const groupColor = g.color || colors.tint;
+                                    const IconComponent = getGroupIcon(g.icon);
 
-                                        return (
-                                            <ScalePressable
-                                                key={g.id}
-                                                style={[
-                                                    styles.groupOption,
-                                                    {
-                                                        backgroundColor: colors.surface,
-                                                        borderColor: isSelected ? groupColor + '40' : colors.border,
-                                                        borderWidth: 1
-                                                    }
-                                                ]}
-                                                onPress={() => {
-                                                    triggerHaptic();
-                                                    onToggleGroup(g.id);
-                                                }}
-                                                innerStyle={{ borderRadius: 0 }} // Keep full row pressable feel
-                                                scaleTo={0.96}
-                                            >
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                                                    <View style={[
-                                                        styles.groupIconBox,
-                                                        {
-                                                            backgroundColor: isSelected ? groupColor + '15' : colors.surface,
-                                                            borderColor: isSelected ? groupColor + '30' : 'transparent',
-                                                            borderWidth: 1,
-                                                        }
-                                                    ]}>
-                                                        <IconComponent
-                                                            size={22}
-                                                            color={isSelected ? groupColor : colors.secondary}
-                                                            weight={isSelected ? 'fill' : 'regular'}
-                                                        />
-                                                    </View>
-                                                    <ThemedText style={{
-                                                        color: isSelected ? colors.text : colors.secondary,
-                                                        fontWeight: isSelected ? '700' : '500',
-                                                        fontSize: 17,
-                                                    }}>
-                                                        {g.name}
-                                                    </ThemedText>
-                                                </View>
+                                    return (
+                                        <ScalePressable
+                                            key={g.id}
+                                            style={[
+                                                styles.groupOption,
+                                                {
+                                                    backgroundColor: colors.surface,
+                                                }
+                                            ]}
+                                            onPress={() => {
+                                                triggerHaptic();
+                                                onToggleGroup(g.id);
+                                            }}
+                                            scaleTo={0.96}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                                                 <View style={[
-                                                    styles.checkCircle,
+                                                    styles.groupIconBox,
                                                     {
-                                                        backgroundColor: isSelected ? groupColor : 'transparent',
-                                                        borderColor: isSelected ? groupColor : colors.border,
+                                                        backgroundColor: isSelected ? groupColor + '15' : colors.surface,
+                                                        borderColor: isSelected ? groupColor + '30' : 'transparent',
+                                                        borderWidth: 1,
                                                     }
                                                 ]}>
-                                                    {isSelected && <Check size={12} color="#fff" weight="bold" />}
+                                                    <IconComponent
+                                                        size={22}
+                                                        color={isSelected ? groupColor : colors.secondary}
+                                                        weight={isSelected ? 'fill' : 'regular'}
+                                                    />
                                                 </View>
-                                            </ScalePressable>
-                                        );
-                                    })
-                                ) : (
-                                    <View style={{ paddingTop: 60, alignItems: 'center' }}>
-                                        <Folder size={64} color={colors.secondary + '4D'} />
-                                        <ThemedText style={{ color: colors.secondary, marginTop: 16, textAlign: 'center', fontSize: 16 }}>
-                                            No groups created yet
-                                        </ThemedText>
-                                    </View>
-                                )}
-                            </ScrollView>
-                        </Pressable>
+                                                <ThemedText style={{
+                                                    color: isSelected ? colors.text : colors.secondary,
+                                                    fontWeight: isSelected ? '700' : '500',
+                                                    fontSize: 17,
+                                                }}>
+                                                    {g.name}
+                                                </ThemedText>
+                                            </View>
+                                            <View style={[
+                                                styles.checkCircle,
+                                                {
+                                                    backgroundColor: isSelected ? groupColor : 'transparent',
+                                                    borderColor: isSelected ? groupColor : colors.border,
+                                                }
+                                            ]}>
+                                                {isSelected && <Check size={12} color="#fff" weight="bold" />}
+                                            </View>
+                                        </ScalePressable>
+                                    );
+                                })
+                            ) : (
+                                <View style={{ paddingTop: 60, alignItems: 'center' }}>
+                                    <Folder size={64} color={colors.secondary + '4D'} />
+                                    <ThemedText style={{ color: colors.secondary, marginTop: 16, textAlign: 'center', fontSize: 16 }}>
+                                        No groups created yet
+                                    </ThemedText>
+                                </View>
+                            )}
+                        </ScrollView>
                     </Animated.View>
                 </Pressable>
             </View>

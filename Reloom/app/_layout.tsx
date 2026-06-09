@@ -73,6 +73,12 @@ function RootLayoutContent() {
     }
   }, [migrationError]);
 
+  useEffect(() => {
+    if (migrationSuccess) {
+      // Reverted ALTER TABLE migrations
+    }
+  }, [migrationSuccess]);
+
   const { checkForUpdates } = useSettings();
 
   useEffect(() => {

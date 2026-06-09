@@ -508,7 +508,7 @@ export default function SettingsScreen() {
                 onDelete={confirmRestoreBackup}
                 actionLabel="Restore"
                 actionColor={colors.tint}
-                actionTextColor="#000"
+                actionTextColor={theme === 'dark' ? '#000' : '#fff'}
             />
 
             <AlertModal

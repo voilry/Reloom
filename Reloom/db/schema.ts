@@ -71,7 +71,7 @@ export const reminders = sqliteTable('reminders', {
     date: text('date').notNull(), // ISO Date String YYYY-MM-DD
     time: text('time'), // ISO Time String HH:MM
     personId: integer('person_id').references(() => people.id), // Optional: Link to a person
-    notificationId: text('notification_id'), // To cancel/update local notifications
+    notificationId: text('notification_id'), // To cancel/update local notifications (comma-separated if multiple)
     completed: integer('completed', { mode: 'boolean' }).default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });

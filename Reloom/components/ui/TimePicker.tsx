@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
+import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
+import Animated, { SlideInDown, FadeIn } from 'react-native-reanimated';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Clock, Check, X } from '@/components/ui/Icon';
@@ -153,42 +154,48 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
         <View style={styles.container}>
             {label && <ThemedText style={[styles.label, { color: colors.text, opacity: 0.5 }]}>{label}</ThemedText>}
 
-            <TouchableOpacity
-                activeOpacity={0.7}
+            <ScalePressable
                 onPress={() => setShow(true)}
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: 'transparent', borderWidth: 0 }]}
+                style={[styles.input, { backgroundColor: colors.surface }]}
+                innerStyle={{ borderRadius: 16 }}
+                scaleTo={0.97}
             >
                 <ThemedText style={[styles.valueText, !value && { color: colors.text, opacity: 0.3 }]}>
                     {displayTime() || placeholder}
                 </ThemedText>
                 <Clock size={18} color={colors.text} style={{ opacity: 0.5 }} />
-            </TouchableOpacity>
+            </ScalePressable>
 
             {Platform.OS === 'ios' || Platform.OS === 'android' ? (
-                <Modal visible={show} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShow(false)}>
+                <Modal visible={show} transparent animationType="none" statusBarTranslucent onRequestClose={() => setShow(false)}>
                     <View style={styles.modalOverlay}>
-                        <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
+                            <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        </Animated.View>
                         <View style={styles.modalOverlay}>
                             <Pressable style={StyleSheet.absoluteFill} onPress={() => setShow(false)} />
-                            <View
+                            <Animated.View
+                                entering={SlideInDown.duration(300).springify()}
                                 style={[styles.pickerContainer, { backgroundColor: colors.card }]}
                             >
                                 <View style={styles.header}>
                                     <ScalePressable
                                         onPress={() => setShow(false)}
                                         style={[styles.cancelButton, { backgroundColor: colors.surface }]}
+                                        scaleTo={0.93}
                                     >
                                         <ThemedText style={{ color: colors.secondary, fontWeight: '700', fontSize: 13 }}>Cancel</ThemedText>
                                     </ScalePressable>
                                     <View style={{ flex: 1, alignItems: 'center' }}>
-                                        <ThemedText type="sectionHeader" style={{ fontSize: 16, right: 10, opacity: 0.8 }}>{label || 'Select Time'}</ThemedText>
+                                        <ThemedText type="sectionHeader" style={{ fontSize: 14, textAlign: 'center', opacity: 0.8 }}>{label || 'Select Time'}</ThemedText>
                                     </View>
                                     <ScalePressable
                                         onPress={handleSave}
                                         style={[styles.doneButton, { backgroundColor: colors.tint + '15' }]}
                                         innerStyle={{ borderRadius: 12 }}
+                                        scaleTo={0.93}
                                     >
-                                        <Check size={20} color={colors.tint} weight="bold" />
+                                        <ThemedText style={{ color: colors.tint, fontWeight: '700', fontSize: 13 }}>Done</ThemedText>
                                     </ScalePressable>
                                 </View>
 
@@ -201,7 +208,7 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
 
                                     <View style={[styles.selectionOverlay, { borderColor: colors.border, backgroundColor: colors.tint + '10' }]} pointerEvents="none" />
                                 </View>
-                            </View>
+                            </Animated.View>
                         </View>
                     </View>
                 </Modal>
@@ -245,7 +252,8 @@ const styles = StyleSheet.create({
     pickerContainer: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        paddingBottom: 40,
+        paddingBottom: 100,
+        marginBottom: -60,
         paddingHorizontal: 24,
     },
     header: {
@@ -256,13 +264,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     cancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 12,
     },
     doneButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 12,
     },
     pickerWrapper: {

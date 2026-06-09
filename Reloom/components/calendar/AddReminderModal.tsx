@@ -39,6 +39,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const [searchQuery, setSearchQuery] = useState('');
     const [people, setPeople] = useState<Person[]>([]);
     const [loading, setLoading] = useState(false);
+    const [nudgeType, setNudgeType] = useState('on_time');
+    const [customCount, setCustomCount] = useState(0);
     const searchInputRef = useRef<TextInput>(null);
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -51,11 +53,15 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                 setTime(editingReminder.time || '09:00');
                 setSelectedDate(editingReminder.date);
                 setPersonId(editingReminder.personId || null);
+                setNudgeType('on_time');
+                setCustomCount(0);
             } else {
                 setTitle('');
                 setDescription('');
                 setTime('09:00');
                 setPersonId(null);
+                setNudgeType('on_time');
+                setCustomCount(0);
 
                 const d = date || new Date();
                 const y = d.getFullYear();
@@ -70,6 +76,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
             setDescription('');
             setPersonId(null);
             setSearchQuery('');
+            setNudgeType('on_time');
+            setCustomCount(0);
         }
     }, [visible, editingReminder, date]);
 
@@ -89,22 +97,17 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
         people.find(p => p.id === personId),
         [people, personId]);
 
-    const QUICK_TIMES = [
-        { label: 'Morning', time: '09:00' },
-        { label: 'Afternoon', time: '14:00' },
-        { label: 'Evening', time: '19:00' },
-        { label: 'Night', time: '21:00' },
-    ];
-
     const handleSave = async () => {
         if (!title.trim()) return;
         setLoading(true);
 
         try {
-            const { status } = await Notifications.getPermissionsAsync();
-            if (status !== 'granted') {
-                await Notifications.requestPermissionsAsync();
-            }
+            // Trigger permission check/request in background without blocking DB write
+            Notifications.getPermissionsAsync().then(({ status }) => {
+                if (status !== 'granted') {
+                    Notifications.requestPermissionsAsync().catch(() => {});
+                }
+            }).catch(() => {});
 
             if (editingReminder) {
                 await ReminderRepository.update(editingReminder.id, {
@@ -113,6 +116,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     date: selectedDate,
                     time: time,
                     personId: personId,
+                    nudgeType: nudgeType,
+                    customNudgesCount: customCount,
                 });
             } else {
                 await ReminderRepository.create({
@@ -121,7 +126,9 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     date: selectedDate,
                     time: time,
                     personId: personId,
-                    completed: false
+                    completed: false,
+                    nudgeType: nudgeType,
+                    customNudgesCount: customCount,
                 });
             }
 
@@ -181,8 +188,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: insets.bottom + 40 }}
                     >
-                        <View style={styles.inputSection}>
-                            <ThemedText type="sectionHeader" style={styles.inputLabel}>Event</ThemedText>
+                        <View style={[styles.inputSection, { marginTop: 8 }]}>
                             <View style={{ position: 'relative' }}>
                                 <Input
                                     value={title}
@@ -233,10 +239,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                             </View>
                         </View>
 
-                        <View style={styles.divider} />
-
-                        <View style={styles.timeSection}>
-                            <ThemedText type="sectionHeader" style={[styles.inputLabel, { marginBottom: 10 }]}>Schedule</ThemedText>
+                        <View style={[styles.timeSection, { marginTop: 24 }]}>
                             <View style={styles.pickersRow}>
                                 <View style={{ flex: 1 }}>
                                     <TimePicker value={time} onChange={setTime} />
@@ -245,27 +248,89 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                     <DatePicker value={selectedDate} onChange={setSelectedDate} minDate={new Date()} />
                                 </View>
                             </View>
+                        </View>
 
+                        <View style={styles.nudgeSection}>
+                            <ThemedText type="sectionHeader" style={[styles.inputLabel, { marginBottom: 10 }]}>Notifications</ThemedText>
                             <View style={styles.chipsContainer}>
-                                {QUICK_TIMES.map((qt) => (
+                                {[
+                                    { label: 'None', value: 'off' },
+                                    { label: 'On Time', value: 'on_time' },
+                                    { label: 'Light', value: 'nudge' },
+                                    { label: 'Medium', value: 'deep' },
+                                    { label: 'Heavy', value: 'extreme' },
+                                    { label: 'Custom', value: 'custom' },
+                                ].map((n) => (
                                     <ScalePressable
-                                        key={qt.time}
-                                        onPress={() => setTime(qt.time)}
+                                        key={n.value}
+                                        onPress={() => {
+                                            setNudgeType(n.value);
+                                            if (n.value !== 'custom') {
+                                                setCustomCount(0);
+                                            } else {
+                                                setCustomCount(2); // default to 2 pings
+                                            }
+                                        }}
                                         style={[
                                             styles.chip,
-                                            { backgroundColor: time === qt.time ? colors.tint + '15' : colors.surface }
+                                            { backgroundColor: nudgeType === n.value ? colors.tint : colors.surface, marginBottom: 4 }
                                         ]}
                                         innerStyle={{ borderRadius: 20 }}
+                                        scaleTo={0.93}
                                     >
                                         <ThemedText style={[
                                             styles.chipText,
-                                            { color: time === qt.time ? colors.tint : colors.secondary }
+                                            { color: nudgeType === n.value ? (theme === 'light' ? '#fff' : '#000') : colors.secondary }
                                         ]}>
-                                            {qt.label}
+                                            {n.label}
                                         </ThemedText>
                                     </ScalePressable>
                                 ))}
                             </View>
+
+                            {nudgeType === 'custom' && (
+                                <Animated.View entering={FadeInDown} style={[styles.customNudgeCard, { backgroundColor: colors.surface }]}>
+                                    <View style={{ flex: 1, paddingRight: 16, justifyContent: 'center' }}>
+                                        <ThemedText style={{ fontFamily: Typography.fontFamily.bold, fontSize: 16 }}>Custom Alerts</ThemedText>
+                                    </View>
+                                    <View style={[styles.stepperContainer, { backgroundColor: colors.background }]}>
+                                        <ScalePressable
+                                            onPress={() => {
+                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                                setCustomCount(Math.max(1, customCount - 1));
+                                            }}
+                                            style={styles.stepperControlBtn}
+                                            scaleTo={0.85}
+                                        >
+                                            <ThemedText style={{ fontSize: 20, color: colors.text, opacity: 0.8 }}>-</ThemedText>
+                                        </ScalePressable>
+                                        
+                                        <View style={{ minWidth: 24, alignItems: 'center' }}>
+                                            <ThemedText style={[styles.stepperValue, { color: colors.text }]}>{customCount}</ThemedText>
+                                        </View>
+                                        
+                                        <ScalePressable
+                                            onPress={() => {
+                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                                setCustomCount(Math.min(10, customCount + 1));
+                                            }}
+                                            style={styles.stepperControlBtn}
+                                            scaleTo={0.85}
+                                        >
+                                            <ThemedText style={{ fontSize: 20, color: colors.text, opacity: 0.8 }}>+</ThemedText>
+                                        </ScalePressable>
+                                    </View>
+                                </Animated.View>
+                            )}
+
+                            <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 12, fontStyle: 'italic', fontSize: 12, opacity: 0.5 }}>
+                                {nudgeType === 'off' && "No notifications will be sent."}
+                                {nudgeType === 'on_time' && "1 ping exactly at the selected time."}
+                                {nudgeType === 'nudge' && "2 pings: 30 minutes before and at the event time."}
+                                {nudgeType === 'deep' && "3 pings: 2 hours before, 30 minutes before, and at the event time."}
+                                {nudgeType === 'extreme' && "5 pings: 1 day, 2 hours, 30 mins, 10 mins before, and at the event time."}
+                                {nudgeType === 'custom' && `We'll space out ${customCount} notifications leading up to the event time.`}
+                            </ThemedText>
                         </View>
 
                         <View style={styles.divider} />
@@ -468,5 +533,36 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    nudgeSection: {
+        marginBottom: 0,
+    },
+    customNudgeCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 24,
+        marginTop: 12,
+    },
+    stepperContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 20,
+        padding: 4,
+        gap: 4,
+    },
+    stepperControlBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(128,128,128,0.1)',
+    },
+    stepperValue: {
+        fontSize: 16,
+        fontFamily: Typography.fontFamily.bold,
+        textAlign: 'center',
     }
 });

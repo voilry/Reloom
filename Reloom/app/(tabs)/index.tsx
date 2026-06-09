@@ -1061,7 +1061,11 @@ export default function PeopleScreen() {
                 visible={showAddReminderModal}
                 onClose={() => setShowAddReminderModal(false)}
                 date={new Date()}
-                onSuccess={() => { }}
+                onSuccess={() => { 
+                    const { showToast } = require('../../components/ui/Toast');
+                    showToast('Reminder set');
+                    DeviceEventEmitter.emit('refreshCalendar');
+                }}
             />
 
             <DeleteModal
