@@ -1,4 +1,4 @@
-import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable, BackHandler } from 'react-native';
 import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,7 +15,7 @@ import { PersonRepository, Person } from '../../db/repositories/PersonRepository
 import { GroupRepository, Group } from '../../db/repositories/GroupRepository';
 import { JournalRepository } from '../../db/repositories/JournalRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Button } from '../../components/ui/Button';
 import { Plus, MagnifyingGlass as Search, Camera, X, Check, CaretRight, CaretLeft, Faders as Filter, Gear as Settings, User as UserIcon, Folder, Calendar, PencilLine as PenLine, Bell, Book, PushPin, MapPin } from '@/components/ui/Icon';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -165,6 +165,23 @@ export default function PeopleScreen() {
         }
     }, [settings.peopleTabMode, selectedGroupId, search]);
 
+    // Intercept hardware/gesture back in discovery mode when viewing a group
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                if (settings.peopleTabMode === 'discovery' && !isDashboardActive) {
+                    setSearch('');
+                    setSelectedGroupId(null);
+                    setIsDashboardActive(true);
+                    return true; // consume the event
+                }
+                return false;
+            };
+            const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => sub.remove();
+        }, [settings.peopleTabMode, isDashboardActive])
+    );
+
     // Quick Actions State
     const [showPersonPicker, setShowPersonPicker] = useState(false);
     const [showQuickNoteModal, setShowQuickNoteModal] = useState(false);
@@ -262,7 +279,7 @@ export default function PeopleScreen() {
             sub3.remove();
             sub4.remove();
         };
-    }, []);
+    }, [hapticsEnabled]);
 
     const handleTogglePin = async () => {
         if (!personToManage) return;

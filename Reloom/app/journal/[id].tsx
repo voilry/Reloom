@@ -748,13 +748,13 @@ const styles = StyleSheet.create({
         fontFamily: Typography.fontFamily.regular,
         textAlignVertical: 'top',
         includeFontPadding: false,
-        minHeight: 500,
+        minHeight: 300,
     },
     tagsContainer: {
         marginTop: 64,
         borderTopWidth: 1,
         borderTopColor: 'rgba(128,128,128,0.1)',
-        paddingTop: 32,
+        paddingTop: 28,
     },
     sectionHeader: {
         flexDirection: 'row',

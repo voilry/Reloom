@@ -212,7 +212,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 {/* Detached Add Button - Combined solid background with ScalePressable to fix scaling and transparency */}
                 <ScalePressable
                     onPress={() => {
-                        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         setShowAddMenu(!showAddMenu);
                     }}
                     scaleTo={0.88}

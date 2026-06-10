@@ -98,7 +98,7 @@ export class EntryRepository {
             if (addTimestamp) {
                 const now = new Date();
                 const timeString = now.toLocaleDateString() + ' at ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                newSection = `*Added: ${timeString}*\n---\n${content}`;
+                newSection = `---\n*Added: ${timeString}*\n\n${content}`;
             }
             
             const combinedContent = `${existing[0].content}\n\n${newSection}`;
