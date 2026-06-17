@@ -14,4 +14,12 @@ expoDb.execSync(`
   );
 `);
 
+try {
+  expoDb.execSync(`ALTER TABLE reminders ADD COLUMN nudge_type TEXT DEFAULT 'on_time';`);
+} catch (e) {}
+
+try {
+  expoDb.execSync(`ALTER TABLE reminders ADD COLUMN custom_nudges_count INTEGER DEFAULT 0;`);
+} catch (e) {}
+
 export const db = drizzle(expoDb, { schema });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue } from 'react-native';
+import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue, Keyboard } from 'react-native';
 import Animated, { SlideInDown, FadeIn } from 'react-native-reanimated';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -23,21 +23,17 @@ function WheelPicker({ items, value, onChange, width }: { items: { label: string
     const listRef = useRef<FlatList>(null);
     const [activeIndex, setActiveIndex] = useState(() => items.findIndex(i => i.value === value));
 
+    const initialIndex = React.useMemo(() => {
+        const idx = items.findIndex(i => i.value === value);
+        return idx !== -1 ? idx : 0;
+    }, [items, value]);
+
     useEffect(() => {
         const index = items.findIndex(i => i.value === value);
         if (index !== -1 && index !== activeIndex) {
             setActiveIndex(index);
         }
     }, [value, items]);
-
-    useEffect(() => {
-        const index = Math.max(0, items.findIndex(i => i.value === value));
-        if (listRef.current) {
-            setTimeout(() => {
-                listRef.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated: false });
-            }, 50);
-        }
-    }, [items]);
 
     const handleScroll = (e: any) => {
         const y = e.nativeEvent.contentOffset.y;
@@ -73,8 +69,11 @@ function WheelPicker({ items, value, onChange, width }: { items: { label: string
                 scrollEventThrottle={16}
                 nestedScrollEnabled={true}
                 overScrollMode="never"
-                removeClippedSubviews={false}
+                removeClippedSubviews={Platform.OS === 'android'}
+                maxToRenderPerBatch={10}
+                windowSize={5}
                 getItemLayout={(data, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
+                initialScrollIndex={items.length > 0 ? initialIndex : undefined}
                 ListHeaderComponent={<View style={{ height: ITEM_HEIGHT * 2 }} />}
                 ListFooterComponent={<View style={{ height: ITEM_HEIGHT * 2 }} />}
                 renderItem={({ item, index }) => {
@@ -120,6 +119,7 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
 
     useEffect(() => {
         if (show) {
+            Keyboard.dismiss();
             const current = parseTime(value);
             setTempHour(current.h);
             setTempMinute(current.m);
@@ -169,19 +169,22 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
             {Platform.OS === 'ios' || Platform.OS === 'android' ? (
                 <Modal visible={show} transparent animationType="none" statusBarTranslucent onRequestClose={() => setShow(false)}>
                     <View style={styles.modalOverlay}>
-                        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
-                            <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                        <Animated.View entering={FadeIn.duration(200)} style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+                            {Platform.OS === 'ios' && (
+                                <BlurView intensity={20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                            )}
                         </Animated.View>
                         <View style={styles.modalOverlay}>
                             <Pressable style={StyleSheet.absoluteFill} onPress={() => setShow(false)} />
                             <Animated.View
-                                entering={SlideInDown.duration(300).springify()}
+                                entering={SlideInDown.duration(250).springify().damping(20).stiffness(180).mass(0.8)}
                                 style={[styles.pickerContainer, { backgroundColor: colors.card }]}
                             >
                                 <View style={styles.header}>
                                     <ScalePressable
                                         onPress={() => setShow(false)}
                                         style={[styles.cancelButton, { backgroundColor: colors.surface }]}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                                         scaleTo={0.93}
                                     >
                                         <ThemedText style={{ color: colors.secondary, fontWeight: '700', fontSize: 13 }}>Cancel</ThemedText>
@@ -192,6 +195,7 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
                                     <ScalePressable
                                         onPress={handleSave}
                                         style={[styles.doneButton, { backgroundColor: colors.tint + '15' }]}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                                         innerStyle={{ borderRadius: 12 }}
                                         scaleTo={0.93}
                                     >

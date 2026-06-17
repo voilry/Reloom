@@ -18,6 +18,8 @@ export class ReminderRepository {
             personId: reminders.personId,
             notificationId: reminders.notificationId,
             completed: reminders.completed,
+            nudgeType: reminders.nudgeType,
+            customNudgesCount: reminders.customNudgesCount,
             createdAt: reminders.createdAt,
             person: {
                 id: people.id,
@@ -40,6 +42,8 @@ export class ReminderRepository {
             personId: reminders.personId,
             notificationId: reminders.notificationId,
             completed: reminders.completed,
+            nudgeType: reminders.nudgeType,
+            customNudgesCount: reminders.customNudgesCount,
             createdAt: reminders.createdAt,
             person: {
                 id: people.id,
@@ -53,21 +57,20 @@ export class ReminderRepository {
         .orderBy(asc(reminders.time));
     }
 
-    static async create(data: NewReminder & { nudgeType?: string, customNudgesCount?: number }) {
-        const { nudgeType, customNudgesCount, ...dbData } = data;
-        const result = await db.insert(reminders).values({ ...dbData, notificationId: null }).returning();
+    static async create(data: NewReminder) {
+        const result = await db.insert(reminders).values({ ...data, notificationId: null }).returning();
         const newReminder = result[0];
 
-        if (dbData.date && dbData.time && !dbData.completed) {
+        if (data.date && data.time && !data.completed) {
             // Delay notification scheduling slightly so it doesn't interrupt the UI modal closing transition
             setTimeout(() => {
                 this.scheduleNotifications(
-                    dbData.title, 
-                    dbData.description || '', 
-                    dbData.date, 
-                    dbData.time as string, 
-                    nudgeType || 'on_time', 
-                    customNudgesCount || 0
+                    data.title, 
+                    data.description || '', 
+                    data.date, 
+                    data.time as string, 
+                    data.nudgeType || 'on_time', 
+                    data.customNudgesCount || 0
                 )
                 .then(async (notificationId) => {
                     if (notificationId) {
@@ -81,9 +84,8 @@ export class ReminderRepository {
         return newReminder;
     }
 
-    static async update(id: number, data: Partial<NewReminder> & { nudgeType?: string, customNudgesCount?: number }) {
-        const { nudgeType, customNudgesCount, ...dbData } = data;
-        const result = await db.update(reminders).set(dbData).where(eq(reminders.id, id)).returning();
+    static async update(id: number, data: Partial<NewReminder>) {
+        const result = await db.update(reminders).set(data).where(eq(reminders.id, id)).returning();
         const updatedReminder = result[0];
 
         // Process notification changes in the background (delayed to avoid UI main thread lag)
@@ -101,16 +103,19 @@ export class ReminderRepository {
                                 ));
                             }
 
-                            if (dbData.completed === false || (dbData.completed === undefined && !current.completed)) {
-                                const newTitle = dbData.title ?? current.title;
-                                const newDesc = dbData.description ?? current.description;
-                                const newDate = dbData.date ?? current.date;
-                                const newTime = dbData.time ?? current.time;
-                                const newNudgeType = nudgeType ?? 'on_time';
-                                const newCustomCount = customNudgesCount ?? 0;
+                            let newNotificationId: string | null = null;
+                            const isCompleted = data.completed ?? current.completed;
+
+                            if (!isCompleted) {
+                                const newTitle = data.title ?? current.title;
+                                const newDesc = data.description ?? current.description;
+                                const newDate = data.date ?? current.date;
+                                const newTime = data.time ?? current.time;
+                                const newNudgeType = data.nudgeType ?? current.nudgeType ?? 'on_time';
+                                const newCustomCount = data.customNudgesCount ?? current.customNudgesCount ?? 0;
                                 
                                 if (newDate && newTime) {
-                                    const notificationId = await this.scheduleNotifications(
+                                    newNotificationId = await this.scheduleNotifications(
                                         newTitle, 
                                         newDesc || '', 
                                         newDate, 
@@ -118,12 +123,11 @@ export class ReminderRepository {
                                         newNudgeType, 
                                         newCustomCount
                                     ).catch(() => null);
-
-                                    if (notificationId) {
-                                        await db.update(reminders).set({ notificationId }).where(eq(reminders.id, id)).catch(() => {});
-                                    }
                                 }
                             }
+
+                            // Always update db to match scheduled state (null or new IDs)
+                            await db.update(reminders).set({ notificationId: newNotificationId }).where(eq(reminders.id, id)).catch(() => {});
                         })().catch(() => {});
                     }
                 })

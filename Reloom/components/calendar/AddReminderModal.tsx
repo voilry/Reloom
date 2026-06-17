@@ -53,8 +53,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                 setTime(editingReminder.time || '09:00');
                 setSelectedDate(editingReminder.date);
                 setPersonId(editingReminder.personId || null);
-                setNudgeType('on_time');
-                setCustomCount(0);
+                setNudgeType(editingReminder.nudgeType || 'on_time');
+                setCustomCount(editingReminder.customNudgesCount || 0);
             } else {
                 setTitle('');
                 setDescription('');

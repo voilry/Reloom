@@ -10,6 +10,7 @@ import m0005 from './0005_round_warlock.sql';
 import m0006 from './0006_nice_nick_fury.sql';
 import m0007 from './0007_jittery_phantom_reporter.sql';
 import m0008 from './0008_add_location_fields.sql';
+import m0009 from './0009_organic_malcolm_colcord.sql';
 
   export default {
     journal,
@@ -22,7 +23,8 @@ m0004,
 m0005,
 m0006,
 m0007,
-m0008
+m0008,
+m0009
     }
   }
   

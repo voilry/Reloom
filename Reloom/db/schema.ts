@@ -73,6 +73,8 @@ export const reminders = sqliteTable('reminders', {
     personId: integer('person_id').references(() => people.id), // Optional: Link to a person
     notificationId: text('notification_id'), // To cancel/update local notifications (comma-separated if multiple)
     completed: integer('completed', { mode: 'boolean' }).default(false),
+    nudgeType: text('nudge_type').default('on_time'),
+    customNudgesCount: integer('custom_nudges_count').default(0),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 

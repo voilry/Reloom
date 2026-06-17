@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useColorScheme, View, Platform, Text } from 'react-native';
 
 Notifications.setNotificationHandler({
@@ -61,6 +61,14 @@ function RootLayoutContent() {
 
   const { success: migrationSuccess, error: migrationError } = useMigrations(db, migrations);
 
+  const isIgnorableMigrationError = useMemo(() => {
+    if (!migrationError) return false;
+    const msg = migrationError.message || String(migrationError);
+    return msg.includes('location_home') || msg.includes('duplicate column') || msg.includes('already exists');
+  }, [migrationError]);
+
+  const hasMigrationFinished = migrationSuccess || isIgnorableMigrationError;
+
   useEffect(() => {
     if (fontError) {
       console.error("Font loading error:", fontError);
@@ -68,10 +76,10 @@ function RootLayoutContent() {
   }, [fontError]);
 
   useEffect(() => {
-    if (migrationError) {
+    if (migrationError && !isIgnorableMigrationError) {
       console.error("Migration error:", migrationError);
     }
-  }, [migrationError]);
+  }, [migrationError, isIgnorableMigrationError]);
 
   useEffect(() => {
     if (migrationSuccess) {
@@ -93,7 +101,7 @@ function RootLayoutContent() {
   useEffect(() => {
     async function prepare() {
       // Wait for everything: Fonts, Migrations, and Settings
-      if ((loaded || fontError) && (migrationSuccess || migrationError) && !settingsLoading) {
+      if ((loaded || fontError) && (hasMigrationFinished || (migrationError && !isIgnorableMigrationError)) && !settingsLoading) {
         // A small delay (50ms) ensures the view has actually painted the internal theme color
         setTimeout(async () => {
           await SplashScreen.hideAsync();
@@ -102,13 +110,13 @@ function RootLayoutContent() {
       }
     }
     prepare();
-  }, [loaded, fontError, migrationSuccess, migrationError, settingsLoading]);
+  }, [loaded, fontError, hasMigrationFinished, migrationError, isIgnorableMigrationError, settingsLoading]);
 
-  if (fontError || migrationError) {
+  if (fontError || (migrationError && !isIgnorableMigrationError)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: appColors.background }}>
         <Text style={{ fontSize: 18, color: 'red', marginHorizontal: 20, textAlign: 'center' }}>
-          Startup Error: {fontError?.message || migrationError?.message || "Unknown error"}
+          {fontError ? 'Failed to load fonts.' : `Migration error: ${migrationError?.message}`}
         </Text>
       </View>
     );
