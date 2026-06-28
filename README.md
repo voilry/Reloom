@@ -23,7 +23,7 @@ The idea is simple: log info quickly when you're on the go, and find it again la
 ## Features
 
 ### Privacy & Data Ownership
-- **Local-First:** Your data lives on your device. No accounts, no cloud, no servers.
+- **Local-First:** Your data lives on your device. No accounts or server.
 - **App Lock:** Lock the app with a PIN or your face / fingerprint.
 - **Portable Backups:** Export everything and move it to another device anytime.
 
