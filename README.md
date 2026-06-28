@@ -34,38 +34,28 @@ The idea is simple: log info quickly when you're on the go, and find it again la
 - **Groups:** Sort people into custom groups like Family, Work, or Music. Each group has its own color and icon for quick filtering.
 
 ### Notes & Journaling
-- **Quick Notes:** Add notes to anyone in seconds. Drafts save automatically as you type.
-- **Categories:** Tag entries as Memories, Goals, Food & Drink, and more. Keeps things organized without extra effort.
+- **Quick Notes:** Add notes to anyone in seconds. 
+- **Categories:** Tag entries as Memories, Goals, Food & Drink, and more. Keeps things organized.
 - **Tag People:** Mention anyone in your journal. A smart picker shows the people you write about most.
-- **Markdown Support:** Use bold, italics, quotes, code, and checkboxes. They all work as you'd expect.
-- **Smart Templates:** Your most-used tags and categories rise to the top. The ones you don't use fade away.
+- **Markdown Support:** Use bold, italics, quotes, code, and checkboxes, standard markdown.
+- **Smart Templates:** Your most used tags and categories rise to the top. The ones you don't use fade away.
 
 ### Calendar & Reminders
-- **Unified Timeline:** Birthdays and reminders all in one calendar view.
+- **Timeline:** Birthdays and reminders all in one calendar view.
 - **Smart Adding:** Tap a past date to write a journal entry. Tap a future date to set a reminder.
 - **Linked Reminders:** Attach reminders to people. Tapping a reminder takes you straight to their profile.
 - **Smart Suggestions:** When linking a person to a reminder, the picker shows the people you interact with most.
 
-### Designed to Feel Good
-- **Warm Visuals:** Soft, layered colors with several theme presets to pick from.
-- **Multiple Themes:** Five complete color schemes, each with light and dark mode.
-- **Smooth Feel:** Every interaction has subtle feedback, from button presses to list transitions.
-
-### Dashboard
-- **At a Glance:** Your home screen shows groups, upcoming birthdays, and people worth reconnecting with. All shown quietly, without shouting for attention.
-- **Fast Add:** Jump straight into adding a person, note, or reminder without navigating menus.
 
 ### Flexible & Controlled
 - **Quick Actions:** A single floating button gives you instant access to the three things you do most: add a person, write a note, or set a reminder.
 - **Choose Your Layout:** Reorder profile tabs or turn off modules like Journal or Calendar if you don't need them.
-- **Works Offline:** No internet? No problem. Everything works the moment you open the app.
+- **Works Offline:** No internet? No problem. App dosnt have a backend and works entirely offline.
 
 ## Technical Foundation
 
-- **Core:** Built with React Native and Expo for a native mobile experience.
-- **Database:** Type-safe local storage with automatic migrations.
-- **Routing:** File-based navigation.
-- **Motion:** Spring-based animations for a responsive, tactile feel.
+- **Core:** Built with React Native and Expo.
+- **Database:** Type-safe local storage and sql lite schema with automatic migrations. 
 
 ## Getting Started
 
