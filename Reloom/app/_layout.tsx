@@ -64,7 +64,11 @@ function RootLayoutContent() {
   const isIgnorableMigrationError = useMemo(() => {
     if (!migrationError) return false;
     const msg = migrationError.message || String(migrationError);
-    return msg.includes('location_home') || msg.includes('duplicate column') || msg.includes('already exists');
+    return msg.includes('location_home') || 
+           msg.includes('duplicate column') || 
+           msg.includes('already exists') || 
+           msg.includes('nudge_type') || 
+           msg.includes('custom_nudges_count');
   }, [migrationError]);
 
   const hasMigrationFinished = migrationSuccess || isIgnorableMigrationError;

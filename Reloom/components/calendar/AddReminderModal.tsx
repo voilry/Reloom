@@ -323,13 +323,19 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                 </Animated.View>
                             )}
 
-                            <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 12, fontStyle: 'italic', fontSize: 12, opacity: 0.5 }}>
+                            <ThemedText 
+                                type="tiny" 
+                                style={{ color: colors.secondary, marginTop: 12, fontStyle: 'italic', fontSize: 12, opacity: 0.5 }}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumScaleFactor={0.7}
+                            >
                                 {nudgeType === 'off' && "No notifications will be sent."}
                                 {nudgeType === 'on_time' && "1 ping exactly at the selected time."}
-                                {nudgeType === 'nudge' && "2 pings: 30 minutes before and at the event time."}
-                                {nudgeType === 'deep' && "3 pings: 2 hours before, 30 minutes before, and at the event time."}
-                                {nudgeType === 'extreme' && "5 pings: 1 day, 2 hours, 30 mins, 10 mins before, and at the event time."}
-                                {nudgeType === 'custom' && `We'll space out ${customCount} notifications leading up to the event time.`}
+                                {nudgeType === 'nudge' && "2 pings: 30m before and at event time."}
+                                {nudgeType === 'deep' && "3 pings: 2h and 30m before, and at event time."}
+                                {nudgeType === 'extreme' && "5 pings: 1d, 2h, 30m, 10m before, and at event time."}
+                                {nudgeType === 'custom' && `Spaced out ${customCount} alerts leading up to the event.`}
                             </ThemedText>
                         </View>
 
