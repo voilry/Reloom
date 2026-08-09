@@ -80,7 +80,25 @@ export default function ContactEditorScreen() {
     }, [isNew, value, selectedPlatform, originalContact]);
 
     const handleSave = async () => {
-        if (!value.trim() || !person || isSaving) return;
+        if (isSaving) return;
+        if (!value.trim()) {
+            setAlertConfig({
+                visible: true,
+                title: 'Missing Value',
+                description: 'Please enter a contact detail or handle.',
+                type: 'error'
+            });
+            return;
+        }
+        if (!person) {
+            setAlertConfig({
+                visible: true,
+                title: 'Invalid Contact Target',
+                description: 'No person profile associated with this contact.',
+                type: 'error'
+            });
+            return;
+        }
         setIsSaving(true);
         try {
             if (isNew) {
@@ -98,7 +116,7 @@ export default function ContactEditorScreen() {
             const { showToast } = require('../../components/ui/Toast');
             showToast(isNew ? 'Contact added' : 'Contact updated');
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
+            if (router.canGoBack()) router.back(); else router.replace('/');
         } catch (error) {
             setAlertConfig({
                 visible: true,
@@ -117,7 +135,7 @@ export default function ContactEditorScreen() {
             await ContactRepository.deleteContact(Number(id));
             setShowDeleteModal(false);
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
+            if (router.canGoBack()) router.back(); else router.replace('/');
         } catch (err) {
             setIsSaving(false);
             setAlertConfig({

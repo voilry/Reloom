@@ -6,6 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { ThemedText } from '../ui/ThemedText';
 import { Card } from '../ui/Card';
 import { Colors } from '../../constants/Colors';
+import { Typography } from '../../constants/Typography';
 import { BookOpen, Trash } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -59,10 +60,8 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
         <View style={styles.entriesSection}>
             {journals.length === 0 ? (
                 <View style={styles.emptyState}>
-                    <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
-                        <BookOpen size={32} color={colors.icon} />
-                    </View>
-                    <ThemedText type="sectionHeader" style={{ marginTop: 16 }}>No Mentions</ThemedText>
+                    <BookOpen size={48} color={colors.tint} weight="fill" />
+                    <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Mentions</ThemedText>
                     <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
                         Tag {personName.split(' ')[0]} in your daily journal to see them here.
                     </ThemedText>

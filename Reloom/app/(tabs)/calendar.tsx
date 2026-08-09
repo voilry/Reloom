@@ -593,10 +593,8 @@ export default function CalendarScreen() {
                             <ScrollView style={styles.eventList} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
                                 {selectedEvents.length === 0 ? (
                                     <View style={styles.emptyEvents}>
-                                        <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
-                                            <Calendar size={28} color={colors.icon} weight="duotone" />
-                                        </View>
-                                        <ThemedText type="sectionHeader" style={styles.emptyTitle}>No Status</ThemedText>
+                                        <Calendar size={48} color={colors.tint} weight="fill" />
+                                        <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>No Status</ThemedText>
                                         <ThemedText style={[styles.emptySubtitle, { color: colors.secondary }]}>Everything is quiet.</ThemedText>
                                     </View>
                                 ) : (
@@ -881,8 +879,10 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 18,
+        marginTop: 16,
         marginBottom: 2,
         textAlign: 'center',
+        fontFamily: Typography.fontFamily.bold,
     },
     emptySubtitle: {
         textAlign: 'center',

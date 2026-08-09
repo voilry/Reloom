@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 340,
         borderRadius: DesignSystem.radius.xl,
-        borderWidth: 0.5,
+        borderWidth: 0,
         overflow: 'hidden',
     },
     modalHeader: {

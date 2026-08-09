@@ -17,7 +17,7 @@ export function Input({ label, error, style, containerStyle, ...rest }: InputPro
     return (
         <View style={[styles.container, containerStyle]}>
             {label && (
-                <ThemedText type="sectionHeader" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>
+                <ThemedText type="defaultSemiBold" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>
                     {label}
                 </ThemedText>
             )}
@@ -69,10 +69,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     label: {
-        fontSize: 14,
+        fontSize: 16,
         marginBottom: 8,
-        letterSpacing: 1,
-        lineHeight: 16,
+        letterSpacing: 0.1,
+        lineHeight: 20,
     },
     inputWrapper: {
         position: 'relative',

@@ -9,6 +9,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
+import { Typography } from '../../constants/Typography';
 import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee, House as Home, Briefcase, Airplane as Plane, Gift, Target, Tag, Trash } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -134,10 +135,8 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
 
             {filteredEntries.length === 0 ? (
                 <View style={styles.emptyState}>
-                    <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
-                        <FileText size={32} color={colors.icon} />
-                    </View>
-                    <ThemedText type="sectionHeader" style={{ marginTop: 1 }}>{search ? 'No notes found' : 'No Notes Yet'}</ThemedText>
+                    <FileText size={48} color={colors.tint} weight="fill" />
+                    <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>{search ? 'No notes found' : 'No Notes Yet'}</ThemedText>
                     <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
                         {search ? 'Try a different search term.' : 'Keep track of specific details here.'}
                     </ThemedText>
@@ -226,7 +225,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         height: 50,
         borderRadius: 12,
-        borderWidth: 0.6,
+        borderWidth: 0,
         marginRight: 10,
     },
     searchInput: {

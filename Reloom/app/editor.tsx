@@ -90,9 +90,11 @@ export default function EditorScreen() {
             if (selectionRef.current.start > 40) {
                 setTimeout(() => {
                     const sel = selectionRef.current;
-                    const totalChars = Math.max(1, contentRef.current.length);
-                    const cursorRatio = sel.start / totalChars;
-                    const cursorY = editorYRef.current + (contentHeightRef.current * cursorRatio);
+                    const textBeforeCursor = contentRef.current.slice(0, sel.start);
+                    const lineCountBefore = (textBeforeCursor.match(/\n/g) || []).length;
+                    const totalLines = Math.max(1, (contentRef.current.match(/\n/g) || []).length + 1);
+                    const lineRatio = lineCountBefore / totalLines;
+                    const cursorY = editorYRef.current + (contentHeightRef.current * lineRatio);
                     
                     // Only scroll if the cursor is significantly down the page
                     if (cursorY > 200) {

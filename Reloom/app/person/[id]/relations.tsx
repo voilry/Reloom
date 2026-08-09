@@ -194,10 +194,8 @@ export default function RelationsScreen() {
 
                 {relationships.length === 0 ? (
                     <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
-                        <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
-                            <ArrowsLeftRight size={28} color={colors.icon} />
-                        </View>
-                        <ThemedText type="sectionHeader" style={{ marginTop: 1, opacity: 0.9, fontSize: 18 }}>No Connections</ThemedText>
+                        <ArrowsLeftRight size={48} color={colors.tint} weight="fill" />
+                        <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Connections</ThemedText>
                         <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
                             tap link to add
                         </ThemedText>

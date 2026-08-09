@@ -204,7 +204,7 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
 
     return (
         <View style={styles.container}>
-            {label && <ThemedText type="sectionHeader" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>{label}</ThemedText>}
+            {label && <ThemedText type="defaultSemiBold" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>{label}</ThemedText>}
 
             <ScalePressable
                 onPress={() => setShow(true)}
@@ -276,10 +276,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     label: {
-        fontSize: 14,
+        fontSize: 16,
         marginBottom: 8,
-        letterSpacing: 1,
-        lineHeight: 16,
+        letterSpacing: 0.1,
+        lineHeight: 20,
     },
     input: {
         flexDirection: 'row',

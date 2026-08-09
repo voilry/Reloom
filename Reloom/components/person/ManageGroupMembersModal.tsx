@@ -200,8 +200,8 @@ export const ManageGroupMembersModal = ({
                             {isAddingMode ? (
                                 filteredAllPeople.length === 0 ? (
                                     <View style={styles.emptyState}>
-                                        <MagnifyingGlassPlus size={48} color={colors.icon} weight="light" />
-                                        <ThemedText style={{ color: colors.secondary, textAlign: 'center', marginTop: 12 }}>
+                                        <MagnifyingGlassPlus size={48} color={colors.tint} weight="fill" />
+                                        <ThemedText style={{ color: colors.secondary, textAlign: 'center', marginTop: 12, fontSize: 16, fontFamily: Typography.fontFamily.bold }}>
                                             No matches found.
                                         </ThemedText>
                                     </View>
@@ -243,8 +243,8 @@ export const ManageGroupMembersModal = ({
                             ) : (
                                 members.length === 0 ? (
                                     <View style={[styles.emptyState, { marginTop: 40 }]}>
-                                        <UsersThree size={72} color={colors.icon} weight="light" />
-                                        <ThemedText type="display" style={{ color: colors.secondary, textAlign: 'center', marginTop: 8, fontSize: 16, letterSpacing: -0.2 }}>
+                                        <UsersThree size={48} color={colors.tint} weight="fill" />
+                                        <ThemedText style={{ color: colors.secondary, textAlign: 'center', marginTop: 12, fontSize: 16, fontFamily: Typography.fontFamily.bold }}>
                                             Group is currently empty.
                                         </ThemedText>
                                     </View>

@@ -30,17 +30,20 @@ export const DataRepository = {
             db.select().from(contacts)
         ]);
 
-        const peopleWithImages = await Promise.all(p.map(async (person: any) => {
+        // Process avatars sequentially to avoid memory bloat during Base64 encoding
+        const peopleWithImages: any[] = [];
+        for (const person of p) {
             if (person.avatarUri && person.avatarUri.startsWith('file://')) {
                 try {
                     const base64 = await FileSystem.readAsStringAsync(person.avatarUri, { encoding: FileSystem.EncodingType.Base64 });
-                    return { ...person, _avatarBase64: base64 };
+                    peopleWithImages.push({ ...person, _avatarBase64: base64 });
+                    continue;
                 } catch (e) {
                     console.log('Could not encode image for', person.name);
                 }
             }
-            return person;
-        }));
+            peopleWithImages.push(person);
+        }
 
         return {
             version: "0.1 alpha",
@@ -83,13 +86,18 @@ export const DataRepository = {
             contacts: c
         } = imported;
 
-        console.log('Clearing existing records...');
-        await this.clearAllData();
+        const createdAvatarUris: string[] = [];
 
         const mapDates = (item: any) => {
             const newItem = { ...item };
-            if (typeof newItem.createdAt === 'string') newItem.createdAt = new Date(newItem.createdAt);
-            if (typeof newItem.updatedAt === 'string') newItem.updatedAt = new Date(newItem.updatedAt);
+            if (newItem.createdAt) {
+                const parsed = new Date(newItem.createdAt);
+                if (!isNaN(parsed.getTime())) newItem.createdAt = parsed;
+            }
+            if (newItem.updatedAt) {
+                const parsed = new Date(newItem.updatedAt);
+                if (!isNaN(parsed.getTime())) newItem.updatedAt = parsed;
+            }
             return newItem;
         };
 
@@ -106,6 +114,7 @@ export const DataRepository = {
                     const fileUri = `${avatarsDir}${filename}`;
                     await FileSystem.writeAsStringAsync(fileUri, newPerson._avatarBase64, { encoding: FileSystem.EncodingType.Base64 });
                     newPerson.avatarUri = fileUri;
+                    createdAvatarUris.push(fileUri);
                 } catch (e) {
                     console.error("Failed to decode image during import", e);
                 }
@@ -114,60 +123,86 @@ export const DataRepository = {
             return newPerson;
         };
 
+        // Prepare people images sequentially to prevent heap memory exhaustion
+        const mappedPeople: any[] = [];
+        if (p?.length) {
+            for (const person of p) {
+                const mapped = await mapPersonImages(person);
+                mappedPeople.push(mapped);
+            }
+        }
+
         try {
-            console.log('Restoring entry types...');
-            if (et?.length) {
-                for (const item of et) {
-                    await db.insert(entryTypes).values(item).onConflictDoNothing();
+            await db.transaction(async (tx) => {
+                console.log('Clearing existing records inside transaction...');
+                await tx.delete(journalTags);
+                await tx.delete(journals);
+                await tx.delete(relationships);
+                await tx.delete(personGroups);
+                await tx.delete(groups);
+                await tx.delete(reminders);
+                await tx.delete(contacts);
+                await tx.delete(entries);
+                await tx.delete(people);
+                await tx.delete(entryTypes);
+
+                console.log('Restoring entry types...');
+                if (et?.length) {
+                    for (const item of et) {
+                        await tx.insert(entryTypes).values(item).onConflictDoNothing();
+                    }
                 }
-            }
 
-            console.log(`Restoring ${p?.length || 0} people...`);
-            if (p?.length) {
-                const mappedPeople = await Promise.all(p.map(mapPersonImages));
-                await db.insert(people).values(mappedPeople);
-            }
+                console.log(`Restoring ${mappedPeople.length} people...`);
+                if (mappedPeople.length) {
+                    await tx.insert(people).values(mappedPeople);
+                }
 
-            console.log(`Restoring ${e?.length || 0} entries...`);
-            if (e?.length) {
-                const mappedEntries = e.map(mapDates);
-                await db.insert(entries).values(mappedEntries);
-            }
+                console.log(`Restoring ${e?.length || 0} entries...`);
+                if (e?.length) {
+                    const mappedEntries = e.map(mapDates);
+                    await tx.insert(entries).values(mappedEntries);
+                }
 
+                console.log(`Restoring ${j?.length || 0} journals...`);
+                if (j?.length) {
+                    const mappedJournals = j.map(mapDates);
+                    await tx.insert(journals).values(mappedJournals);
+                }
 
+                console.log('Restoring junction maps...');
+                if (r?.length) await tx.insert(relationships).values(r);
+                if (jt?.length) await tx.insert(journalTags).values(jt);
 
-            console.log(`Restoring ${j?.length || 0} journals...`);
-            if (j?.length) {
-                const mappedJournals = j.map(mapDates);
-                await db.insert(journals).values(mappedJournals);
-            }
+                console.log(`Restoring ${g?.length || 0} groups...`);
+                if (g?.length) {
+                    const mappedGroups = g.map(mapDates);
+                    await tx.insert(groups).values(mappedGroups);
+                }
+                if (pg?.length) await tx.insert(personGroups).values(pg);
 
-            console.log('Restoring junction maps...');
-            if (r?.length) await db.insert(relationships).values(r);
-            if (jt?.length) await db.insert(journalTags).values(jt);
+                console.log(`Restoring ${rem?.length || 0} reminders...`);
+                if (rem?.length) {
+                    const mappedReminders = rem.map(mapDates);
+                    await tx.insert(reminders).values(mappedReminders);
+                }
 
-            console.log(`Restoring ${g?.length || 0} groups...`);
-            if (g?.length) {
-                const mappedGroups = g.map(mapDates);
-                await db.insert(groups).values(mappedGroups);
-            }
-            if (pg?.length) await db.insert(personGroups).values(pg);
-
-            console.log(`Restoring ${rem?.length || 0} reminders...`);
-            if (rem?.length) {
-                const mappedReminders = rem.map(mapDates);
-                await db.insert(reminders).values(mappedReminders);
-            }
-
-            console.log(`Restoring ${c?.length || 0} contacts...`);
-            if (c?.length) {
-                const mappedContacts = c.map(mapDates);
-                await db.insert(contacts).values(mappedContacts);
-            }
+                console.log(`Restoring ${c?.length || 0} contacts...`);
+                if (c?.length) {
+                    const mappedContacts = c.map(mapDates);
+                    await tx.insert(contacts).values(mappedContacts);
+                }
+            });
 
             console.log('Import successful!');
         } catch (error: any) {
             console.error('Import process failed at database level:', error);
+            // Clean up avatar files created on disk prior to failure
+            for (const fileUri of createdAvatarUris) {
+                try {
+                    await FileSystem.deleteAsync(fileUri, { idempotent: true });
+                } catch (e) {}
+            }
             throw new Error(`Database error: ${error.message || "Unknown constraint violation"}`);
         }
     }

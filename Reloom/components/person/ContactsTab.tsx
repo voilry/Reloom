@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Plus, Trash, PencilSimple, Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe } from '@/components/ui/Icon';
 import { Button } from '../ui/Button';
+import { Typography } from '../../constants/Typography';
 import { BlurView } from 'expo-blur';
 
 export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcrylic, colors }: any) {
@@ -66,17 +67,15 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
     if (!contacts || contacts.length === 0) {
         return (
             <Animated.View entering={FadeInDown.duration(400)} style={styles.emptyContainer}>
-                <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
-                    <Phone size={32} color={colors.icon} />
-                </View>
-                <ThemedText type="sectionHeader" style={{ marginTop: 1, opacity: 0.8 }}>No Contacts Yet</ThemedText>
+                <Phone size={48} color={colors.tint} weight="fill" />
+                <ThemedText style={{ marginTop: 16, opacity: 0.8, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Contacts Yet</ThemedText>
                 <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
                     Add phone numbers, social media, and more.
                 </ThemedText>
                 <Button
                     title="Add Contact"
                     onPress={onAdd}
-                    style={{ marginTop: 17 }}
+                    style={{ marginTop: 17, alignSelf: 'center', paddingHorizontal: 28, borderRadius: 24 }}
                 />
             </Animated.View>
         );

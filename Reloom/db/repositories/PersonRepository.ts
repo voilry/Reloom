@@ -1,6 +1,6 @@
 import { db } from '../index';
-import { people, entries, journalTags, reminders } from '../schema';
-import { eq, desc, isNotNull, asc, sql } from 'drizzle-orm';
+import { people, entries, journalTags, reminders, relationships, personGroups, contacts } from '../schema';
+import { eq, desc, isNotNull, asc, sql, or } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 export type Person = InferSelectModel<typeof people>;
@@ -42,38 +42,59 @@ export class PersonRepository {
     }
 
     static async delete(id: number) {
-        // Ideally delete related entries too (cascade or manual)
+        // Fallback explicit delete for child and junction records
         await db.delete(entries).where(eq(entries.personId, id));
+        await db.delete(journalTags).where(eq(journalTags.personId, id));
+        await db.delete(personGroups).where(eq(personGroups.personId, id));
+        await db.delete(contacts).where(eq(contacts.personId, id));
+        await db.delete(reminders).where(eq(reminders.personId, id));
+        await db.delete(relationships).where(or(eq(relationships.sourcePersonId, id), eq(relationships.targetPersonId, id)));
         await db.delete(people).where(eq(people.id, id));
     }
 
     static async getUpcomingBirthdays(limit = 3) {
-        // This is a bit complex in SQLite/Drizzle without raw SQL for date parts.
-        // For now, let's fetch all (if dataset small) or use a raw query if Drizzle supports it easily here.
-        // Simplified: Fetch all with birthdays, filter in JS for MVP to avoid raw SQL complexity errors.
         const all = await db.select().from(people).where(isNotNull(people.birthdate));
         const today = new Date();
-        const nextMonth = new Date();
-        nextMonth.setDate(today.getDate() + 30);
+        const currentYear = today.getFullYear();
 
-        return all.filter(p => {
-            if (!p.birthdate) return false;
-            const bd = new Date(p.birthdate);
-            const thisYearBd = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
-            if (thisYearBd < today) {
-                thisYearBd.setFullYear(today.getFullYear() + 1);
+        const todayStart = new Date(currentYear, today.getMonth(), today.getDate());
+        const nextMonth = new Date(todayStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const itemsWithTargetDate = all.map(p => {
+            if (!p.birthdate) return null;
+            const normalized = p.birthdate.trim().replace(/\//g, '-');
+            const parts = normalized.split('-').map(Number);
+            if (parts.length < 3 || parts.some(isNaN)) return null;
+
+            const [, bMonthStr, bDayStr] = parts;
+            const bMonth = bMonthStr - 1; // 0-indexed month
+            const bDay = bDayStr;
+
+            // Handle Feb 29 in non-leap years
+            let targetDate = new Date(currentYear, bMonth, bDay);
+            if (bMonth === 1 && bDay === 29 && targetDate.getMonth() !== 1) {
+                targetDate = new Date(currentYear, 1, 28);
             }
-            return thisYearBd >= today && thisYearBd <= nextMonth;
-        }).sort((a, b) => {
-            const dateA = new Date(a.birthdate!).setFullYear(today.getFullYear());
-            const dateB = new Date(b.birthdate!).setFullYear(today.getFullYear());
-            return dateA - dateB;
-        }).slice(0, limit);
+
+            if (targetDate < todayStart) {
+                targetDate = new Date(currentYear + 1, bMonth, bDay);
+                if (bMonth === 1 && bDay === 29 && targetDate.getMonth() !== 1) {
+                    targetDate = new Date(currentYear + 1, 1, 28);
+                }
+            }
+
+            return { person: p, targetDate };
+        }).filter((x): x is { person: Person, targetDate: Date } => x !== null);
+
+        return itemsWithTargetDate
+            .filter(x => x.targetDate >= todayStart && x.targetDate <= nextMonth)
+            .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime())
+            .map(x => x.person)
+            .slice(0, limit);
     }
 
     static async getReconnectSuggestions(limit = 4) {
         const allPeople = await db.select().from(people);
-        // "at start it won't show unless user have spent sometime and added much"
         if (allPeople.length < 3) return [];
 
         const entryCounts = await db.select({
@@ -92,7 +113,6 @@ export class PersonRepository {
             activityMap.set(j.personId, (activityMap.get(j.personId) || 0) + j.count);
         });
 
-        // Check if user has "spent some time and added much" (total activity threshold)
         const totalActivityGlobally = Array.from(activityMap.values()).reduce((a, b) => a + b, 0);
         if (totalActivityGlobally < 5) return [];
 
@@ -101,8 +121,10 @@ export class PersonRepository {
 
         allPeople.forEach(p => {
             const totalActivity = activityMap.get(p.id) || 0;
-            const daysSinceUpdate = (now - new Date(p.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
-            const daysSinceCreated = (now - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+            const updatedTime = p.updatedAt ? new Date(p.updatedAt).getTime() : now;
+            const createdTime = p.createdAt ? new Date(p.createdAt).getTime() : now;
+            const daysSinceUpdate = isNaN(updatedTime) ? 0 : (now - updatedTime) / (1000 * 60 * 60 * 24);
+            const daysSinceCreated = isNaN(createdTime) ? 0 : (now - createdTime) / (1000 * 60 * 60 * 24);
 
             let missingFields = 0;
             if (!p.elevatorPitch) missingFields++;
@@ -129,7 +151,7 @@ export class PersonRepository {
         const coolOffs = suggestions.filter(s => s.type === 'cool-off').sort((a, b) => b.score - a.score);
         const needsAttention = suggestions.filter(s => s.type === 'needs-attention').sort((a, b) => b.score - a.score);
 
-        const finalSelection = [];
+        const finalSelection: any[] = [];
         if (missingInfos.length > 0) finalSelection.push(missingInfos[0]);
         if (coolOffs.length > 0) finalSelection.push(coolOffs[0]);
         if (frequents.length > 0) finalSelection.push(frequents[0]);
@@ -137,8 +159,8 @@ export class PersonRepository {
         if (coolOffs.length > 1) finalSelection.push(coolOffs[1]);
         if (needsAttention.length > 0) finalSelection.push(needsAttention[0]);
 
-        // Dedup and limit
-        const uniqueSelection = Array.from(new Set(finalSelection)).slice(0, limit);
+        const validSelection = finalSelection.filter(Boolean);
+        const uniqueSelection = Array.from(new Set(validSelection)).slice(0, limit);
         return uniqueSelection;
     }
 

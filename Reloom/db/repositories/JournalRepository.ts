@@ -13,15 +13,22 @@ export class JournalRepository {
         const journalIds = journalList.map(j => j.id);
         if (journalIds.length === 0) return [];
 
-        // Single query to get all tags for all visible journals
-        const allTags = await db
-            .select({ 
-                journalId: journalTags.journalId,
-                person: people 
-            })
-            .from(journalTags)
-            .innerJoin(people, eq(journalTags.personId, people.id))
-            .where(inArray(journalTags.journalId, journalIds));
+        // Chunk queries in batches of 500 to prevent SQLITE_MAX_VARIABLE_NUMBER overflow
+        const CHUNK_SIZE = 500;
+        const allTags: { journalId: number; person: any }[] = [];
+
+        for (let i = 0; i < journalIds.length; i += CHUNK_SIZE) {
+            const chunk = journalIds.slice(i, i + CHUNK_SIZE);
+            const chunkTags = await db
+                .select({ 
+                    journalId: journalTags.journalId,
+                    person: people 
+                })
+                .from(journalTags)
+                .innerJoin(people, eq(journalTags.personId, people.id))
+                .where(inArray(journalTags.journalId, chunk));
+            allTags.push(...chunkTags);
+        }
 
         // Group tags by journalId
         const tagsMap = allTags.reduce((acc, current) => {

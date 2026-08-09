@@ -48,9 +48,10 @@ export function ScalePressable({
     const scaleValue = useSharedValue(1);
     const highlightOpacity = useSharedValue(0);
 
-    const flatStyle = StyleSheet.flatten(style);
-    const flatInnerStyle = StyleSheet.flatten(innerStyle);
-    const borderRadius = flatInnerStyle?.borderRadius ?? flatStyle?.borderRadius ?? 0;
+    const flatStyle = StyleSheet.flatten(style) as ViewStyle | undefined;
+    const flatInnerStyle = StyleSheet.flatten(innerStyle) as ViewStyle | undefined;
+    const rawRadius = flatInnerStyle?.borderRadius ?? flatStyle?.borderRadius ?? 0;
+    const borderRadius = typeof rawRadius === 'number' && !isNaN(rawRadius) ? rawRadius : 0;
 
     const containerAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scaleValue.value }],

@@ -30,8 +30,8 @@ export const entryTypes = sqliteTable('entry_types', {
 // Entries
 export const entries = sqliteTable('entries', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    personId: integer('person_id').references(() => people.id).notNull(),
-    typeId: integer('type_id').references(() => entryTypes.id).notNull(),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
+    typeId: integer('type_id').references(() => entryTypes.id, { onDelete: 'cascade' }).notNull(),
     content: text('content').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
@@ -39,8 +39,8 @@ export const entries = sqliteTable('entries', {
 // Relationships
 export const relationships = sqliteTable('relationships', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    sourcePersonId: integer('source_person_id').references(() => people.id).notNull(),
-    targetPersonId: integer('target_person_id').references(() => people.id).notNull(),
+    sourcePersonId: integer('source_person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
+    targetPersonId: integer('target_person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
     relationType: text('relation_type'), // e.g. "Sister", "Coworker"
     strength: integer('strength'), // Optional: for graph visualization weight
 });
@@ -59,8 +59,8 @@ export const journals = sqliteTable('journals', {
 // Journal Tags (People mentions)
 export const journalTags = sqliteTable('journal_tags', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    journalId: integer('journal_id').references(() => journals.id).notNull(),
-    personId: integer('person_id').references(() => people.id).notNull(),
+    journalId: integer('journal_id').references(() => journals.id, { onDelete: 'cascade' }).notNull(),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
 });
 
 // Reminders & Upcoming Events
@@ -70,7 +70,7 @@ export const reminders = sqliteTable('reminders', {
     description: text('description'),
     date: text('date').notNull(), // ISO Date String YYYY-MM-DD
     time: text('time'), // ISO Time String HH:MM
-    personId: integer('person_id').references(() => people.id), // Optional: Link to a person
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }), // Optional: Link to a person
     notificationId: text('notification_id'), // To cancel/update local notifications (comma-separated if multiple)
     completed: integer('completed', { mode: 'boolean' }).default(false),
     nudgeType: text('nudge_type').default('on_time'),
@@ -91,14 +91,14 @@ export const groups = sqliteTable('groups', {
 // Person Groups (Junction)
 export const personGroups = sqliteTable('person_groups', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    personId: integer('person_id').references(() => people.id).notNull(),
-    groupId: integer('group_id').references(() => groups.id).notNull(),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
+    groupId: integer('group_id').references(() => groups.id, { onDelete: 'cascade' }).notNull(),
 });
 
 // Contacts (Phone, Email, Social Media)
 export const contacts = sqliteTable('contacts', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    personId: integer('person_id').references(() => people.id).notNull(),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'cascade' }).notNull(),
     platform: text('platform').notNull(), // "Phone", "Email", "Instagram", "WhatsApp", "X", "LinkedIn"
     value: text('value').notNull(),       // the number, email, or handle
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),

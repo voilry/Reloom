@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect, useMemo, memo, useRef } from 'react';
 import { JournalRepository, Journal } from '../../db/repositories/JournalRepository';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
+import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -330,10 +331,8 @@ export default function JournalScreen() {
                 ListEmptyComponent={
                     isLoading ? null : (
                         <View style={styles.emptyContainer}>
-                            <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
-                                {searchQuery ? <Search size={32} color={colors.icon} weight="bold" /> : <PenTool size={32} color={colors.icon} weight="duotone" />}
-                            </View>
-                            <ThemedText type="sectionHeader" style={styles.emptyTitle}>
+                            {searchQuery ? <Search size={48} color={colors.icon} weight="fill" /> : <PenTool size={48} color={colors.tint} weight="fill" />}
+                            <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>
                                 {searchQuery ? 'No results' : 'Journal'}
                             </ThemedText>
                             <ThemedText style={[styles.emptySubtitle, { color: colors.secondary }]}>
@@ -429,8 +428,10 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 20,
+        marginTop: 16,
         marginBottom: 2,
         textAlign: 'center',
+        fontFamily: Typography.fontFamily.bold,
     },
     emptySubtitle: {
         textAlign: 'center',
@@ -440,7 +441,10 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     emptyButton: {
-        width: '100%',
+        alignSelf: 'center',
+        paddingHorizontal: 28,
+        borderRadius: 24,
+        marginTop: 8,
     },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { flex: 1, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 20 },

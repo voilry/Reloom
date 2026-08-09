@@ -170,10 +170,8 @@ export default function LocationsScreen() {
                 ListEmptyComponent={
                     isLoading ? null : (
                         <View style={styles.emptyContainer}>
-                            <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
-                                <Map size={40} color={colors.icon} weight="duotone" />
-                            </View>
-                            <ThemedText type="sectionHeader" style={styles.emptyTitle}>No Cities Yet</ThemedText>
+                            <Map size={48} color={colors.tint} weight="fill" />
+                            <ThemedText style={styles.emptyTitle}>No Cities Yet</ThemedText>
                             <ThemedText style={[styles.emptySubtitle, { color: colors.secondary }]}>
                                 Add a city to a person's profile to see them appear here.
                             </ThemedText>
@@ -249,10 +247,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     emptyTitle: {
-        fontSize: 22,
+        fontSize: 20,
+        marginTop: 16,
         marginBottom: 8,
         textAlign: 'center',
-        fontFamily: Typography.fontFamily.serif,
+        fontFamily: Typography.fontFamily.bold,
     },
     emptySubtitle: {
         textAlign: 'center',

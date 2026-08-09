@@ -178,10 +178,8 @@ export default function CityDetailScreen() {
                 ListEmptyComponent={
                     !isLoading ? (
                         <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
-                            <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
-                                <MapEmpty size={29} color={colors.icon} weight="duotone" />
-                            </View>
-                            <ThemedText type="sectionHeader" style={{ marginTop: 1, opacity: 0.9 }}>
+                            <MapEmpty size={48} color={colors.tint} weight="fill" />
+                            <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
                                 {search ? 'No matches' : 'No contacts here'}
                             </ThemedText>
                             <ThemedText style={[styles.emptySubtitle, { color: colors.secondary }]}>

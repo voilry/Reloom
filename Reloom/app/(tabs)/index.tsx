@@ -110,6 +110,15 @@ export default function PeopleScreen() {
         }, 800);
     }, []);
 
+    const lastJSCallRef = useRef<number>(0);
+    const triggerHideTimerJS = useCallback(() => {
+        const now = Date.now();
+        if (now - lastJSCallRef.current > 200) {
+            lastJSCallRef.current = now;
+            startHideTimer();
+        }
+    }, [startHideTimer]);
+
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             const currentY = event.contentOffset.y;
@@ -121,7 +130,7 @@ export default function PeopleScreen() {
             }
             scrollY.value = currentY;
 
-            runOnJS(startHideTimer)();
+            runOnJS(triggerHideTimerJS)();
         },
     });
 
@@ -816,10 +825,8 @@ export default function PeopleScreen() {
                 ListEmptyComponent={
                     (isLoading || isDashboardActive) ? null : (
                         <View style={styles.emptyContainer}>
-                            <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
-                                {search ? <Search size={32} color={colors.icon} weight="bold" /> : <UserIcon size={32} color={colors.icon} weight="duotone" />}
-                            </View>
-                            <ThemedText type="sectionHeader" style={styles.emptyTitle}>
+                            {search ? <Search size={48} color={colors.icon} weight="fill" /> : <UserIcon size={48} color={colors.tint} weight="fill" />}
+                            <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>
                                 {search ? 'No results' : selectedGroupId ? 'Group Empty' : 'Network'}
                             </ThemedText>
                             <ThemedText style={[styles.emptySubtitle, { color: colors.secondary }]}>
@@ -1372,8 +1379,10 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 20,
+        marginTop: 16,
         marginBottom: 2,
         textAlign: 'center',
+        fontFamily: Typography.fontFamily.bold,
     },
     emptySubtitle: {
         textAlign: 'center',
@@ -1384,7 +1393,10 @@ const styles = StyleSheet.create({
         fontFamily: Typography.fontFamily.regular,
     },
     emptyButton: {
-        width: '100%',
+        alignSelf: 'center',
+        paddingHorizontal: 28,
+        borderRadius: 24,
+        marginTop: 8,
     },
     fullScreenPage: {
         flex: 1,

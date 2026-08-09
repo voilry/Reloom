@@ -122,7 +122,7 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
             </Card>
 
             <ScalePressable
-                style={[styles.relationshipCard, { borderColor: isAcrylic ? 'transparent' : colors.border, backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, overflow: 'hidden', borderWidth: isAcrylic ? 0 : 0.6 }]}
+                style={[styles.relationshipCard, { backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, overflow: 'hidden', borderWidth: 0 }]}
                 innerStyle={{ borderRadius: DesignSystem.radius.lg }}
                 scaleTo={0.94}
                 onPress={() => {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderRadius: DesignSystem.radius.lg,
-        borderWidth: 0.6,
+        borderWidth: 0,
         marginBottom: 32,
         overflow: 'hidden', // Fix press effect clipping
         ...DesignSystem.shadows.sm,

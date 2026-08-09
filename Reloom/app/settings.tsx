@@ -140,7 +140,7 @@ export default function SettingsScreen() {
             triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
             showAlert("Success", "Your network has been restored.", "success", () => {
                 router.dismissAll();
-                setTimeout(() => refreshApp(), 100);
+                setTimeout(() => refreshApp(), 350);
             });
         } catch (e: any) {
             console.error('Full import error:', e);
@@ -161,7 +161,7 @@ export default function SettingsScreen() {
         setShowClearData(false);
         showAlert("Registry Wiped", "Your network has been cleared.", "success", () => {
             router.dismissAll();
-            setTimeout(() => refreshApp(), 100);
+            setTimeout(() => refreshApp(), 350);
         });
     };
 

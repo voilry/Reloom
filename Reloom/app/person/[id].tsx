@@ -33,6 +33,8 @@ import { NewEntryModal } from '../../components/person/NewEntryModal';
 import { ManageGroupsModal } from '../../components/person/ManageGroupsModal';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ScalePressable } from '../../components/ui/ScalePressable';
+import { Button } from '../../components/ui/Button';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 export default function PersonDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -41,6 +43,7 @@ export default function PersonDetailScreen() {
     const { settings } = useSettings();
     const insets = useSafeAreaInsets();
 
+    const [isLoading, setIsLoading] = useState(true);
     const [person, setPerson] = useState<Person | null>(null);
     const [entries, setEntries] = useState<any[]>([]);
     const [journals, setJournals] = useState<any[]>([]);
@@ -83,26 +86,35 @@ export default function PersonDetailScreen() {
     const loadData = async () => {
         const personId = Number(id);
         const p = await PersonRepository.getById(personId);
-        if (!p) return;
+        if (!p) {
+            setPerson(null);
+            setIsLoading(false);
+            return;
+        }
         setPerson(p);
+        setIsLoading(false); // Unblock screen render instantly (~5ms)
 
-        const [e, j, r, all, pg, g, c] = await Promise.all([
-            EntryRepository.getForPerson(personId),
-            JournalRepository.getJournalsForPerson(personId),
-            RelationshipRepository.getForPerson(personId),
-            PersonRepository.getAll(),
-            GroupRepository.getGroupsForPerson(personId),
-            GroupRepository.getAll(),
-            ContactRepository.getContactsForPerson(personId)
-        ]);
+        try {
+            const [e, j, r, all, pg, g, c] = await Promise.all([
+                EntryRepository.getForPerson(personId),
+                JournalRepository.getJournalsForPerson(personId),
+                RelationshipRepository.getForPerson(personId),
+                PersonRepository.getAll(),
+                GroupRepository.getGroupsForPerson(personId),
+                GroupRepository.getAll(),
+                ContactRepository.getContactsForPerson(personId)
+            ]);
 
-        setEntries(e);
-        setJournals(j);
-        setRelationships(r);
-        setPersonGroups(pg);
-        setAllGroups(g);
-        setAllPeople(all.filter(x => x.id !== personId));
-        setContacts(c);
+            setEntries(e);
+            setJournals(j);
+            setRelationships(r);
+            setPersonGroups(pg);
+            setAllGroups(g);
+            setAllPeople(all.filter(x => x.id !== personId));
+            setContacts(c);
+        } catch (error) {
+            console.error('Error loading secondary tab data:', error);
+        }
     };
 
     const toggleGroup = async (groupId: number) => {
@@ -236,7 +248,31 @@ export default function PersonDetailScreen() {
         }
     };
 
-    if (!person) return null;
+    if (isLoading) {
+        return (
+            <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+                <Stack.Screen options={{ headerShown: false }} />
+                <Skeleton width={72} height={72} style={{ borderRadius: 36, marginBottom: 16 }} />
+                <Skeleton width={140} height={18} style={{ borderRadius: 6, marginBottom: 8 }} />
+                <Skeleton width={200} height={14} style={{ borderRadius: 4 }} />
+            </ThemedView>
+        );
+    }
+
+    if (!person) {
+        return (
+            <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+                <Stack.Screen options={{ headerShown: false }} />
+                <ThemedText type="subtitle" style={{ marginBottom: 12, textAlign: 'center' }}>
+                    Contact Not Found
+                </ThemedText>
+                <ThemedText style={{ color: colors.secondary, marginBottom: 24, textAlign: 'center' }}>
+                    This profile may have been deleted or the link is invalid.
+                </ThemedText>
+                <Button title="Go Back" onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/'); }} />
+            </ThemedView>
+        );
+    }
 
     const age = getAge(person.birthdate);
 

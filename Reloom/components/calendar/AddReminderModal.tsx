@@ -251,7 +251,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                         </View>
 
                         <View style={styles.nudgeSection}>
-                            <ThemedText type="sectionHeader" style={[styles.inputLabel, { marginBottom: 10 }]}>Notifications</ThemedText>
+                            <ThemedText style={[styles.inputLabel, { marginBottom: 10 }]}>Notifications</ThemedText>
                             <View style={styles.chipsContainer}>
                                 {[
                                     { label: 'None', value: 'off' },
@@ -328,7 +328,6 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                 style={{ color: colors.secondary, marginTop: 12, fontStyle: 'italic', fontSize: 12, opacity: 0.5 }}
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
-                                minimumScaleFactor={0.7}
                             >
                                 {nudgeType === 'off' && "No notifications will be sent."}
                                 {nudgeType === 'on_time' && "1 ping exactly at the selected time."}
@@ -342,7 +341,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                         <View style={styles.divider} />
 
                         <View style={styles.mentionSection}>
-                            <ThemedText type="sectionHeader" style={[styles.inputLabel, { marginBottom: 10 }]}>Mention Someone</ThemedText>
+                            <ThemedText style={[styles.inputLabel, { marginBottom: 10 }]}>Mention Someone</ThemedText>
 
                             {selectedPerson ? (
                                 <Animated.View entering={FadeInDown} style={[styles.selectedPersonCard, { backgroundColor: colors.surface }]}>
@@ -438,10 +437,10 @@ const styles = StyleSheet.create({
     inputSection: { marginBottom: 0 },
     inputLabel: {
         fontSize: 13,
-        textTransform: 'uppercase',
         letterSpacing: 0.5,
         opacity: 0.5,
         marginBottom: 8,
+        fontFamily: Typography.fontFamily.bold,
     },
     titleInput: {
         fontSize: 20,

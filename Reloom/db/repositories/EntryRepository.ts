@@ -1,11 +1,13 @@
 import { db } from '../index';
 import { entries, entryTypes } from '../schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, notInArray, isNull, or } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 export type Entry = InferSelectModel<typeof entries>;
 export type NewEntry = InferInsertModel<typeof entries>;
 export type EntryType = InferSelectModel<typeof entryTypes>;
+
+const DEFAULT_TEMPLATES = ['Note', 'Memory', 'Food & Drink', 'Family', 'Work', 'Travel', 'Gift Idea', 'Goal'];
 
 export class EntryRepository {
     static async getForPerson(personId: number) {
@@ -33,8 +35,8 @@ export class EntryRepository {
             .innerJoin(entries, eq(entries.typeId, entryTypes.id))
             .where(and(
                 eq(entries.personId, personId),
-                sql`entry_types.label NOT IN ('Note', 'Memory', 'Food & Drink', 'Family', 'Work', 'Travel', 'Gift Idea', 'Goal')`,
-                sql`(is_system = 0 OR is_system IS NULL)`
+                notInArray(entryTypes.label, DEFAULT_TEMPLATES),
+                or(eq(entryTypes.isSystem, false), isNull(entryTypes.isSystem))
             ))
             .groupBy(entryTypes.id)
             .orderBy(entryTypes.label);
@@ -60,8 +62,8 @@ export class EntryRepository {
             .select()
             .from(entryTypes)
             .where(and(
-                sql`label NOT IN ('Note', 'Memory', 'Food & Drink', 'Family', 'Work', 'Travel', 'Gift Idea', 'Goal')`,
-                sql`(is_system = 0 OR is_system IS NULL)`
+                notInArray(entryTypes.label, DEFAULT_TEMPLATES),
+                or(eq(entryTypes.isSystem, false), isNull(entryTypes.isSystem))
             ))
             .orderBy(entryTypes.label);
     }
@@ -71,18 +73,24 @@ export class EntryRepository {
     }
 
     static async createType(label: string) {
-        // Check if exists
-        const existing = await db.select().from(entryTypes).where(eq(entryTypes.label, label));
+        const cleanLabel = label ? label.trim() : 'General Note';
+        const existing = await db.select().from(entryTypes).where(eq(entryTypes.label, cleanLabel));
         if (existing.length > 0) return existing[0];
 
-        const result = await db.insert(entryTypes).values({ label }).returning();
-        return result[0];
+        try {
+            const result = await db.insert(entryTypes).values({ label: cleanLabel }).onConflictDoNothing().returning();
+            if (result.length > 0) return result[0];
+        } catch (e) {
+            // Fallback in case onConflictDoNothing returns empty array
+        }
+
+        const fallback = await db.select().from(entryTypes).where(eq(entryTypes.label, cleanLabel));
+        return fallback[0];
     }
 
     static async addEntry(personId: number, typeLabel: string, content: string, addTimestamp: boolean = false) {
         let type = await this.createType(typeLabel);
 
-        // Check for existing entry of same type for this person
         const existing = await db
             .select()
             .from(entries)
@@ -103,7 +111,7 @@ export class EntryRepository {
             
             const combinedContent = `${existing[0].content}\n\n${newSection}`;
             await db.update(entries)
-                .set({ content: combinedContent, createdAt: new Date() })
+                .set({ content: combinedContent })
                 .where(eq(entries.id, existing[0].id));
             return existing[0];
         }
