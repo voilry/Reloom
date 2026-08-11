@@ -9,7 +9,7 @@ import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSettings } from '../../store/SettingsContext';
-import { CaretLeft as ChevronLeft, Pencil as Edit3, Check, Calendar, UserPlus, Trash as Trash2, DotsThreeVertical as MoreVertical, ShareNetwork as ShareIcon, X, MagnifyingGlass as Search } from '@/components/ui/Icon';
+import { CaretLeft as ChevronLeft, Pencil as Edit3, Check, UserPlus, Trash as Trash2, DotsThreeVertical as MoreVertical, ShareNetwork as ShareIcon, X, MagnifyingGlass as Search } from '@/components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { MarkdownText } from '../../components/ui/MarkdownText';
 import { DeleteModal } from '../../components/ui/DeleteModal';
@@ -17,7 +17,6 @@ import { AlertModal } from '../../components/ui/AlertModal';
 import { EditorToolbar } from '../../components/ui/EditorToolbar';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { ScalePressable } from '../../components/ui/ScalePressable';
-import { Badge } from '../../components/ui/Badge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Share } from 'react-native';
@@ -235,6 +234,7 @@ export default function JournalEditorScreen() {
     const performDelete = async () => {
         try {
             triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+            if (!Number.isFinite(journalId)) return;
             await JournalRepository.delete(journalId);
             if (router.canGoBack()) {
                 router.back();
@@ -406,15 +406,13 @@ export default function JournalEditorScreen() {
                 backButtonStyle={{ backgroundColor: colors.border + '20' }}
                 title={undefined}
                 borderBottom={false}
+                bottomPadding={2}
                 centerContent={
-                    <View style={styles.headerTitleCenter}>
-                        <Badge variant="default" backgroundColor={colors.surface} icon={<Calendar size={12} color={colors.secondary} weight="bold" />}>
-                            {journal.date}
-                        </Badge>
-                        <ThemedText type="small" style={{ color: colors.secondary, fontSize: 10, opacity: 0.6, marginTop: 4 }}>
+                    isEditing ? (
+                        <ThemedText type="small" style={{ color: colors.secondary, fontSize: 13, opacity: 0.6 }}>
                             {wordCount} words
                         </ThemedText>
-                    </View>
+                    ) : null
                 }
                 rightContent={
                     <View style={[styles.headerActions, { marginRight: -6 }]}>
@@ -481,6 +479,9 @@ export default function JournalEditorScreen() {
                                 }}
                                 onContentSizeChange={(e) => {
                                     contentHeightRef.current = e.nativeEvent.contentSize.height;
+                                }}
+                                onLayout={(e) => {
+                                    editorYRef.current = e.nativeEvent.layout.y;
                                 }}
                                 multiline
                                 placeholder="Pour your thoughts..."
@@ -679,7 +680,11 @@ export default function JournalEditorScreen() {
                         router.back();
                     } else {
                         setContent(originalContent);
+                        contentRef.current = originalContent;
                         setTitle(originalTitle);
+                        setSelectedPeople(originalSelectedPeople);
+                        setUndoStack([originalContent]);
+                        setRedoStack([]);
                         setIsEditing(false);
                     }
                 }}
@@ -698,10 +703,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    headerTitleCenter: {
-        alignItems: 'center',
-        paddingTop: 4,
-    },
     headerActions: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -717,9 +718,9 @@ const styles = StyleSheet.create({
     fullDate: {
         opacity: 0.4,
         fontFamily: Typography.fontFamily.bold,
-        marginBottom: 12,
         textTransform: 'uppercase',
         letterSpacing: 1.5,
+        marginBottom: 12,
     },
     viewerTitle: {
         marginBottom: 16,
@@ -727,13 +728,6 @@ const styles = StyleSheet.create({
     },
     viewerText: {
         paddingBottom: 40,
-    },
-    viewParagraph: {
-        fontSize: 16,
-        lineHeight: 26,
-        fontWeight: '500',
-        marginBottom: 16,
-        opacity: 0.85,
     },
     titleInput: {
         fontSize: 32,

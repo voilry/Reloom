@@ -19,6 +19,7 @@ interface ScreenHeaderProps {
     backButtonIcon?: React.ReactNode;
     backButtonStyle?: StyleProp<ViewStyle>;
     alignCenter?: boolean;
+    bottomPadding?: number;
 }
 
 export function ScreenHeader({ 
@@ -31,7 +32,8 @@ export function ScreenHeader({
     borderBottom = false,
     backButtonIcon,
     backButtonStyle,
-    alignCenter = true
+    alignCenter = true,
+    bottomPadding = 16
 }: ScreenHeaderProps) {
     const { colors } = useAppTheme();
     const insets = useSafeAreaInsets();
@@ -49,7 +51,7 @@ export function ScreenHeader({
         <View 
             style={[
                 styles.header, 
-                { paddingTop: insets.top + 10 },
+                { paddingTop: insets.top + 10, paddingBottom: bottomPadding },
                 borderBottom && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 style
             ]}

@@ -284,16 +284,14 @@ export default function EditorScreen() {
             backButtonStyle={{ backgroundColor: colors.border + '20' }}
             title={undefined}
             borderBottom={false}
+            bottomPadding={2}
             centerContent={
-                <View style={[styles.headerInfo, { gap: 0, overflow: 'visible', marginTop: -4 }]}>
-                    <ThemedText type="small" style={{ color: colors.secondary, textTransform: 'uppercase', letterSpacing: 1.5, fontSize: 10, fontWeight: '700', marginBottom: -5, textAlign: 'center' }}>
-                        {type === 'description' ? 'Biography' : 'Note'}
-                    </ThemedText>
+                <View style={[styles.headerInfo, { gap: 2, overflow: 'visible' }]}>
                     {isEditing && type === 'entry' && !editingTitle ? (
                         <TouchableOpacity onPress={() => {
                             setEditingTitle(true);
                             if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }} style={[styles.titleEditRow, { marginBottom: 2 }]}>
+                        }} style={styles.titleEditRow}>
                             <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center', maxWidth: 180 }}>{title}</ThemedText>
                             <Edit3 size={12} color={colors.secondary} />
                         </TouchableOpacity>
@@ -309,9 +307,9 @@ export default function EditorScreen() {
                             maxLength={20}
                         />
                     ) : (
-                        <ThemedText type="sectionHeader" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, marginBottom: -8, textAlign: 'center', alignSelf: 'stretch' }}>{title}</ThemedText>
+                        <ThemedText type="sectionHeader" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center', alignSelf: 'stretch' }}>{title}</ThemedText>
                     )}
-                    <ThemedText type="small" style={{ color: colors.secondary, fontSize: 10, opacity: 0.6, textAlign: 'center' }}>
+                    <ThemedText type="small" style={{ color: colors.secondary, fontSize: 10, opacity: 0.6, textAlign: 'center', marginTop: -10 }}>
                         {isEditing ? `${wordCount} words` : (lastUpdated ? `Last edited ${new Date(lastUpdated).toLocaleDateString()}` : '')}
                     </ThemedText>
                 </View>
@@ -458,18 +456,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerTitle: {
-        fontSize: 15,
-        letterSpacing: -0.3,
-        textAlign: 'center',
-    },
-    headerTitleGroup: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        maxWidth: 200,
-        marginBottom: 2,
-    },
     titleEditRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -505,11 +491,5 @@ const styles = StyleSheet.create({
     },
     viewContent: {
         paddingBottom: 40,
-    },
-    viewParagraph: {
-        fontSize: 16,
-        lineHeight: 26,
-        marginBottom: 16,
-        opacity: 0.85,
     },
 });
