@@ -286,14 +286,13 @@ export default function JournalScreen() {
                         </View>
                         <ScalePressable
                             onPress={handleAddPress}
-                            style={[
-                                styles.headerAction,
-                                { backgroundColor: colors.tint + '1A', borderColor: colors.tint + '30', borderWidth: 1 }
-                            ]}
-                            innerStyle={{ borderRadius: 22 }}
+                            style={[styles.headerAction, { backgroundColor: colors.surface, marginRight: 0 }]}
                             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                            innerStyle={{ borderRadius: DesignSystem.radius.full }}
+                            scaleTo={0.88}
+                            springConfig={DesignSystem.animation.springs.fast}
                         >
-                            <PenTool size={22} color={colors.tint} weight="fill" />
+                            <PenTool size={22} color={colors.text} weight="fill" />
                         </ScalePressable>
                     </View>
                 </Animated.View>
@@ -388,10 +387,9 @@ const styles = StyleSheet.create({
     headerAction: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: DesignSystem.radius.full,
         justifyContent: 'center',
         alignItems: 'center',
-        ...DesignSystem.shadows.sm,
     },
     list: {
         paddingHorizontal: DesignSystem.spacing.md,

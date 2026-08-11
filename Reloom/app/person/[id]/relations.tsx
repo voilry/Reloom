@@ -283,7 +283,7 @@ export default function RelationsScreen() {
 
                                 {/* Search */}
                                 <View style={styles.modalContent}>
-                                    <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                                    <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
                                         <Search size={16} color={colors.icon} style={{ marginRight: 8 }} />
                                         <TextInput
                                             placeholder="Search people..."
@@ -562,7 +562,6 @@ const styles = StyleSheet.create({
     searchBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
         borderRadius: 12,
         paddingHorizontal: 12,
         height: 48,

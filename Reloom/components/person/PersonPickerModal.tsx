@@ -52,7 +52,7 @@ export function PersonPickerModal({ visible, people, onSelect, onClose, title = 
                     }
                 />
 
-                <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.searchBar, { backgroundColor: colors.card }]}>
                     <Search size={20} color={colors.icon} style={{ marginRight: 8 }} />
                     <TextInput
                         placeholder="Search..."
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         height: 48,
         borderRadius: 12,
-        borderWidth: 1,
     },
     item: {
         flexDirection: 'row',

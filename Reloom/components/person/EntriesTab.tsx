@@ -1,18 +1,16 @@
 
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, TextInput, Animated as RNAnimated } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, TouchableOpacity, TextInput, Animated as RNAnimated } from 'react-native';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { ScalePressable } from '../ui/ScalePressable';
 import { Swipeable } from 'react-native-gesture-handler';
 import { ThemedText } from '../ui/ThemedText';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
-import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee, House as Home, Briefcase, Airplane as Plane, Gift, Target, Tag, Trash } from '@/components/ui/Icon';
+import { Plus, FileText, MagnifyingGlass as Search, Sparkle as Sparkles, Coffee, House as Home, Briefcase, Airplane as Plane, Gift, Target, Tag, Trash, X } from '@/components/ui/Icon';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { BlurView } from 'expo-blur';
 
@@ -26,51 +24,78 @@ interface EntriesTabProps {
 
 export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: EntriesTabProps) {
     const router = useRouter();
-    const { colors, hapticsEnabled } = useAppTheme();
+    const { colors } = useAppTheme();
     const [search, setSearch] = useState('');
 
-    const acrylicBg = isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}D9`) : undefined;
+    const filteredEntries = useMemo(() => {
+        return entries.filter(e => {
+            const q = search.toLowerCase().trim();
+            if (!q) return true;
 
-    const filteredEntries = entries.filter(e => {
-        const q = search.toLowerCase().trim();
-        if (!q) return true;
-        const contentMatch = (e.content && e.content.toLowerCase().includes(q)) || (e.type && e.type.toLowerCase().includes(q));
+            const contentMatch = (e.content && e.content.toLowerCase().includes(q)) || (e.type && e.type.toLowerCase().includes(q));
 
-        // Comprehensive Date Match
-        let dateMatch = false;
-        if (e.createdAt) {
-            const d = new Date(e.createdAt);
-            if (!isNaN(d.getTime())) {
-                const formats = [
-                    d.toLocaleDateString('default', { month: 'long', day: 'numeric' }).toLowerCase(),
-                    d.toLocaleDateString('default', { month: 'short', day: 'numeric' }).toLowerCase(),
-                    d.toLocaleDateString('default', { month: 'long', year: 'numeric' }).toLowerCase(),
-                    d.toLocaleDateString('default', { month: 'short', year: 'numeric' }).toLowerCase()
-                ];
-                dateMatch = formats.some(f => f.includes(q));
-                if (!dateMatch && q.includes(' ')) {
-                    const qParts = q.split(/\s+/);
-                    dateMatch = qParts.every(part => formats.some(f => f.includes(part)));
+            // Comprehensive Date Match
+            let dateMatch = false;
+            if (e.createdAt) {
+                const d = new Date(e.createdAt);
+                if (!isNaN(d.getTime())) {
+                    const formats = [
+                        d.toLocaleDateString('default', { month: 'long', day: 'numeric' }).toLowerCase(),
+                        d.toLocaleDateString('default', { month: 'short', day: 'numeric' }).toLowerCase(),
+                        d.toLocaleDateString('default', { month: 'long', year: 'numeric' }).toLowerCase(),
+                        d.toLocaleDateString('default', { month: 'short', year: 'numeric' }).toLowerCase()
+                    ];
+                    dateMatch = formats.some(f => f.includes(q));
+                    if (!dateMatch && q.includes(' ')) {
+                        const qParts = q.split(/\s+/);
+                        dateMatch = qParts.every(part => formats.some(f => f.includes(part)));
+                    }
                 }
             }
-        }
-        return contentMatch || dateMatch;
-    });
+            return contentMatch || dateMatch;
+        });
+    }, [entries, search]);
 
     const getCategoryIcon = (type: string) => {
-        const size = 14;
+        const size = 15;
         const color = colors.tint;
         switch (type) {
-            case 'Memory': return <Sparkles size={size} color={color} />;
-            case 'Food & Drink': return <Coffee size={size} color={color} />;
-            case 'Family': return <Home size={size} color={color} />;
-            case 'Work': return <Briefcase size={size} color={color} />;
-            case 'Travel': return <Plane size={size} color={color} />;
-            case 'Gift Idea': return <Gift size={size} color={color} />;
-            case 'Goal': return <Target size={size} color={color} />;
-            case 'Note': return <FileText size={size} color={color} />;
-            default: return <Tag size={size} color={color} />;
+            case 'Memory': return <Sparkles size={size} color={color} weight="fill" />;
+            case 'Food & Drink': return <Coffee size={size} color={color} weight="fill" />;
+            case 'Family': return <Home size={size} color={color} weight="fill" />;
+            case 'Work': return <Briefcase size={size} color={color} weight="fill" />;
+            case 'Travel': return <Plane size={size} color={color} weight="fill" />;
+            case 'Gift Idea': return <Gift size={size} color={color} weight="fill" />;
+            case 'Goal': return <Target size={size} color={color} weight="fill" />;
+            case 'Note': return <FileText size={size} color={color} weight="fill" />;
+            default: return <Tag size={size} color={color} weight="fill" />;
         }
+    };
+
+    const getNoteTitleAndBody = (rawContent: string) => {
+        if (!rawContent) return { title: 'Untitled note', body: '' };
+
+        const lines = rawContent
+            .split('\n')
+            .map(l => l.trim())
+            .filter(l => l.length > 0 && !/^(-{3,}|\*{3,}|_{3,})$/.test(l));
+
+        if (lines.length === 0) return { title: 'Untitled note', body: '' };
+
+        const cleanLine = (line: string) =>
+            line
+                .replace(/^#{1,6}\s+/, '')
+                .replace(/\*\*(.+?)\*\*/g, '$1')
+                .replace(/\*(.+?)\*/g, '$1')
+                .replace(/~~(.+?)~~/g, '$1')
+                .replace(/^[-*]\s+/, '')
+                .replace(/^\[[ xX]\]\s+/, '')
+                .trim();
+
+        const title = cleanLine(lines[0]);
+        const body = lines.slice(1).map(cleanLine).filter(Boolean).join(' ');
+
+        return { title, body };
     };
 
     const renderRightActions = (id: number, dragX: RNAnimated.AnimatedInterpolation<number>) => {
@@ -86,10 +111,10 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                     backgroundColor: colors.error,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    width: 75,
+                    width: 72,
                     borderRadius: 16,
-                    marginBottom: 16,
-                    marginLeft: 12,
+                    marginBottom: 12,
+                    marginLeft: 10,
                 }}
                 innerStyle={{ borderRadius: 16 }}
                 scale={true}
@@ -97,7 +122,7 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                 onPress={() => onDelete(id)}
             >
                 <RNAnimated.View style={{ transform: [{ scale: trans }] }}>
-                    <Trash size={24} color="#FFF" weight="fill" />
+                    <Trash size={22} color="#FFF" weight="fill" />
                 </RNAnimated.View>
             </ScalePressable>
         );
@@ -122,6 +147,15 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                         onChangeText={setSearch}
                         style={[styles.searchInput, { color: colors.text }]}
                     />
+                    {search.length > 0 && (
+                        <TouchableOpacity
+                            onPress={() => setSearch('')}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={{ padding: 4 }}
+                        >
+                            <X size={16} color={colors.icon} />
+                        </TouchableOpacity>
+                    )}
                 </View>
                 <ScalePressable
                     onPress={onAdd}
@@ -129,81 +163,87 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                     style={[styles.addButton, { backgroundColor: colors.tint, ...DesignSystem.shadows.sm }]}
                     innerStyle={{ borderRadius: 14 }}
                 >
-                    <Plus size={24} color={theme === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'} weight="fill" />
+                    <Plus size={22} color={theme === 'light' ? '#FFFFFF' : '#000000'} weight="fill" />
                 </ScalePressable>
             </View>
 
             {filteredEntries.length === 0 ? (
                 <View style={styles.emptyState}>
                     <FileText size={48} color={colors.tint} weight="fill" />
-                    <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>{search ? 'No notes found' : 'No Notes Yet'}</ThemedText>
-                    <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
+                    <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
+                        {search ? 'No notes found' : 'No notes yet'}
+                    </ThemedText>
+                    <ThemedText style={{ color: colors.secondary, marginTop: 4, fontSize: 13, textAlign: 'center' }}>
                         {search ? 'Try a different search term.' : 'Keep track of specific details here.'}
                     </ThemedText>
                 </View>
             ) : (
-                filteredEntries.map((entry, index) => (
-                    <Animated.View
-                        key={entry.id}
-                        layout={Layout.springify()}
-                    >
+                filteredEntries.map((entry, index) => {
+                    const { title, body } = getNoteTitleAndBody(entry.content || '');
+                    return (
                         <Animated.View
-                            entering={FadeInDown.delay(Math.min(index, 5) * 50).duration(400)}
+                            key={entry.id}
+                            layout={Layout.springify()}
                         >
-                            <Swipeable
-                                renderRightActions={(_progress, dragX) => renderRightActions(entry.id, dragX)}
-                                overshootRight={false}
-                                friction={3}
-                                overshootFriction={8}
-                                rightThreshold={60}
+                            <Animated.View
+                                entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(350)}
                             >
-                            <ScalePressable
-                                onPress={() => router.push({
-                                    pathname: '/editor',
-                                    params: { id: entry.id, type: 'entry' }
-                                })}
-                                style={{ marginBottom: 16 }}
-                                innerStyle={{ borderRadius: 16 }}
-                            >
-                                    <Card style={[{ backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, borderRadius: 16, overflow: 'hidden', borderWidth: 0 }]} padding="md">
-                                        {isAcrylic && (
-                                            <BlurView
-                                                intensity={40}
-                                                tint={theme === 'dark' ? 'dark' : 'light'}
-                                                style={StyleSheet.absoluteFill}
-                                            />
-                                        )}
-                                        <View style={styles.entryHeader}>
-                                            <View style={[styles.categoryBadge, { backgroundColor: colors.tint + '15' }]}>
+                                <Swipeable
+                                    renderRightActions={(_progress, dragX) => renderRightActions(entry.id, dragX)}
+                                    overshootRight={false}
+                                    friction={3}
+                                    overshootFriction={8}
+                                    rightThreshold={60}
+                                >
+                                    <ScalePressable
+                                        onPress={() => router.push({
+                                            pathname: '/editor',
+                                            params: { id: entry.id, type: 'entry' }
+                                        })}
+                                        style={{ marginBottom: 12 }}
+                                        innerStyle={{ borderRadius: 16 }}
+                                    >
+                                        <Card style={[{ backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, borderRadius: 16, overflow: 'hidden', borderWidth: 0 }]} padding="md">
+                                            {isAcrylic && (
+                                                <BlurView
+                                                    intensity={40}
+                                                    tint={theme === 'dark' ? 'dark' : 'light'}
+                                                    style={StyleSheet.absoluteFill}
+                                                />
+                                            )}
+                                            <View style={styles.entryMeta}>
                                                 {getCategoryIcon(entry.type)}
-                                                <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', textTransform: 'uppercase', marginLeft: 6 }}>{entry.type}</ThemedText>
+                                                <ThemedText style={[styles.entryMetaType, { color: colors.secondary }]}>
+                                                    {entry.type}
+                                                </ThemedText>
+                                                <ThemedText style={[styles.entryMetaDot, { color: colors.secondary }]}>·</ThemedText>
+                                                <ThemedText style={[styles.entryMetaDate, { color: colors.secondary }]}>
+                                                    {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </ThemedText>
                                             </View>
-                                            <ThemedText type="tiny" style={{ color: colors.secondary, fontWeight: '700' }}>
-                                                {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+
+                                            <ThemedText
+                                                numberOfLines={2}
+                                                style={[styles.entryTitle, { color: colors.text, fontFamily: Typography.fontFamily.medium }]}
+                                            >
+                                                {title}
                                             </ThemedText>
-                                        </View>
-                                        <ThemedText numberOfLines={4} style={[styles.entryContent, { color: colors.text }]}>
-                                            {entry.content
-                                                .split('\n')
-                                                .filter((l: string) => !/^(-{3,}|\*{3,}|_{3,})$/.test(l.trim()))
-                                                .map((l: string) =>
-                                                    l.replace(/#{1,6}\s/, '')
-                                                     .replace(/\*\*(.+?)\*\*/g, '$1')
-                                                     .replace(/\*(.+?)\*/g, '$1')
-                                                     .replace(/~~(.+?)~~/g, '$1')
-                                                     .replace(/^[-*]\s/, '')
-                                                     .replace(/^\[[ xX]\]\s/, '')
-                                                )
-                                                .join(' ')
-                                                .trim()
-                                            }
-                                        </ThemedText>
-                                    </Card>
-                            </ScalePressable>
-                            </Swipeable>
+
+                                            {body ? (
+                                                <ThemedText
+                                                    numberOfLines={2}
+                                                    style={[styles.entryBody, { color: colors.secondary }]}
+                                                >
+                                                    {body}
+                                                </ThemedText>
+                                            ) : null}
+                                        </Card>
+                                    </ScalePressable>
+                                </Swipeable>
+                            </Animated.View>
                         </Animated.View>
-                    </Animated.View>
-                ))
+                    );
+                })
             )}
         </View>
     );
@@ -216,15 +256,15 @@ const styles = StyleSheet.create({
     searchRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     searchContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        height: 50,
-        borderRadius: 12,
+        paddingHorizontal: 14,
+        height: 48,
+        borderRadius: 14,
         borderWidth: 0,
         marginRight: 10,
     },
@@ -234,8 +274,8 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     addButton: {
-        width: 50,
-        height: 50,
+        width: 48,
+        height: 48,
         borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
@@ -245,32 +285,37 @@ const styles = StyleSheet.create({
         paddingVertical: 40,
         opacity: 0.8,
     },
-    emptyCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    entryCard: {
-    },
-    entryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    categoryBadge: {
+    entryMeta: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        marginBottom: 8,
+        gap: 5,
     },
-    entryContent: {
-        lineHeight: 20,
-        fontSize: 14,
-        opacity: 0.9,
+    entryMetaType: {
+        fontSize: 12,
+        fontWeight: '600',
+        opacity: 0.65,
+    },
+    entryMetaDot: {
+        fontSize: 12,
+        opacity: 0.35,
+    },
+    entryMetaDate: {
+        fontSize: 12,
+        opacity: 0.5,
+    },
+    entryTitle: {
+        fontSize: 15,
+        lineHeight: 21,
+        marginBottom: 3,
+    },
+    entryBody: {
+        fontSize: 13,
+        lineHeight: 18,
+        opacity: 0.55,
     },
 });
+
+
+
+

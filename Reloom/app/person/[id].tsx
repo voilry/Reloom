@@ -294,32 +294,21 @@ export default function PersonDetailScreen() {
 
             <View style={styles.topBarWrapper}>
                 <BlurView
-                    intensity={headerVisible ? (settings.profileBlurBackground && person.avatarUri ? 70 : (theme === 'dark' ? 70 : 30)) : 0}
-                    tint={theme === 'dark' ? 'dark' : (settings.profileBlurBackground && person.avatarUri ? 'light' : 'default')}
+                    intensity={headerVisible ? (theme === 'dark' ? 60 : 40) : 0}
+                    tint={theme === 'dark' ? 'dark' : 'default'}
                     style={[
                         styles.topBar,
                         {
-                            paddingTop: insets.top + 10,
-                            borderBottomWidth: headerVisible ? 0.75 : 0,
-                            borderBottomColor: colors.border,
+                            paddingTop: insets.top + 8,
                             backgroundColor: headerVisible
-                                ? (settings.profileBlurBackground && person.avatarUri
-                                    ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.surface}90`)
-                                    : (theme === 'dark' ? `${colors.background}CC` : `${colors.background}F7`))
+                                ? (theme === 'dark' ? `${colors.background}D9` : `${colors.background}E6`)
                                 : 'transparent'
                         }
                     ]}
                 >
                     <View style={styles.topBarContent}>
                         <ScalePressable
-                            style={[
-                                styles.backButton, 
-                                { 
-                                    backgroundColor: (settings.profileBlurBackground && person.avatarUri) 
-                                        ? colors.surface 
-                                        : (headerVisible ? 'transparent' : colors.surface) 
-                                }
-                            ]}
+                            style={styles.headerIconButton}
                             onPress={() => {
                                 triggerHaptic();
                                 router.back();
@@ -327,7 +316,7 @@ export default function PersonDetailScreen() {
                             innerStyle={{ borderRadius: 22 }}
                             hitSlop={{ top: 30, bottom: 30, left: 30, right: 30 }}
                         >
-                            <ChevronLeft size={28} color={colors.text} />
+                            <ChevronLeft size={26} color={colors.text} />
                         </ScalePressable>
 
                         {headerVisible && (
@@ -339,14 +328,7 @@ export default function PersonDetailScreen() {
                         {!headerVisible && <View style={{ flex: 1 }} />}
 
                         <ScalePressable
-                            style={[
-                                styles.moreButton, 
-                                { 
-                                    backgroundColor: (settings.profileBlurBackground && person.avatarUri) 
-                                        ? colors.surface 
-                                        : (headerVisible ? 'transparent' : colors.surface) 
-                                }
-                            ]}
+                            style={styles.headerIconButton}
                             onPress={() => setShowMoreMenu(true)}
                             innerStyle={{ borderRadius: 22 }}
                         >
@@ -515,8 +497,8 @@ export default function PersonDetailScreen() {
                     />
 
                     {/* Replicated Button for Focus Persistence */}
-                    <View style={{ position: 'absolute', top: insets.top + 11, right: 16 }}>
-                        <View style={[styles.moreButton, { backgroundColor: colors.surface }]}>
+                    <View style={{ position: 'absolute', top: insets.top + 10, right: 12 }}>
+                        <View style={[styles.headerIconButton, { backgroundColor: colors.surface, borderRadius: 21 }]}>
                             <MoreHorizontal size={24} color={colors.text} />
                         </View>
                     </View>
@@ -676,29 +658,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingBottom: 16,
+        paddingHorizontal: 12,
+        paddingBottom: 14,
     },
     topBarTitle: {
         fontSize: 17,
-        fontWeight: '800',
+        fontWeight: '700',
         textAlign: 'center',
-        marginHorizontal: 12,
+        marginHorizontal: 10,
         includeFontPadding: false,
     },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+    headerIconButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    moreButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: 'transparent',
     },
     scrollContent: { paddingBottom: 120 },
     tabContainer: {
