@@ -91,27 +91,18 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
                                             scaleTo={0.96}
                                         >
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                                                <View style={[
-                                                    styles.groupIconBox,
-                                                    {
-                                                        backgroundColor: isSelected ? groupColor + '15' : colors.surface,
-                                                        borderColor: isSelected ? groupColor + '30' : 'transparent',
-                                                        borderWidth: 1,
-                                                    }
-                                                ]}>
-                                                    <IconComponent
-                                                        size={22}
-                                                        color={isSelected ? groupColor : colors.secondary}
-                                                        weight={isSelected ? 'fill' : 'regular'}
-                                                    />
-                                                </View>
-                                                <ThemedText style={{
-                                                    color: isSelected ? colors.text : colors.secondary,
-                                                    fontWeight: isSelected ? '700' : '500',
-                                                    fontSize: 17,
-                                                }}>
-                                                    {g.name}
-                                                </ThemedText>
+                                                 <IconComponent
+                                                     size={22}
+                                                     color={isSelected ? groupColor : colors.secondary}
+                                                     weight={isSelected ? 'fill' : 'regular'}
+                                                 />
+                                                 <ThemedText style={{
+                                                     color: isSelected ? colors.text : colors.secondary,
+                                                     fontFamily: isSelected ? Typography.fontFamily.bold : Typography.fontFamily.medium,
+                                                     fontSize: 17,
+                                                 }}>
+                                                     {g.name}
+                                                 </ThemedText>
                                             </View>
                                             <View style={[
                                                 styles.checkCircle,

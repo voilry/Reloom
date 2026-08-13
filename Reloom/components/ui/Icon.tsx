@@ -170,6 +170,7 @@ export const Link = (props: any) => <Icon name={props.weight === 'fill' ? 'link_
 export const MoreVertical = DotsThreeVertical;
 export const ShareIcon = ShareNetwork;
 export const Camera = (props: any) => <Icon name={props.weight === 'fill' ? 'camera_fill' : 'camera_line'} {...props} />;
+export const UserRemove = (props: any) => <Icon name={props.weight === 'fill' ? 'user_remove_2_fill' : 'user_remove_2_line'} {...props} />;
 export const Trash2 = Trash;
 export const Suitcase = (props: any) => <Icon name={props.weight === 'fill' ? 'suitcase_fill' : 'suitcase_line'} {...props} />;
 export const GraduationCap = (props: any) => <Icon name={props.weight === 'fill' ? 'graduation_fill' : 'graduation_line'} {...props} />;

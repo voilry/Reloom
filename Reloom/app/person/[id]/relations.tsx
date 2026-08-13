@@ -15,7 +15,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import {
     Trash, Plus, Link, CaretRight, MagnifyingGlass as Search,
-    ArrowsLeftRight, X, Check
+    ArrowsLeftRight, X, Check, UserRemove
 } from '@/components/ui/Icon';
 import { useAppTheme } from '../../../hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
@@ -130,7 +130,7 @@ export default function RelationsScreen() {
                 overlayColor="rgba(0,0,0,0.15)"
             >
                 <RNAnimated.View style={{ transform: [{ scale: trans }] }}>
-                    <Trash size={22} color="#fff" weight="fill" />
+                    <UserRemove size={22} color="#fff" weight="fill" />
                 </RNAnimated.View>
             </ScalePressable>
         );
@@ -163,13 +163,13 @@ export default function RelationsScreen() {
                 rightContent={
                     <ScalePressable
                         onPress={openPicker}
-                        style={[styles.linkCapsule, { backgroundColor: colors.tint + '20' }]}
+                        style={[styles.linkCapsule, { backgroundColor: colors.tint }]}
                         innerStyle={{ borderRadius: 20 }}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         scaleTo={0.92}
                     >
-                        <Plus size={14} color={colors.tint} weight="fill" />
-                        <ThemedText style={[styles.linkCapsuleText, { color: colors.tint }]}>Link</ThemedText>
+                        <Plus size={14} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
+                        <ThemedText style={[styles.linkCapsuleText, { color: theme === 'light' ? '#fff' : '#000' }]}>Link</ThemedText>
                     </ScalePressable>
                 }
             />
@@ -370,7 +370,7 @@ export default function RelationsScreen() {
                                         {/* Connector */}
                                         <View style={styles.connectorBridge}>
                                             <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
-                                            <View style={[styles.connectorIcon, { backgroundColor: colors.tint + '15', borderColor: colors.tint + '30' }]}>
+                                            <View style={[styles.connectorIcon, { backgroundColor: colors.tint + '15' }]}>
                                                 <Link size={20} color={colors.tint} weight="bold" />
                                             </View>
                                             <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
@@ -423,17 +423,12 @@ export default function RelationsScreen() {
 
                                     <View style={{ height: 24 }} />
 
-                                    <View style={{ position: 'relative' }}>
-                                        <Input
-                                            placeholder="describe the connection..."
-                                            value={relationType}
-                                            onChangeText={setRelationType}
-                                            maxLength={25}
-                                        />
-                                        <ThemedText style={{ position: 'absolute', right: 12, bottom: -8, fontSize: 10, color: colors.secondary, opacity: 0.6 }}>
-                                            {relationType.length}/25
-                                        </ThemedText>
-                                    </View>
+                                    <Input
+                                        placeholder="describe the connection..."
+                                        value={relationType}
+                                        onChangeText={setRelationType}
+                                        maxLength={25}
+                                    />
 
                                     {/* Confirm */}
                                     <ScalePressable
@@ -481,7 +476,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 5,
         paddingHorizontal: 14,
-        paddingVertical: 7,
+        paddingVertical: 6,
         borderRadius: 20,
     },
     linkCapsuleText: {
@@ -608,6 +603,7 @@ const styles = StyleSheet.create({
     connectionPerson: {
         alignItems: 'center',
         width: 100,
+        paddingTop: 15,
     },
     connectionPersonName: {
         marginTop: 10,
@@ -625,19 +621,18 @@ const styles = StyleSheet.create({
         height: 2,
     },
     connectorIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
         marginHorizontal: 4,
     },
 
     // Label step: chips
     sectionLabel: {
         fontSize: 14,
-        fontFamily: Typography.fontFamily.serif,
+        fontFamily: Typography.fontFamily.semibold,
         letterSpacing: 0.5,
         opacity: 0.5,
         marginBottom: 12,
