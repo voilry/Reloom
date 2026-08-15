@@ -68,9 +68,11 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                         <View style={styles.handle} />
                         
                         <View style={styles.header}>
-                            <ThemedText type="display" numberOfLines={2} style={[styles.title, reminder.completed && { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                                {reminder.title}
-                            </ThemedText>
+                            <View style={styles.titleWrap}>
+                                <ThemedText type="display" numberOfLines={2} style={[styles.title, reminder.completed && { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                                    {reminder.title}
+                                </ThemedText>
+                            </View>
                             <View style={styles.headerActions}>
                                 <ScalePressable 
                                     onPress={() => onEdit(reminder)}
@@ -217,13 +219,19 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: 24,
     },
     headerActions: {
         flexDirection: 'row',
         gap: 12,
         marginLeft: 12,
+    },
+    titleWrap: {
+        flex: 1,
+        marginRight: 4,
+        minHeight: 44,
+        justifyContent: 'center',
     },
     circleBtn: {
         width: 44,
@@ -237,8 +245,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 26,
-        flex: 1,
-        marginRight: 4,
+        lineHeight: 30,
         fontFamily: Typography.fontFamily.bold,
     },
     description: {
