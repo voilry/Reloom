@@ -97,6 +97,19 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
         people.find(p => p.id === personId),
         [people, personId]);
 
+    const isDirty = useMemo(() => {
+        if (!editingReminder) return false;
+        return (
+            title !== (editingReminder.title || '') ||
+            description !== (editingReminder.description || '') ||
+            time !== (editingReminder.time || '09:00') ||
+            selectedDate !== (editingReminder.date || '') ||
+            personId !== (editingReminder.personId || null) ||
+            nudgeType !== (editingReminder.nudgeType || 'on_time') ||
+            customCount !== (editingReminder.customNudgesCount || 0)
+        );
+    }, [editingReminder, title, description, time, selectedDate, personId, nudgeType, customCount]);
+
     const handleSave = async () => {
         if (!title.trim()) return;
         setLoading(true);
@@ -170,11 +183,11 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     <ScalePressable
                         onPress={handleSave}
                         disabled={!title.trim() || loading}
-                        style={[styles.saveBtn, { backgroundColor: title.trim() ? colors.tint : colors.surface }]}
+                        style={styles.saveBtn}
                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                         scaleTo={0.9}
                     >
-                        <Check size={22} color={title.trim() ? (theme === 'light' ? '#fff' : '#000') : colors.secondary} weight="bold" />
+                        <Check size={22} color={title.trim() && (isDirty || !editingReminder) ? colors.tint : colors.text} weight="bold" />
                     </ScalePressable>
                 </View>
 
@@ -192,50 +205,24 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                             <View style={{ position: 'relative' }}>
                                 <Input
                                     value={title}
-                                    maxLength={(title.trim().split(/\s+/).filter(Boolean).length >= 10 && /\s$/.test(title)) ? title.length : undefined}
-                                    onChangeText={(text) => {
-                                        const parts = text.split(/(\s+)/);
-                                        let wCount = 0;
-                                        let res = '';
-                                        for (let i = 0; i < parts.length; i++) {
-                                            if (parts[i].trim().length > 0) wCount++;
-                                            if (wCount > 10) break;
-                                            res += parts[i];
-                                        }
-                                        setTitle(res);
-                                    }}
+                                    maxLength={30}
+                                    onChangeText={setTitle}
                                     placeholder="What's the plan?"
                                     style={styles.titleInput}
                                     containerStyle={{ marginBottom: 12 }}
                                     autoFocus={!editingReminder}
                                 />
-                                <ThemedText type="tiny" style={[styles.wordCount, { color: colors.secondary }]}>
-                                    {title.trim() ? title.trim().split(/\s+/).filter(Boolean).length : 0}/10
-                                </ThemedText>
                             </View>
                             <View style={{ position: 'relative' }}>
                                 <Input
                                     value={description}
-                                    maxLength={(description.trim().split(/\s+/).filter(Boolean).length >= 40 && /\s$/.test(description)) ? description.length : undefined}
-                                    onChangeText={(text) => {
-                                        const parts = text.split(/(\s+)/);
-                                        let wCount = 0;
-                                        let res = '';
-                                        for (let i = 0; i < parts.length; i++) {
-                                            if (parts[i].trim().length > 0) wCount++;
-                                            if (wCount > 40) break;
-                                            res += parts[i];
-                                        }
-                                        setDescription(res);
-                                    }}
+                                    maxLength={300}
+                                    onChangeText={setDescription}
                                     placeholder="Add notes or details..."
                                     multiline
                                     style={styles.descInput}
                                     containerStyle={{ marginBottom: 0 }}
                                 />
-                                <ThemedText type="tiny" style={[styles.wordCount, { color: colors.secondary, bottom: 16 }]}>
-                                    {description.trim() ? description.trim().split(/\s+/).filter(Boolean).length : 0}/40
-                                </ThemedText>
                             </View>
                         </View>
 
@@ -456,13 +443,6 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: 'rgba(128,128,128,0.1)',
         marginVertical: 12,
-    },
-    wordCount: {
-        position: 'absolute',
-        right: 12,
-        bottom: 24,
-        fontSize: 10,
-        fontWeight: '600',
     },
     timeSection: { marginBottom: 0 },
     pickersRow: {

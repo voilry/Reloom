@@ -1,9 +1,9 @@
-import { View, StyleSheet, Modal, TouchableOpacity, Platform, Pressable } from 'react-native';
+import { View, StyleSheet, Modal, ScrollView, Platform, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../ui/ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Bell, Calendar, Clock, X, CheckCircle, RadioButton, Trash, PencilSimple as Pencil, User } from '@/components/ui/Icon';
+import { Calendar, Clock, X, CheckCircle, CheckCircleDash, RadioButton, Trash, PencilSimple as Pencil } from '@/components/ui/Icon';
 import { Reminder } from '../../db/repositories/ReminderRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
 import Animated, { FadeIn, SlideInDown, FadeInDown } from 'react-native-reanimated';
@@ -28,7 +28,7 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
 
     if (!visible || !reminder) return null;
 
-    const formattedDate = new Date(reminder.date).toLocaleDateString('default', {
+    const formattedDate = new Date(reminder.date + 'T00:00:00').toLocaleDateString('default', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
@@ -68,9 +68,9 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                         <View style={styles.handle} />
                         
                         <View style={styles.header}>
-                            <View style={[styles.iconContainer, { backgroundColor: colors.tint + '15' }]}>
-                                <Bell size={28} color={colors.tint} weight="duotone" />
-                            </View>
+                            <ThemedText type="display" numberOfLines={2} style={[styles.title, reminder.completed && { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                                {reminder.title}
+                            </ThemedText>
                             <View style={styles.headerActions}>
                                 <ScalePressable 
                                     onPress={() => onEdit(reminder)}
@@ -93,11 +93,7 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                             </View>
                         </View>
 
-                        <View style={styles.contentScroll}>
-                            <ThemedText type="display" style={[styles.title, reminder.completed && { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                                {reminder.title}
-                            </ThemedText>
-
+                        <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 4 }}>
                             {reminder.description ? (
                                 <ThemedText style={[styles.description, { color: colors.secondary }]}>
                                     {reminder.description}
@@ -144,14 +140,13 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                                     </Animated.View>
                                 </ScalePressable>
                             )}
-                        </View>
+                        </ScrollView>
 
                         <View style={styles.actionsContainer}>
                             <ScalePressable
                                 onPress={() => {
                                     if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     onToggle(reminder);
-                                    onClose();
                                 }}
                                 style={{ flex: 1 }}
                                 scaleTo={0.95}
@@ -160,19 +155,18 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                                 <View style={[
                                     styles.mainAction, 
                                     { 
-                                        backgroundColor: reminder.completed ? colors.surface : colors.tint,
-                                        borderWidth: reminder.completed ? 1 : 0,
-                                        borderColor: colors.border
+                                        backgroundColor: reminder.completed ? (theme === 'light' ? '#16A34A' : '#10B981') : colors.tint,
+                                        borderWidth: 0,
                                     }
                                 ]}>
                                     {reminder.completed ? (
                                         <>
-                                            <CheckCircle size={22} color={colors.success} weight="fill" />
-                                            <ThemedText style={{ color: colors.text, fontWeight: '700', marginLeft: 10 }}>Completed</ThemedText>
+                                            <CheckCircle size={22} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
+                                            <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontWeight: '700', marginLeft: 10 }}>Completed</ThemedText>
                                         </>
                                     ) : (
                                         <>
-                                            <RadioButton size={22} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
+                                            <CheckCircleDash size={22} color={theme === 'light' ? '#fff' : '#000'} weight="line" />
                                             <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontWeight: '700', marginLeft: 10 }}>Mark as Done</ThemedText>
                                         </>
                                     )}
@@ -189,8 +183,8 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
                                 scaleTo={0.9}
                                 innerStyle={{ borderRadius: 20 }}
                             >
-                                <View style={[styles.deleteAction, { backgroundColor: colors.error + '10' }]}>
-                                    <Trash size={22} color={colors.error} weight="duotone" />
+                                <View style={[styles.deleteAction, { backgroundColor: theme === 'light' ? '#C2410C' : '#F87171' }]}>
+                                    <Trash size={22} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
                                 </View>
                             </ScalePressable>
                         </View>
@@ -208,6 +202,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 36,
         borderTopRightRadius: 36,
         padding: 24,
+        maxHeight: '85%',
         ...DesignSystem.shadows.xl,
         marginBottom: -100,
     },
@@ -222,19 +217,13 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: 24,
     },
     headerActions: {
         flexDirection: 'row',
         gap: 12,
-    },
-    iconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
+        marginLeft: 12,
     },
     circleBtn: {
         width: 44,
@@ -248,7 +237,8 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 26,
-        marginBottom: 12,
+        flex: 1,
+        marginRight: 4,
         fontFamily: Typography.fontFamily.bold,
     },
     description: {
