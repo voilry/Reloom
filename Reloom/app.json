@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reloom",
     "slug": "reloom",
-    "version": "0.4.4-alpha",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -31,7 +31,18 @@
       "expo-sqlite",
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "arm64-v8a",
+              "x86_64"
+            ]
+          }
+        }
+      ]
     ],
     "scheme": "reloom",
     "experiments": {

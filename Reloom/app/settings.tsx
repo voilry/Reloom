@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf, Mosaic } from '@/components/ui/Icon';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf, Mosaic, Palette } from '@/components/ui/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -228,6 +228,23 @@ export default function SettingsScreen() {
                         />
                     </Card>
                 </ScalePressable>
+
+                <Card style={[styles.card, { marginBottom: theme === 'dark' ? 8 : 32 }]} padding="none">
+                    <SettingRow
+                        label="Dynamic Android Theme"
+                        icon={<Palette size={20} color={colors.tint} weight="duotone" />}
+                        colors={colors}
+                        style={[styles.paddingBox, { paddingVertical: 18 }]}
+                    >
+                        <Toggle
+                            value={settings.materialYouEnabled}
+                            onValueChange={(v) => {
+                                triggerHaptic();
+                                updateSetting('materialYouEnabled', v);
+                            }}
+                        />
+                    </SettingRow>
+                </Card>
 
                 {theme === 'dark' && (
                     <Card style={[styles.card, { marginBottom: 32 }]} padding="none">
@@ -463,7 +480,7 @@ export default function SettingsScreen() {
                         <View style={styles.infoRow}>
                             <Heart size={16} color={colors.error} weight="fill" />
                             <View style={{ marginLeft: 16 }}>
-                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v{APP_VERSION}</ThemedText>
+                                <ThemedText type="sectionHeader" style={{ fontSize: 14, marginBottom: -4 }}>Reloom v{APP_VERSION} beta</ThemedText>
                                 <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 1 }}>Build with love by zash</ThemedText>
                             </View>
                         </View>

@@ -7,7 +7,7 @@ import { ThemedText } from '../../components/ui/ThemedText';
 import { useSettings, ThemeMode } from '../../store/SettingsContext';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, Clock, ArrowUp, ArrowDown, List, ArrowsDownUp } from '@/components/ui/Icon';
+import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, Clock, ArrowUp, ArrowDown, List, ArrowsDownUp, Palette } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,7 +46,7 @@ export default function AppearanceSettingsScreen() {
                         <View style={styles.paddingBox}>
                             <SettingRow
                                 label="Color Preset"
-                                description="Choose your preferred app aesthetic"
+                                description={settings.materialYouEnabled ? "Preset overridden by Material You dynamic theme" : "Choose your preferred app aesthetic"}
                                 icon={<PaintBrush size={20} color={colors.tint} />}
                                 colors={colors}
                             />
@@ -54,16 +54,17 @@ export default function AppearanceSettingsScreen() {
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
-                                style={{ marginTop: 16, marginLeft: -4 }}
+                                style={{ marginTop: 16, marginLeft: -4, opacity: settings.materialYouEnabled ? 0.45 : 1 }}
                                 contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 4 }}
                             >
                                 {Object.entries(Colors.presets).map(([key, config]) => {
-                                    const isSelected = (settings.themePreset || 'default') === key;
+                                    const isSelected = !settings.materialYouEnabled && (settings.themePreset || 'default') === key;
                                     const presetColors = theme === 'dark' ? config.dark : config.light;
 
                                     return (
                                         <ScalePressable
                                             key={key}
+                                            disabled={settings.materialYouEnabled}
                                             onPress={() => {
                                                 triggerHaptic();
                                                 updateSetting('themePreset', key);
@@ -95,6 +96,22 @@ export default function AppearanceSettingsScreen() {
                                 })}
                             </ScrollView>
                         </View>
+                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                        <SettingRow
+                            label="Dynamic Android Theme"
+                            description="Use Material You wallpaper colors from your device"
+                            icon={<Palette size={20} color={colors.tint} weight="duotone" />}
+                            colors={colors}
+                            style={styles.paddingBox}
+                        >
+                            <Toggle
+                                value={settings.materialYouEnabled}
+                                onValueChange={(v) => {
+                                    triggerHaptic();
+                                    updateSetting('materialYouEnabled', v);
+                                }}
+                            />
+                        </SettingRow>
                     </Card>
                 </Section>
 

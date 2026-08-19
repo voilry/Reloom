@@ -3,10 +3,14 @@ import { View, ScrollView, TouchableOpacity, StyleSheet, Keyboard, Platform } fr
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
-import { X, Quotes as Quote, Code, Minus, Undo, Redo } from '@/components/ui/Icon';
+import { X, Quotes as Quote, Code, Undo, Redo } from '@/components/ui/Icon';
+import type { EditorBridge } from '@10play/tentap-editor';
+import { useBridgeState } from '@10play/tentap-editor';
+import * as Haptics from 'expo-haptics';
 
 interface EditorToolbarProps {
-    onInsertFormatting: (prefix: string, suffix?: string) => void;
+    editor?: EditorBridge;
+    onInsertFormatting?: (prefix: string, suffix?: string) => void;
     onUndo?: () => void;
     onRedo?: () => void;
     canUndo?: boolean;
@@ -14,13 +18,42 @@ interface EditorToolbarProps {
 }
 
 export function EditorToolbar({ 
+    editor,
     onInsertFormatting,
     onUndo,
     onRedo,
-    canUndo = false,
-    canRedo = false,
+    canUndo: propCanUndo = false,
+    canRedo: propCanRedo = false,
 }: EditorToolbarProps) {
-    const { colors } = useAppTheme();
+    const { colors, hapticsEnabled } = useAppTheme();
+    const bridgeState = editor ? useBridgeState(editor) : null;
+
+    const triggerHaptic = () => {
+        if (hapticsEnabled && Platform.OS !== 'web') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+    };
+
+    const isBoldActive = bridgeState?.isBoldActive;
+    const isItalicActive = bridgeState?.isItalicActive;
+    const isStrikeActive = bridgeState?.isStrikeActive;
+    const headingLevel = bridgeState?.headingLevel;
+    const isBulletActive = bridgeState?.isBulletListActive;
+    const isTaskActive = bridgeState?.isTaskListActive;
+    const isBlockquoteActive = bridgeState?.isBlockquoteActive;
+    const isCodeActive = bridgeState?.isCodeActive;
+
+    const canUndo = editor ? (bridgeState?.canUndo ?? false) : propCanUndo;
+    const canRedo = editor ? (bridgeState?.canRedo ?? false) : propCanRedo;
+
+    const handleAction = (action: () => void, fallbackPrefix?: string, fallbackSuffix?: string) => {
+        triggerHaptic();
+        if (editor) {
+            action();
+        } else if (onInsertFormatting && fallbackPrefix) {
+            onInsertFormatting(fallbackPrefix, fallbackSuffix);
+        }
+    };
 
     return (
         <View style={[styles.toolbar, { borderTopColor: colors.border + '30', backgroundColor: colors.background }]}>
@@ -30,59 +63,108 @@ export function EditorToolbar({
                 contentContainerStyle={styles.toolbarScroll}
                 keyboardShouldPersistTaps="always"
             >
-                {onUndo && (
-                    <TouchableOpacity 
-                        onPress={onUndo} 
-                        disabled={!canUndo} 
-                        style={[styles.toolbarButton, { opacity: canUndo ? 1 : 0.4 }]}
-                    >
-                        <Undo size={18} color={colors.text} />
-                    </TouchableOpacity>
-                )}
-                {onRedo && (
-                    <TouchableOpacity 
-                        onPress={onRedo} 
-                        disabled={!canRedo} 
-                        style={[styles.toolbarButton, { opacity: canRedo ? 1 : 0.4 }]}
-                    >
-                        <Redo size={18} color={colors.text} />
-                    </TouchableOpacity>
-                )}
-                {(onUndo || onRedo) && (
-                    <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                )}
-                <TouchableOpacity onPress={() => onInsertFormatting('**', '**')} style={styles.toolbarButton}>
-                    <ThemedText style={styles.toolbarTextBold}>B</ThemedText>
+                <TouchableOpacity 
+                    onPress={() => {
+                        triggerHaptic();
+                        if (editor) editor.undo();
+                        else if (onUndo) onUndo();
+                    }} 
+                    disabled={!canUndo} 
+                    style={[styles.toolbarButton, { opacity: canUndo ? 1 : 0.3 }]}
+                >
+                    <Undo size={18} color={colors.text} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('*', '*')} style={styles.toolbarButton}>
-                    <ThemedText style={styles.toolbarTextItalic}>I</ThemedText>
+
+                <TouchableOpacity 
+                    onPress={() => {
+                        triggerHaptic();
+                        if (editor) editor.redo();
+                        else if (onRedo) onRedo();
+                    }} 
+                    disabled={!canRedo} 
+                    style={[styles.toolbarButton, { opacity: canRedo ? 1 : 0.3 }]}
+                >
+                    <Redo size={18} color={colors.text} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('~~', '~~')} style={styles.toolbarButton}>
-                    <ThemedText style={[styles.toolbarText, { textDecorationLine: 'line-through' }]}>S</ThemedText>
-                </TouchableOpacity>
+
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                <TouchableOpacity onPress={() => onInsertFormatting('# ')} style={styles.toolbarButton}>
-                    <ThemedText style={styles.toolbarText}>H1</ThemedText>
+
+                {/* Bold */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleBold(), '**', '**')} 
+                    style={[styles.toolbarButton, isBoldActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <ThemedText style={[styles.toolbarTextBold, { color: isBoldActive ? colors.tint : colors.text }]}>B</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('## ')} style={styles.toolbarButton}>
-                    <ThemedText style={styles.toolbarText}>H2</ThemedText>
+
+                {/* Italic */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleItalic(), '*', '*')} 
+                    style={[styles.toolbarButton, isItalicActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <ThemedText style={[styles.toolbarTextItalic, { color: isItalicActive ? colors.tint : colors.text }]}>I</ThemedText>
                 </TouchableOpacity>
+
+                {/* Strike */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleStrike(), '~~', '~~')} 
+                    style={[styles.toolbarButton, isStrikeActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <ThemedText style={[styles.toolbarText, { textDecorationLine: 'line-through', color: isStrikeActive ? colors.tint : colors.text }]}>S</ThemedText>
+                </TouchableOpacity>
+
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                <TouchableOpacity onPress={() => onInsertFormatting('> ')} style={styles.toolbarButton}>
-                    <Quote size={18} color={colors.text} />
+
+                {/* H1 */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleHeading(1), '# ')} 
+                    style={[styles.toolbarButton, headingLevel === 1 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <ThemedText style={[styles.toolbarText, { color: headingLevel === 1 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H1</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('- ')} style={styles.toolbarButton}>
-                    <View style={styles.bulletIcon} />
+
+                {/* H2 */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleHeading(2), '## ')} 
+                    style={[styles.toolbarButton, headingLevel === 2 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <ThemedText style={[styles.toolbarText, { color: headingLevel === 2 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H2</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('[ ] ')} style={styles.toolbarButton}>
-                    <View style={styles.checkboxIcon} />
-                </TouchableOpacity>
+
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
-                <TouchableOpacity onPress={() => onInsertFormatting('`', '`')} style={styles.toolbarButton}>
-                    <Code size={18} color={colors.text} />
+
+                {/* Quote */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleBlockquote(), '> ')} 
+                    style={[styles.toolbarButton, isBlockquoteActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <Quote size={18} color={isBlockquoteActive ? colors.tint : colors.text} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onInsertFormatting('---')} style={styles.toolbarButton}>
-                    <Minus size={18} color={colors.text} />
+
+                {/* Bullet List */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleBulletList(), '- ')} 
+                    style={[styles.toolbarButton, isBulletActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <View style={[styles.bulletIcon, { borderColor: isBulletActive ? colors.tint : colors.text }]} />
+                </TouchableOpacity>
+
+                {/* Task List / Checklist */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleTaskList(), '[ ] ')} 
+                    style={[styles.toolbarButton, isTaskActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <View style={[styles.checkboxIcon, { borderColor: isTaskActive ? colors.tint : colors.text }]} />
+                </TouchableOpacity>
+
+                <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
+
+                {/* Code */}
+                <TouchableOpacity 
+                    onPress={() => handleAction(() => editor?.toggleCode(), '`', '`')} 
+                    style={[styles.toolbarButton, isCodeActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                >
+                    <Code size={18} color={isCodeActive ? colors.tint : colors.text} />
                 </TouchableOpacity>
             </ScrollView>
             <TouchableOpacity onPress={() => Keyboard.dismiss()} style={[styles.toolbarButton, { paddingLeft: 8 }]}>
@@ -99,6 +181,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         height: 44,
         borderTopWidth: StyleSheet.hairlineWidth,
+        marginBottom: Platform.OS === 'android' ? 12 : 6,
     },
     toolbarScroll: {
         alignItems: 'center',
@@ -106,43 +189,40 @@ const styles = StyleSheet.create({
     },
     toolbarButton: {
         width: 36,
-        height: 40,
+        height: 38,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 0,
+        marginHorizontal: 1,
     },
     toolbarText: {
         fontSize: 15,
-        fontWeight: '500',
+        fontFamily: Typography.fontFamily.medium,
     },
     toolbarTextBold: {
         fontSize: 18,
-        fontWeight: '800',
+        fontFamily: Typography.fontFamily.bold,
     },
     toolbarTextItalic: {
         fontSize: 18,
-        fontStyle: 'italic',
-        fontFamily: Typography.fontFamily.regular,
+        fontFamily: Typography.fontFamily.italic,
     },
     toolbarDivider: {
         width: 1,
         height: 20,
-        marginHorizontal: 8,
+        marginHorizontal: 6,
     },
     bulletIcon: {
         width: 14,
         height: 14,
         borderLeftWidth: 2,
         borderBottomWidth: 2,
-        borderColor: '#888',
-        opacity: 0.8,
+        opacity: 0.85,
     },
     checkboxIcon: {
-        width: 16,
-        height: 16,
-        borderWidth: 1.5,
-        borderColor: '#888',
+        width: 15,
+        height: 15,
+        borderWidth: 1.8,
         borderRadius: 3,
-        opacity: 0.8,
+        opacity: 0.85,
     },
 });

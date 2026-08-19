@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { useColorScheme } from 'react-native';
 import { useSettings } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
+import { useActiveColorScheme } from './useActiveColorScheme';
+import { getMaterialYouThemeColors } from '../utils/materialYou';
 
 export function useAppTheme() {
-    const systemColorScheme = useColorScheme() ?? 'light';
+    const systemColorScheme = useActiveColorScheme();
     const { settings } = useSettings();
 
     return useMemo(() => {
@@ -13,9 +14,15 @@ export function useAppTheme() {
         const theme: 'light' | 'dark' = themeOption === 'dark' ? 'dark' : 'light';
         const preset = settings.themePreset || 'default';
         
-        // Ensure preset and theme exist, otherwise fallback to default light/dark
-        const presetColors = Colors.presets[preset]?.[theme];
-        const colors = presetColors || Colors[theme];
+        let colors: typeof Colors.light;
+        if (settings.materialYouEnabled) {
+            // Material You dynamic Android Monet theme
+            colors = getMaterialYouThemeColors(theme, settings.amoledEnabled);
+        } else {
+            // Ensure preset and theme exist, otherwise fallback to default light/dark
+            const presetColors = Colors.presets[preset]?.[theme];
+            colors = presetColors || Colors[theme];
+        }
         
         // Apply AMOLED override if enabled in dark mode
         const finalColors = (theme === 'dark' && settings.amoledEnabled) 
@@ -37,5 +44,6 @@ export function useAppTheme() {
             isDark: theme === 'dark',
             hapticsEnabled: settings.hapticsEnabled
         };
-    }, [settings.theme, settings.themePreset, settings.hapticsEnabled, settings.amoledEnabled, systemColorScheme]);
+    }, [settings.theme, settings.themePreset, settings.materialYouEnabled, settings.hapticsEnabled, settings.amoledEnabled, systemColorScheme]);
 }
+

@@ -1,4 +1,4 @@
-import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, Keyboard, BackHandler } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform, Keyboard, BackHandler, LayoutAnimation } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../components/ui/ThemedView';
 import { ThemedText } from '../components/ui/ThemedText';
@@ -6,21 +6,23 @@ import { MarkdownText } from '../components/ui/MarkdownText';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { PersonRepository } from '../db/repositories/PersonRepository';
 import { EntryRepository } from '../db/repositories/EntryRepository';
-import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft as ChevronLeft, Check, Trash as Trash2, Pencil as Edit3, TextT as Type, X, FloppyDisk as Save } from '@/components/ui/Icon';
-import { Button } from '../components/ui/Button';
+import { CaretLeft as ChevronLeft, Check, Pencil as Edit3, X } from '@/components/ui/Icon';
 import { DeleteModal } from '../components/ui/DeleteModal';
 import { AlertModal } from '../components/ui/AlertModal';
 import { EditorToolbar } from '../components/ui/EditorToolbar';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { ScalePressable } from '../components/ui/ScalePressable';
-import { Badge } from '../components/ui/Badge';
+import { RichEditor } from '../components/ui/RichEditor';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEditorBridge, TenTapStartKit } from '@10play/tentap-editor';
+import { markdownToHtml, htmlToMarkdown } from '../utils/markdownConverter';
 import * as Haptics from 'expo-haptics';
 
 import { useAppTheme } from '../hooks/useAppTheme';
 import { useSettings } from '../store/SettingsContext';
+
+const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
 
 export default function EditorScreen() {
     const { id, type, edit } = useLocalSearchParams();
@@ -30,11 +32,6 @@ export default function EditorScreen() {
     const { settings } = useSettings();
 
     const [content, setContent] = useState('');
-    const contentRef = useRef('');
-    const [undoStack, setUndoStack] = useState<string[]>([]);
-    const [redoStack, setRedoStack] = useState<string[]>([]);
-    const isHistoryChange = useRef(false);
-    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [title, setTitle] = useState('');
     const [originalContent, setOriginalContent] = useState('');
     const [originalTitle, setOriginalTitle] = useState('');
@@ -42,26 +39,33 @@ export default function EditorScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(edit === 'true');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-    const selectionRef = useRef({ start: 0, end: 0 });
     const [showDiscardModal, setShowDiscardModal] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean, title: string, description: string, type: 'success' | 'error' | 'info' | 'warning', onClose?: () => void } | null>(null);
 
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    const [kavKey, setKavKey] = useState(0);
-    const contentHeightRef = useRef(0);
-    const editorYRef = useRef(0);
-    const scrollViewRef = useRef<ScrollView>(null);
-    const editorRef = useRef<TextInput>(null);
+    const isDataLoadedRef = useRef(false);
+
+    // editorHtml is null until SQLite data loads. The WebView is gated on this so
+    // initialContent is always the real content when the WebView first boots.
+    const [editorHtml, setEditorHtml] = useState<string | null>(null);
+
+    const editor = useEditorBridge({
+        autofocus: edit === 'true',
+        initialContent: editorHtml ?? '<p></p>',
+        avoidIosKeyboard: true,
+        bridgeExtensions,
+        onChange: () => {
+            if (isDataLoadedRef.current) {
+                setHasChanges(true);
+            }
+        }
+    });
 
     const showAlert = (title: string, description: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', onClose?: () => void) => {
         setAlertConfig({ visible: true, title, description, type, onClose });
     };
-
-
-
-    const hasChanges = useMemo(() => {
-        return content !== originalContent || title !== originalTitle;
-    }, [content, originalContent, title, originalTitle]);
 
     const wordCount = useMemo(() => {
         return content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -81,38 +85,41 @@ export default function EditorScreen() {
             return () => subscription.remove();
         }, [isEditing, hasChanges])
     );
+
     useEffect(() => {
         loadData();
 
-        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-            setIsKeyboardVisible(true);
-            // Scroll to cursor position after keyboard opens, but only if cursor is not at the top
-            if (selectionRef.current.start > 40) {
-                setTimeout(() => {
-                    const sel = selectionRef.current;
-                    const textBeforeCursor = contentRef.current.slice(0, sel.start);
-                    const lineCountBefore = (textBeforeCursor.match(/\n/g) || []).length;
-                    const totalLines = Math.max(1, (contentRef.current.match(/\n/g) || []).length + 1);
-                    const lineRatio = lineCountBefore / totalLines;
-                    const cursorY = editorYRef.current + (contentHeightRef.current * lineRatio);
-                    
-                    // Only scroll if the cursor is significantly down the page
-                    if (cursorY > 200) {
-                        scrollViewRef.current?.scrollTo({ y: Math.max(0, cursorY - 180), animated: true });
-                    }
-                }, 100);
+        const onKeyboardShow = (e: any) => {
+            const height = e?.endCoordinates?.height || 0;
+            if (Platform.OS === 'ios') {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             }
-        });
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setKeyboardHeight(height);
+            setIsKeyboardVisible(true);
+        };
+
+        const onKeyboardHide = () => {
+            if (Platform.OS === 'ios') {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            }
+            setKeyboardHeight(0);
             setIsKeyboardVisible(false);
-            setKavKey(prev => prev + 1);
-        });
+        };
+
+        const showListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            onKeyboardShow
+        );
+        const hideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            onKeyboardHide
+        );
 
         return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
+            showListener.remove();
+            hideListener.remove();
         };
-    }, [id, type, isEditing, settings.editorFontSize]);
+    }, [id, type]);
 
     const loadData = async () => {
         if (!id) return;
@@ -122,175 +129,103 @@ export default function EditorScreen() {
             if (p) {
                 const desc = p.description || '';
                 setContent(desc);
-                contentRef.current = desc;
                 setOriginalContent(desc);
                 setTitle(p.name);
                 setOriginalTitle(p.name);
                 setLastUpdated(p.updatedAt);
-                setUndoStack([desc]);
-                setRedoStack([]);
+                setEditorHtml(markdownToHtml(desc));
+                isDataLoadedRef.current = true;
             }
         } else if (type === 'entry') {
             const e = await EntryRepository.getById(Number(id));
             if (e) {
                 setContent(e.content);
-                contentRef.current = e.content;
                 setOriginalContent(e.content);
                 setTitle(e.type);
                 setOriginalTitle(e.type);
                 setLastUpdated(e.createdAt);
-                setUndoStack([e.content]);
-                setRedoStack([]);
+                setEditorHtml(markdownToHtml(e.content));
+                isDataLoadedRef.current = true;
             }
         }
     };
 
     const handleSave = async () => {
         if (!id) return;
-        if (!hasChanges) {
-            setIsEditing(false);
-            return;
-        }
         setIsSaving(true);
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         try {
+            const html = await editor.getHTML();
+            const markdown = htmlToMarkdown(html);
+
             if (type === 'description') {
-                await PersonRepository.update(Number(id), { description: content });
+                await PersonRepository.update(Number(id), { description: markdown });
             } else if (type === 'entry') {
-                await EntryRepository.updateWithType(Number(id), content, title);
+                await EntryRepository.updateWithType(Number(id), markdown, title.trim() || originalTitle);
             }
-            setOriginalContent(content);
-            setOriginalTitle(title);
+            setContent(markdown);
+            setOriginalContent(markdown);
+            setOriginalTitle(title.trim() || originalTitle);
+            setHasChanges(false);
             setIsEditing(false);
+            setLastUpdated(new Date());
+            Keyboard.dismiss();
         } catch (error) {
-            showAlert("Error", "Failed to save changes.", "error");
+            console.error('Failed to save:', error);
+            showAlert('Error', 'Failed to save changes', 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleCancel = () => {
+    const handleBack = () => {
         if (hasChanges) {
             setShowDiscardModal(true);
         } else {
-            setIsEditing(false);
+            router.back();
         }
     };
 
     const confirmDiscard = () => {
         setContent(originalContent);
         setTitle(originalTitle);
-        setIsEditing(false);
+        setHasChanges(false);
         setShowDiscardModal(false);
+        setIsEditing(false);
+        Keyboard.dismiss();
     };
 
-    const handleBack = useCallback(() => {
-        if (isEditing && hasChanges) {
-            handleCancel();
-        } else {
-            router.back();
-        }
-    }, [isEditing, hasChanges, router]);
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                if (hasChanges) {
+                    setShowDiscardModal(true);
+                    return true;
+                }
+                return false;
+            };
 
-    const handleContentChange = (text: string) => {
-        setContent(text);
-        contentRef.current = text;
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [hasChanges])
+    );
 
-        if (isHistoryChange.current) {
-            isHistoryChange.current = false;
-            return;
-        }
 
-        if (debounceTimer.current) clearTimeout(debounceTimer.current);
-        debounceTimer.current = setTimeout(() => {
-            setUndoStack(prev => {
-                if (prev.length > 0 && prev[prev.length - 1] === text) return prev;
-                return [...prev, text];
-            });
-            setRedoStack([]);
-        }, 500);
-    };
-
-    const handleUndo = () => {
-        if (undoStack.length <= 1) return;
-        isHistoryChange.current = true;
-        const current = content;
-        const previous = undoStack[undoStack.length - 2];
-
-        setUndoStack(prev => prev.slice(0, -1));
-        setRedoStack(prev => [current, ...prev]);
-        setContent(previous);
-        contentRef.current = previous;
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    };
-
-    const handleRedo = () => {
-        if (redoStack.length === 0) return;
-        isHistoryChange.current = true;
-        const next = redoStack[0];
-
-        setUndoStack(prev => [...prev, next]);
-        setRedoStack(prev => prev.slice(1));
-        setContent(next);
-        contentRef.current = next;
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    };
-
-    const insertFormatting = (prefix: string, suffix: string = '') => {
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-        const { start, end } = selectionRef.current;
-        const selectedText = content.substring(start, end);
-        const newText =
-            content.substring(0, start) +
-            prefix +
-            selectedText +
-            suffix +
-            content.substring(end);
-
-        setContent(newText);
-        contentRef.current = newText;
-
-        setUndoStack(prev => [...prev, newText]);
-        setRedoStack([]);
-
-        // Calculate new cursor position
-        // If we have suffix, we want to be inside it (e.g. inside ****)
-        // If we don't have suffix (like # ), we want to be at the end of prefix
-        const newCursorPos = start + prefix.length + (selectedText ? selectedText.length : 0);
-
-        // We need a tiny timeout to ensure the TextInput has updated before we set selection
-        setTimeout(() => {
-            if (editorRef.current) {
-                editorRef.current.focus();
-                editorRef.current.setSelection(newCursorPos, newCursorPos);
-            }
-        }, 10);
-    };
 
     const renderHeader = () => (
         <ScreenHeader
             onBack={handleBack}
-            backButtonIcon={isEditing ? (
-                <ScalePressable 
-                    onPress={handleBack}
-                    scaleTo={0.9}
-                    hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
-                    overlayColor="transparent"
-                >
-                    <X size={20} color={colors.text} />
-                </ScalePressable>
-            ) : <ChevronLeft size={22} color={colors.text} />}
+            backButtonIcon={isEditing ? <X size={20} color={colors.text} /> : <ChevronLeft size={22} color={colors.text} />}
             backButtonStyle={{ backgroundColor: colors.border + '20' }}
             title={undefined}
             borderBottom={false}
             bottomPadding={2}
             centerContent={
-                <View style={[styles.headerInfo, { gap: 2, overflow: 'visible' }]}>
+                <View style={styles.headerInfo}>
                     {isEditing && type === 'entry' && !editingTitle ? (
                         <TouchableOpacity onPress={() => {
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                             setEditingTitle(true);
-                            if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         }} style={styles.titleEditRow}>
                             <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center', maxWidth: 180 }}>{title}</ThemedText>
                             <Edit3 size={12} color={colors.secondary} />
@@ -337,6 +272,7 @@ export default function EditorScreen() {
                             setIsEditing(true);
                         }}
                         style={[styles.iconButton, { backgroundColor: colors.tint + '10' }]}
+                        innerStyle={{ borderRadius: 18 }}
                         scaleTo={0.9}
                         hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                     >
@@ -348,75 +284,46 @@ export default function EditorScreen() {
     );
 
     return (
-        <ThemedView style={styles.container}>
+        <ThemedView style={[styles.container, { paddingBottom: isEditing && isKeyboardVisible ? keyboardHeight : insets.bottom }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
             {renderHeader()}
 
-            <KeyboardAvoidingView
-                key={`kav-${kavKey}`}
-                behavior="padding"
-                style={{ flex: 1 }}
-                keyboardVerticalOffset={0}
-            >
-                <ScrollView
-                    ref={scrollViewRef}
-                    contentContainerStyle={[styles.scrollContent, !isEditing && { paddingTop: 32 }]}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    {isEditing ? (
-                        <TextInput
-                            ref={editorRef}
-                            style={[
-                                styles.editor,
-                                {
-                                    color: colors.text,
-                                    fontSize: settings.editorFontSize,
-                                    lineHeight: Math.round(settings.editorFontSize * 1.5)
-                                }
-                            ]}
-                            multiline
-                            value={content}
-                            onChangeText={handleContentChange}
-                            onSelectionChange={(e) => {
-                                selectionRef.current = e.nativeEvent.selection;
-                            }}
-                            onContentSizeChange={(e) => {
-                                contentHeightRef.current = e.nativeEvent.contentSize.height;
-                            }}
-                            placeholder="Start writing..."
-                            placeholderTextColor={colors.icon + '80'}
-                            autoFocus={kavKey === 0}
-                            selectionColor={colors.tint}
-                            scrollEnabled={false}
-                            keyboardType="default"
-                            returnKeyType="default"
-                            onFocus={() => setIsKeyboardVisible(true)}
-                        />
-                    ) : (
+            <View style={{ flex: 1 }}>
+                {isEditing && editorHtml !== null && (
+                    <RichEditor
+                        editor={editor}
+                        fontSize={settings.editorFontSize || 15}
+                        lineHeight={Math.round((settings.editorFontSize || 15) * 1.5)}
+                        horizontalPadding={20}
+                        topPadding={32}
+                        placeholder="Start writing..."
+                    />
+                )}
+
+                {!isEditing && (
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={[styles.scrollContent, { paddingTop: 32 }]}
+                        showsVerticalScrollIndicator={false}
+                    >
                         <View style={styles.viewContent}>
                             <MarkdownText
                                 content={content}
                                 style={{
-                                    fontSize: settings.editorFontSize,
-                                    lineHeight: Math.round(settings.editorFontSize * 1.5)
+                                    fontSize: settings.editorFontSize || 15,
+                                    lineHeight: Math.round((settings.editorFontSize || 15) * 1.5)
                                 }}
                             />
                         </View>
-                    )}
-                </ScrollView>
+                    </ScrollView>
+                )}
 
                 {isEditing && isKeyboardVisible && (
-                    <EditorToolbar 
-                        onInsertFormatting={insertFormatting}
-                        onUndo={handleUndo}
-                        onRedo={handleRedo}
-                        canUndo={undoStack.length > 1}
-                        canRedo={redoStack.length > 0}
-                    />
+                    <EditorToolbar editor={editor} />
                 )}
-            </KeyboardAvoidingView>
+            </View>
+
             <DeleteModal
                 visible={showDiscardModal}
                 title="Discard Changes"
@@ -479,17 +386,10 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 20,
-        paddingBottom: 120,
-    },
-    editor: {
-        fontSize: 15,
-        lineHeight: 23,
-        fontFamily: Typography.fontFamily.regular,
-        textAlignVertical: 'top',
-        includeFontPadding: false,
-        minHeight: 500,
+        paddingBottom: 80,
     },
     viewContent: {
         paddingBottom: 40,
     },
 });
+

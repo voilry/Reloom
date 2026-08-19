@@ -62,6 +62,13 @@ export class JournalRepository {
         return await db.insert(journalTags).values({ journalId, personId }).returning();
     }
 
+    static async setTaggedPeople(journalId: number, personIds: number[]) {
+        await this.removeAllTags(journalId);
+        for (const personId of personIds) {
+            await this.tagPerson(journalId, personId);
+        }
+    }
+
     static async getTaggedPeople(journalId: number) {
         return await db
             .select({ person: people })

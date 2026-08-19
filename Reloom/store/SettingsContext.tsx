@@ -30,6 +30,7 @@ interface Settings {
     latestVersion: string;
     amoledEnabled: boolean;
     checkForUpdatesEnabled: boolean;
+    materialYouEnabled: boolean;
 }
 
 interface SettingsContextType {
@@ -71,6 +72,7 @@ const DEFAULT_SETTINGS: Settings = {
     latestVersion: '',
     amoledEnabled: true,
     checkForUpdatesEnabled: true,
+    materialYouEnabled: false,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -202,6 +204,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             }
             if (stored.amoledEnabled !== undefined) merged.amoledEnabled = stored.amoledEnabled === 'true';
             if (stored.checkForUpdatesEnabled !== undefined) merged.checkForUpdatesEnabled = stored.checkForUpdatesEnabled === 'true';
+            if (stored.materialYouEnabled !== undefined) merged.materialYouEnabled = stored.materialYouEnabled === 'true';
 
             setSettings(merged);
         } catch (e) {
