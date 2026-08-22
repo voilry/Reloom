@@ -179,7 +179,7 @@ export default function EditorScreen() {
     };
 
     const handleBack = () => {
-        if (hasChanges) {
+        if (isEditing && hasChanges) {
             setShowDiscardModal(true);
         } else {
             router.back();
@@ -195,21 +195,9 @@ export default function EditorScreen() {
         Keyboard.dismiss();
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            const onBackPress = () => {
-                if (hasChanges) {
-                    setShowDiscardModal(true);
-                    return true;
-                }
-                return false;
-            };
-
-            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-            return () => subscription.remove();
-        }, [hasChanges])
-    );
-
+    // Single hardware-back handler: discard prompt while editing with unsaved
+    // changes. (A second, duplicate useFocusEffect handler previously lived
+    // here and double-fired this callback.)
 
 
     const renderHeader = () => (

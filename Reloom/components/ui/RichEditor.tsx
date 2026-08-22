@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { PixelRatio, View, StyleSheet } from 'react-native';
 import { RichText, type EditorBridge } from '@10play/tentap-editor';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
@@ -13,13 +13,23 @@ interface RichEditorProps {
     topPadding?: number;
     bottomPadding?: number;
     /**
-     * Journal edit mode. The journal Title is the first <h1> of the TenTap
-     * document and the Date is injected as a non-editable header above the
-     * editor (via journalDate) so both scroll with the body.
+     * Journal edit mode. The Date renders as an inert div and the Title as a
+     * plain contenteditable div — both are HTML SIBLINGS placed ABOVE the
+     * ProseMirror root by enhanceJS, scrolling together with the body. Because
+     * neither belongs to the ProseMirror document, the body's backspace can
+     * never reach them and no structural guards are needed.
      */
     journalMeta?: boolean;
-    /** Formatted journal date string rendered as a non-editable header above the editor. */
+    /** Formatted journal date rendered above the editor. */
     journalDate?: string;
+    /** Title rendered in the editable header above the body (boot value). */
+    journalTitle?: string;
+    /** Live title updates streamed from the header input (webview → RN). */
+    onTitleChange?: (title: string) => void;
+    /** Focus state of the header input (webview → RN), for toolbar gating. */
+    onTitleFocusChange?: (focused: boolean) => void;
+    /** Auto-focus the title header on boot (used for brand-new journals). */
+    journalFocusTitle?: boolean;
 }
 
 export const RichEditor: React.FC<RichEditorProps> = ({
@@ -33,6 +43,10 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     bottomPadding = 120,
     journalMeta = false,
     journalDate = '',
+    journalTitle = '',
+    onTitleChange,
+    onTitleFocusChange,
+    journalFocusTitle = false,
 }) => {
     const { colors, theme } = useAppTheme();
 
@@ -46,6 +60,12 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     // Reader (MarkdownText.tsx) uses fontSize:16, lineHeight:26 as the base paragraph spec.
     const baseFontSize = fontSize;
     const baseLineHeight = lineHeight ?? 26;
+    // Reader <Text> follows the OS font-size setting (allowFontScaling); WebView
+    // CSS pixels do not. Scale our CSS sizes by the same factor so Edit mode
+    // matches Read mode on devices with a non-default system font size. RN
+    // explicit lineHeights are NOT scaled — keep them literal here too.
+    const fontScale = PixelRatio.getFontScale();
+    const fs = (n: number) => Math.round(n * fontScale * 100) / 100;
 
     const customCSS = `
         @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap');
@@ -65,8 +85,12 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             background-color: ${bgColor} !important;
             color: ${textColor} !important;
             font-family: 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            font-size: ${baseFontSize}px !important;
+            font-size: ${fs(baseFontSize)}px !important;
             line-height: ${baseLineHeight}px !important;
+            /* Match RN text metrics exactly — disables Chromium's font boosting,
+               which otherwise renders body blocks larger/smaller than the reader */
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
             -webkit-font-smoothing: antialiased;
             word-break: break-word !important;
             overflow-wrap: break-word !important;
@@ -123,7 +147,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
            margin-bottom 4px; side padding comes from horizontalPadding below,
            which matches MarkdownText's paddingHorizontal). === */
         p {
-            font-size: ${baseFontSize}px !important;
+            font-size: ${fs(baseFontSize)}px !important;
             line-height: ${baseLineHeight}px !important;
             margin-top: 0 !important;
             margin-bottom: 4px !important;
@@ -133,7 +157,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
 
         /* === HEADINGS — mirrors MarkdownText h1/h2 styles === */
         h1 {
-            font-size: 24px !important;
+            font-size: ${fs(24)}px !important;
             line-height: 30px !important;
             font-weight: 900 !important;
             letter-spacing: -0.5px !important;
@@ -142,7 +166,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             font-family: 'Figtree', -apple-system, sans-serif !important;
         }
         h2 {
-            font-size: 20px !important;
+            font-size: ${fs(20)}px !important;
             line-height: 26px !important;
             font-weight: 800 !important;
             margin: 12px 0 6px 0 !important;
@@ -150,7 +174,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             font-family: 'Figtree', -apple-system, sans-serif !important;
         }
         h3 {
-            font-size: 18px !important;
+            font-size: ${fs(18)}px !important;
             line-height: 24px !important;
             font-weight: 700 !important;
             margin: 10px 0 4px 0 !important;
@@ -216,7 +240,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             padding: 1px 6px 0 6px !important;
             border-radius: 6px !important;
             font-family: Menlo, Monaco, Consolas, monospace !important;
-            font-size: 14px !important;
+            font-size: ${fs(14)}px !important;
         }
 
         strong, b { font-weight: 700 !important; font-family: 'Figtree', -apple-system, sans-serif !important; }
@@ -224,39 +248,55 @@ export const RichEditor: React.FC<RichEditorProps> = ({
         s, del { text-decoration: line-through !important; opacity: 0.7 !important; }
     `;
 
-    // Journal edit mode. The date header is injected ABOVE .ProseMirror by
-    // journalMetaJS, so it lives outside the editable region (can't be focused,
-    // typed, or deleted) yet still scrolls with the document. The title is the
-    // first h1 (mirrors the old native titleInput 32/38/800/-1sp), the 'Untitled'
-    // placeholder and divider-line rendering are driven by classes that
-    // journalMetaJS toggles (ProseMirror's schema strips classes, so we manage
-    // them from JS).
+    // Journal edit mode. The Date and Title are plain HTML widgets injected
+    // ABOVE .ProseMirror by enhanceJS (see the enhanceJS docs) — outside the
+    // editable document, yet scrolling with it. These rules style those
+    // widgets plus the divider-line rendering for '---' paragraphs.
     const journalMetaCSS = `
+        /* Date — mirrors the reader's fullDate (ThemedText tiny + Figtree-Bold,
+           12/16, uppercase, ls 1.5, opacity .4). Padding-top 12 matches the
+           reader ScrollView's contentContainer paddingTop so the header starts
+           at the same offset in both modes. */
         .reloom-journal-date {
-            font-size: 12px !important;
+            font-size: ${fs(12)}px !important;
             line-height: 16px !important;
             font-weight: 700 !important;
             font-family: 'Figtree', -apple-system, sans-serif !important;
             text-transform: uppercase !important;
             letter-spacing: 1.5px !important;
             opacity: 0.4 !important;
-            padding: 8px 0 12px 0 !important;
+            padding: 12px 0 12px 0 !important;
             color: ${textColor} !important;
             user-select: none !important;
             -webkit-user-select: none !important;
             pointer-events: none !important;
         }
-        .ProseMirror > h1:first-of-type {
-            font-size: 32px !important;
-            line-height: 38px !important;
+        /* Title — mirrors the reader's display style (32px / lineHeight 40 /
+           letterSpacing -1). Display-Bold is a native-only font; web uses the
+           closest weight of the same family stack. */
+        .reloom-journal-title {
+            font-size: ${fs(32)}px !important;
+            line-height: 40px !important;
             font-weight: 800 !important;
             font-family: 'Figtree', -apple-system, sans-serif !important;
             letter-spacing: -1px !important;
             margin: 0 0 16px 0 !important;
             color: ${textColor} !important;
+            outline: none !important;
+            border: none !important;
+            padding: 0 !important;
+            background: transparent !important;
+            min-height: 40px !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            caret-color: ${tintColor} !important;
+            -webkit-user-select: text !important;
+            user-select: text !important;
         }
-        /* 'Untitled' placeholder — only shown while the title h1 is empty */
-        .ProseMirror > h1:first-of-type.reloom-title-empty::before {
+        /* 'Untitled' placeholder — inverted-default: shows unless JS marks the
+           title .reloom-filled, so it is visible at boot with no timing
+           dependence whatsoever. */
+        .reloom-journal-title:not(.reloom-filled)::before {
             content: 'Untitled';
             color: ${secondaryColor} !important;
             opacity: 0.55 !important;
@@ -280,62 +320,208 @@ export const RichEditor: React.FC<RichEditorProps> = ({
         }
     `;
 
-    // Injected into the WebView after load. Keeps the non-editable date header in
-    // place, shows the 'Untitled' placeholder whenever the title h1 is empty
-    // (visible directly on screen, hides when text is typed, reappears if
-    // cleared), and renders divider paragraphs as lines. Uses a lightweight
-    // observer on the ProseMirror subtree only and debounces via rAF to avoid
-    // frozen input.
-    const journalMetaJS = journalDate
-        ? `
+        // Injected into the WebView after load in EVERY editor session.
+    //
+    // 1) Doc-empty placeholder: TenTap's Placeholder extension is filtered out
+    //    of bridgeExtensions, so TipTap never adds its is-editor-empty class —
+    //    we toggle it ourselves so the custom placeholder CSS actually works.
+    //
+    // 2) Journal mode (JOURNAL=true): builds the header widgets ABOVE the
+    //    ProseMirror root as plain HTML siblings:
+    //      - .reloom-journal-date: inert date line,
+    //      - .reloom-journal-title: an INDEPENDENT contenteditable div. It is
+    //        not part of the ProseMirror document, so the body's backspace can
+    //        never reach or delete it structurally — typing behaves exactly
+    //        like a normal field. Its value streams to React Native via
+    //        postMessage ({type:'reloom-title'}) and focus changes stream as
+    //        {type:'reloom-title-focus'} so the app can hide the toolbar while
+    //        the title is focused.
+    //      - top-level '---' paragraphs render as divider lines.
+    //
+    // IMPORTANT: syncs are rAF-debounced, observers watch ONLY .ProseMirror,
+    // every class write is a guarded no-op when unchanged, and a slow
+    // setInterval acts as a safety net for observer races.
+    const enhanceJS = `
         (function () {
-            var dateText = ${JSON.stringify(journalDate)};
+            var JOURNAL = ${journalMeta ? 'true' : 'false'};
+            var DATE_TEXT = ${JSON.stringify(journalDate)};
+            var TITLE_TEXT = ${JSON.stringify(journalTitle)};
+            var FOCUS_TITLE = ${journalFocusTitle ? 'true' : 'false'};
+            var focusAttempts = 0;
+
+            function postMsg(payload) {
+                try {
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+                    }
+                } catch (_e) {}
+            }
+
+            function syncDocEmpty(pm) {
+                var empty = (pm.textContent || '').trim().length === 0;
+                if (pm.classList.contains('is-editor-empty') !== empty) {
+                    pm.classList.toggle('is-editor-empty', empty);
+                }
+            }
+
             function ensureDate(pm) {
-                if (document.querySelector('.reloom-journal-date')) return;
+                if (!DATE_TEXT || document.querySelector('.reloom-journal-date')) return;
                 var dateEl = document.createElement('div');
                 dateEl.className = 'reloom-journal-date';
                 dateEl.setAttribute('contenteditable', 'false');
-                dateEl.textContent = dateText;
-                if (pm && pm.parentNode) pm.parentNode.insertBefore(dateEl, pm);
+                dateEl.textContent = DATE_TEXT;
+                if (pm.parentNode) pm.parentNode.insertBefore(dateEl, pm);
             }
-            function syncMeta() {
+
+            function normalizeTitle(el) {
+                var txt = (el.textContent || '');
+                var visibleEmpty = txt.trim().length === 0;
+                // Browsers leave a stray <br> once all text is deleted; clear
+                // it so the placeholder pseudo-element shows again.
+                if (visibleEmpty && el.firstChild) el.innerHTML = '';
+                else if (txt.length > 200) el.textContent = txt.substring(0, 200);
+                var filled = (el.textContent || '').trim().length > 0;
+                if (el.classList.contains('reloom-filled') !== filled) {
+                    el.classList.toggle('reloom-filled', filled);
+                }
+            }
+
+            function focusBody() {
                 var pm = document.querySelector('.ProseMirror');
                 if (!pm) return;
+                pm.focus();
+                try {
+                    var sel = window.getSelection();
+                    var r = document.createRange();
+                    r.selectNodeContents(pm);
+                    r.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(r);
+                } catch (_e) {}
+            }
 
-                ensureDate(pm);
-
-                var first = pm.firstElementChild;
-                var h1 = first && first.tagName === 'H1' ? first : null;
-                if (h1) {
-                    var empty = (h1.textContent || '').trim().length === 0;
-                    if (h1.classList.contains('reloom-title-empty') !== empty) {
-                        h1.classList.toggle('reloom-title-empty', empty);
-                    }
+            function wireTitle(el) {
+                function report() {
+                    normalizeTitle(el);
+                    postMsg({
+                        type: 'reloom-title',
+                        value: (el.textContent || '').replace(/\\u00a0/g, ' ')
+                    });
                 }
+                el.addEventListener('input', report);
+                el.addEventListener('focus', function () {
+                    postMsg({ type: 'reloom-title-focus', value: true });
+                });
+                el.addEventListener('blur', function () {
+                    report();
+                    postMsg({ type: 'reloom-title-focus', value: false });
+                });
+                // Single-line title: Enter commits and moves into the body.
+                el.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        report();
+                        focusBody();
+                    }
+                });
+                // Plain-text titles only: strip formatting and newlines.
+                el.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    var text = '';
+                    try {
+                        text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+                    } catch (_e) {}
+                    text = text.replace(/\\s*[\\r\\n]+\\s*/g, ' ').trim();
+                    var room = 200 - (el.textContent || '').trim().length;
+                    if (room <= 0) return;
+                    if (text.length > room) text = text.substring(0, room);
+                    if (text) document.execCommand('insertText', false, text);
+                    report();
+                });
+            }
 
-                var ps = pm.querySelectorAll('p');
-                for (var i = 0; i < ps.length; i++) {
-                    var el = ps[i];
+            function ensureTitle(pm) {
+                var el = document.querySelector('.reloom-journal-title');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.className = 'reloom-journal-title';
+                    el.setAttribute('contenteditable', 'true');
+                    el.setAttribute('spellcheck', 'false');
+                    el.setAttribute('autocorrect', 'off');
+                    el.textContent = TITLE_TEXT || '';
+                    pm.parentNode.insertBefore(el, pm);
+                    wireTitle(el);
+                    // Apply the filled/placeholder state IMMEDIATELY at creation
+                    // so existing titles never flash the 'Untitled' placeholder.
+                    normalizeTitle(el);
+                }
+                return el;
+            }
+
+            function syncDividers(pm) {
+                // Top-level paragraphs only — the converter emits dividers
+                // exclusively at the top level, so list items / blockquotes
+                // containing '---' keep their literal text (matches reader).
+                var children = pm.children;
+                for (var i = 0; i < children.length; i++) {
+                    var el = children[i];
+                    if (el.tagName !== 'P') continue;
                     var t = (el.textContent || '').trim();
                     var isDivider = t === '---' || t === '___' || t === '***';
                     if (el.classList.contains('reloom-divider') !== isDivider) {
                         el.classList.toggle('reloom-divider', isDivider);
                     }
+                    // Dividers are ATOMIC: hide the caret path entirely. The
+                    // paragraph renders as a 1px line while its real text stays
+                    // '---'; without contenteditable=false a tap on the line
+                    // would place the caret inside the transparent text and any
+                    // keystroke nearby could silently corrupt it ('---' -> '-').
+                    var ce = el.getAttribute('contenteditable');
+                    if (isDivider && ce !== 'false') {
+                        el.setAttribute('contenteditable', 'false');
+                    } else if (!isDivider && ce === 'false') {
+                        el.removeAttribute('contenteditable');
+                    }
                 }
             }
+
+            function syncAll() {
+                var pm = document.querySelector('.ProseMirror');
+                if (!pm) return;
+                syncDocEmpty(pm);
+                if (!JOURNAL) return;
+                ensureDate(pm);
+                ensureTitle(pm);
+                syncDividers(pm);
+                // Boot focus for brand-new journals: take the caret only while
+                // nothing else has been focused yet, and only while the title
+                // is empty.
+                if (FOCUS_TITLE && focusAttempts < 12) {
+                    focusAttempts++;
+                    var active = document.activeElement;
+                    if (!active || active === document.body) {
+                        var t = document.querySelector('.reloom-journal-title');
+                        if (t && !t.classList.contains('reloom-filled')) t.focus();
+                    }
+                }
+            }
+
             var scheduled = false;
             function scheduleSync() {
                 if (scheduled) return;
                 scheduled = true;
                 requestAnimationFrame(function () {
                     scheduled = false;
-                    syncMeta();
+                    syncAll();
                 });
             }
-            function attachObserver() {
+
+            function attach() {
                 var pm = document.querySelector('.ProseMirror');
                 if (!pm) {
-                    var bodyObs = new MutationObserver(function (m, obs) {
+                    // Editor not booted yet — watch the body only until it
+                    // exists, then hand off to a .ProseMirror-scoped observer.
+                    var bodyObs = new MutationObserver(function (_m, obs) {
                         var p = document.querySelector('.ProseMirror');
                         if (p) {
                             obs.disconnect();
@@ -348,31 +534,55 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                         }
                     });
                     bodyObs.observe(document.body, { childList: true, subtree: true });
-                    return;
+                } else {
+                    scheduleSync();
+                    new MutationObserver(scheduleSync).observe(pm, {
+                        childList: true,
+                        subtree: true,
+                        characterData: true
+                    });
                 }
-                scheduleSync();
-                new MutationObserver(scheduleSync).observe(pm, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true
-                });
+                // Safety net: converge even if an observer record is missed.
+                setInterval(syncAll, 350);
+                // Early-boot passes: cover slow ProseMirror boots and any
+                // node recreation during initial transactions.
+                setTimeout(syncAll, 60);
+                setTimeout(syncAll, 300);
+                setTimeout(syncAll, 900);
+                setTimeout(syncAll, 2000);
             }
-            attachObserver();
+
+            attach();
+            scheduleSync();
         })();
-        `
-        : '';
+    `;
+
+    // Bridges our custom header messages out of the RichText webview without
+    // disturbing TenTap's own messaging (exclusivelyUseCustomOnMessage=false
+    // lets both handlers receive every message).
+    type WebviewMessageLike = { nativeEvent: { data?: unknown } };
+    const handleWebviewMessage = useCallback((event: WebviewMessageLike) => {
+        const data = event?.nativeEvent?.data;
+        if (typeof data !== 'string' || data.charCodeAt(0) !== 0x7b /* '{' */) return;
+        try {
+            const msg = JSON.parse(data) as { type?: string; value?: unknown };
+            if (msg.type === 'reloom-title' && onTitleChange) {
+                onTitleChange(typeof msg.value === 'string' ? msg.value.replace(/\u00a0/g, ' ') : '');
+            } else if (msg.type === 'reloom-title-focus' && onTitleFocusChange) {
+                onTitleFocusChange(msg.value === true);
+            }
+        } catch (_err) { /* non-JSON messages are not ours */ }
+    }, [onTitleChange, onTitleFocusChange]);
 
     const resolvedCSS = journalMeta ? `${customCSS}\n${journalMetaCSS}` : customCSS;
 
-    // Inject CSS when the WebView finishes loading.
+    // Inject CSS + enhancement JS when the WebView finishes loading.
     // avoidIosKeyboard in useEditorBridge handles keyboard avoidance natively.
     const handleLoad = useCallback(() => {
         if (!editor) return;
         editor.injectCSS(resolvedCSS, 'reloom-theme');
-        if (journalMeta && journalMetaJS) {
-            editor.injectJS(journalMetaJS);
-        }
-    }, [editor, resolvedCSS, journalMeta, journalMetaJS]);
+        editor.injectJS(enhanceJS);
+    }, [editor, resolvedCSS, enhanceJS]);
 
     return (
         <View style={[styles.container, style]}>
@@ -382,6 +592,9 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 containerStyle={{ flex: 1, width: '100%', backgroundColor: bgColor }}
                 showsVerticalScrollIndicator={false}
                 onLoad={handleLoad}
+                {...(journalMeta && (onTitleChange || onTitleFocusChange)
+                    ? { exclusivelyUseCustomOnMessage: false, onMessage: handleWebviewMessage }
+                    : {})}
             />
         </View>
     );

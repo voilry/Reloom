@@ -19,7 +19,7 @@ import { ScalePressable } from '../../components/ui/ScalePressable';
 import { RichEditor } from '../../components/ui/RichEditor';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditorBridge, TenTapStartKit } from '@10play/tentap-editor';
-import { htmlToMarkdown, markdownToHtml, buildJournalDocumentHtml, extractJournalDocument } from '../../utils/markdownConverter';
+import { htmlToMarkdown, markdownToHtml } from '../../utils/markdownConverter';
 import * as Haptics from 'expo-haptics';
 
 const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
@@ -41,6 +41,17 @@ export default function JournalEditorScreen() {
     const { journalFontSize, journalPadding } = settings;
     const journalId = Number(id);
 
+    // Title is a header widget ABOVE the editor body (never part of the
+    // ProseMirror document). RichEditor streams edits back via onTitleChange;
+    // while the title field is focused the formatting toolbar stays hidden so
+    // its commands can never apply to the body selection.
+    const [titleFocused, setTitleFocused] = useState(false);
+
+    // Title is a plain RN state value; only the BODY lives in the editor doc.
+    // For a NEW journal the stub and its empty body document are built
+    // synchronously so the very first render is already complete — a blank
+    // first frame here leaves the WebView booting without real initialContent
+    // (blank, frozen editor).
     const [journal, setJournal] = useState<Journal | null>(() => {
         if (id === 'new') {
             const dateStr = (typeof initialDate === 'string' ? (initialDate as string) : undefined) || new Date().toISOString().split('T')[0];
@@ -56,11 +67,12 @@ export default function JournalEditorScreen() {
     const [hasChanges, setHasChanges] = useState(false);
     const isDataLoadedRef = useRef(false);
 
-    // Title is the first <h1> of the document so it scrolls with the
-    // body. editorHtml is null until SQLite data loads; the WebView is
-    // gated on this so initialContent is always the real content.
+        // The editor document contains ONLY the body. For a NEW journal it is
+    // built synchronously (see journal init) and the WebView is gated on
+    // editorHtml !== null, so initialContent is always the real content when
+    // the WebView first boots.
     const [editorHtml, setEditorHtml] = useState<string | null>(() => {
-        if (id === 'new') return buildJournalDocumentHtml({ title: '', body: '' });
+        if (id === 'new') return markdownToHtml('');
         return null;
     });
 
@@ -80,7 +92,10 @@ export default function JournalEditorScreen() {
     const scrollViewRef = useRef<ScrollView>(null);
 
     const editor = useEditorBridge({
-        autofocus: edit === 'true' || id === 'new',
+        // New journals focus the injected TITLE header instead of the body
+        // (RichEditor's journalFocusTitle); editing an existing entry focuses
+        // the body directly.
+        autofocus: edit === 'true' && id !== 'new',
         initialContent: editorHtml ?? '<p></p>',
         avoidIosKeyboard: true,
         bridgeExtensions,
@@ -174,7 +189,7 @@ export default function JournalEditorScreen() {
             setOriginalContent('');
             setSelectedPeople([]);
             setOriginalSelectedPeople([]);
-            setEditorHtml(buildJournalDocumentHtml({ title: '', body: '' }));
+            setEditorHtml(markdownToHtml(''));
             isDataLoadedRef.current = true;
             return;
         }
@@ -182,12 +197,15 @@ export default function JournalEditorScreen() {
         try {
             const j = await JournalRepository.getById(journalId);
             if (j) {
+                if (typeof __DEV__ !== 'undefined' && __DEV__) {
+                    console.log('[journal] boot editorHtml:', markdownToHtml(j.content || ''));
+                }
                 setJournal(j);
                 setTitle(j.title || '');
                 setContent(j.content || '');
                 setOriginalTitle(j.title || '');
                 setOriginalContent(j.content || '');
-                setEditorHtml(buildJournalDocumentHtml({ title: j.title || '', body: j.content || '' }));
+                setEditorHtml(markdownToHtml(j.content || ''));
                 isDataLoadedRef.current = true;
 
                 const tags = await JournalRepository.getTaggedPeople(journalId);
@@ -208,14 +226,12 @@ export default function JournalEditorScreen() {
         }
 
         try {
+            // The editor document holds ONLY the body. The title lives in RN
+            // state (streamed from the header widget via onTitleChange) and is
+            // written straight to the DB; blank titles default to 'Untitled'.
             const html = await editor.getHTML();
-            // Title is the leading <h1> of the document. extractJournalDocument
-            // strips it so only the body markdown is stored; a blank title
-            // defaults to 'Untitled' (date is injected as non-editable header
-            // by RichEditor, real date lives in journal.date).
-            const { title: docTitle, bodyHtml } = extractJournalDocument(html);
-            const finalTitle = docTitle.trim() || 'Untitled';
-            const markdown = htmlToMarkdown(bodyHtml);
+            const markdown = htmlToMarkdown(html);
+            const finalTitle = title.trim() || 'Untitled';
 
             let savedId = journalId;
             const dateStr = (initialDate as string) || new Date().toISOString().split('T')[0];
@@ -242,7 +258,7 @@ export default function JournalEditorScreen() {
             setOriginalContent(markdown);
             setOriginalTitle(finalTitle);
             setOriginalSelectedPeople(selectedPeople);
-            setEditorHtml(buildJournalDocumentHtml({ title: finalTitle, body: markdown }));
+            setEditorHtml(markdownToHtml(markdown));
             setHasChanges(false);
 
             if (id === 'new') {
@@ -386,10 +402,10 @@ export default function JournalEditorScreen() {
             <View style={{ flex: 1 }}>
                 {isEditing && editorHtml !== null && (
                     <View key={String(id)} style={{ flex: 1, paddingHorizontal: journalPadding }}>
-                        {/* Title lives as the first h1 of the TenTap document (scrolls with
-                            the body). The Date is injected by RichEditor as a non-editable
-                            header above the editor — it can't be focused, typed, or deleted.
-                            journalDate is the formatted date; journalMeta scopes the CSS/JS. */}
+                        {/* Date + Title are plain header widgets ABOVE the editor body
+                            (injected by RichEditor, scrolling together with it). The title
+                            is an independent contenteditable field — its value streams back
+                            through onTitleChange and can never be structurally deleted. */}
                         <RichEditor
                             editor={editor}
                             fontSize={journalFontSize || 16}
@@ -399,6 +415,13 @@ export default function JournalEditorScreen() {
                             placeholder="Pour your thoughts..."
                             journalMeta
                             journalDate={formattedDate}
+                            journalTitle={title}
+                            onTitleChange={(t) => {
+                                setTitle(t);
+                                if (isDataLoadedRef.current) setHasChanges(true);
+                            }}
+                            onTitleFocusChange={setTitleFocused}
+                            journalFocusTitle={id === 'new'}
                         />
                     </View>
                 )}
@@ -459,7 +482,7 @@ export default function JournalEditorScreen() {
                     </ScrollView>
                 )}
 
-                {isEditing && isKeyboardVisible && (
+                {isEditing && isKeyboardVisible && !titleFocused && (
                     <EditorToolbar editor={editor} />
                 )}
             </View>
@@ -536,7 +559,7 @@ export default function JournalEditorScreen() {
                         setContent(originalContent);
                         setTitle(originalTitle);
                         setSelectedPeople(originalSelectedPeople);
-                        editor.setContent(buildJournalDocumentHtml({ title: originalTitle, body: originalContent }));
+                        editor.setContent(markdownToHtml(originalContent));
                         setHasChanges(false);
                         setIsEditing(false);
                     }

@@ -154,6 +154,12 @@ export function markdownToHtml(markdown: string): string {
 export function htmlToMarkdown(html: string): string {
     if (!html || !html.trim()) return '';
 
+    // Debug: raw serialized editor HTML before any conversion — this is exactly
+    // what editor.getHTML() returned on save (including <hr>/<hr /> for rules).
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log('[htmlToMarkdown] raw HTML from editor.getHTML():', html);
+    }
+
     let md = html;
 
     // Remove scripts and styles
@@ -164,6 +170,10 @@ export function htmlToMarkdown(html: string): string {
     md = md.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n');
     md = md.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n');
     md = md.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n');
+
+    // Horizontal Rule — explicit: <hr>, <hr />, <hr/> all become a markdown
+    // thematic break surrounded by blank lines.
+    md = md.replace(/<\s*hr\b[^>]*>/gi, '\n\n---\n\n');
 
     // Task list items
     md = md.replace(/<li[^>]*data-type="taskItem"[^>]*data-checked="true"[^>]*>([\s\S]*?)<\/li>/gi, (_, content) => {
@@ -231,56 +241,4 @@ export function htmlToMarkdown(html: string): string {
     md = md.replace(/\n{3,}/g, '\n\n');
 
     return md.trim();
-}
-
-/* === Journal document header (title inside the TenTap document) ===
- *
- * The journal Title is the first <h1> of the editor document so it scrolls with
- * the body. The journal DATE is NOT part of the document: RichEditor injects it
- * as a non-editable header ABOVE the editor (so it can't be focused or deleted)
- * while still scrolling with the page.
- *
- * We use plain schema nodes on purpose: TenTap's prebuilt WebView bundle cannot
- * register custom node types, and non-schema attributes/classes do not survive
- * ProseMirror's parse → render round-trip.
- */
-
-const escapeHtml = (text: string): string =>
-    String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-
-export function buildJournalDocumentHtml(opts: { title: string; body: string }): string {
-    const title = escapeHtml(opts.title);
-    const body = markdownToHtml(opts.body);
-    return `<h1 class="journal-title" data-journal-title="true">${title}</h1>` + body;
-}
-
-const stripTags = (html: string): string =>
-    html
-        .replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, ' ')
-        .trim();
-
-/**
- * Extracts the journal title and the body from the serialized editor HTML.
- * The title is the leading <h1> — the first block of the built document. If the
- * user deleted the title, no leading h1 exists and title falls back to '' (the
- * caller defaults it to 'Untitled').
- */
-export function extractJournalDocument(html: string): { title: string; bodyHtml: string } {
-    const trimmed = (html || '').trim();
-    if (!trimmed) return { title: '', bodyHtml: '' };
-
-    const titleMatch = trimmed.match(/^<h1[^>]*>([\s\S]*?)<\/h1>/i);
-    if (!titleMatch) return { title: '', bodyHtml: trimmed };
-
-    return { title: stripTags(titleMatch[1]), bodyHtml: trimmed.slice(titleMatch[0].length) };
 }

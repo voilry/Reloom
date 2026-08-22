@@ -9,24 +9,21 @@ import { useBridgeState } from '@10play/tentap-editor';
 import * as Haptics from 'expo-haptics';
 
 interface EditorToolbarProps {
-    editor?: EditorBridge;
-    onInsertFormatting?: (prefix: string, suffix?: string) => void;
-    onUndo?: () => void;
-    onRedo?: () => void;
-    canUndo?: boolean;
-    canRedo?: boolean;
+    editor: EditorBridge;
+    /**
+     * Journal edit mode hides H1/H2 — converting the leading title <h1> into
+     * another node type would break the protected title field.
+     */
+    showHeadingControls?: boolean;
 }
 
-export function EditorToolbar({ 
+export function EditorToolbar({
     editor,
-    onInsertFormatting,
-    onUndo,
-    onRedo,
-    canUndo: propCanUndo = false,
-    canRedo: propCanRedo = false,
+    showHeadingControls = true,
 }: EditorToolbarProps) {
     const { colors, hapticsEnabled } = useAppTheme();
-    const bridgeState = editor ? useBridgeState(editor) : null;
+    // Hook is called unconditionally (rules of hooks); editor is required.
+    const bridgeState = useBridgeState(editor);
 
     const triggerHaptic = () => {
         if (hapticsEnabled && Platform.OS !== 'web') {
@@ -43,16 +40,12 @@ export function EditorToolbar({
     const isBlockquoteActive = bridgeState?.isBlockquoteActive;
     const isCodeActive = bridgeState?.isCodeActive;
 
-    const canUndo = editor ? (bridgeState?.canUndo ?? false) : propCanUndo;
-    const canRedo = editor ? (bridgeState?.canRedo ?? false) : propCanRedo;
+    const canUndo = bridgeState?.canUndo ?? false;
+    const canRedo = bridgeState?.canRedo ?? false;
 
-    const handleAction = (action: () => void, fallbackPrefix?: string, fallbackSuffix?: string) => {
+    const handleAction = (action: () => void) => {
         triggerHaptic();
-        if (editor) {
-            action();
-        } else if (onInsertFormatting && fallbackPrefix) {
-            onInsertFormatting(fallbackPrefix, fallbackSuffix);
-        }
+        action();
     };
 
     return (
@@ -67,7 +60,6 @@ export function EditorToolbar({
                     onPress={() => {
                         triggerHaptic();
                         if (editor) editor.undo();
-                        else if (onUndo) onUndo();
                     }} 
                     disabled={!canUndo} 
                     style={[styles.toolbarButton, { opacity: canUndo ? 1 : 0.3 }]}
@@ -79,7 +71,6 @@ export function EditorToolbar({
                     onPress={() => {
                         triggerHaptic();
                         if (editor) editor.redo();
-                        else if (onRedo) onRedo();
                     }} 
                     disabled={!canRedo} 
                     style={[styles.toolbarButton, { opacity: canRedo ? 1 : 0.3 }]}
@@ -91,7 +82,7 @@ export function EditorToolbar({
 
                 {/* Bold */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleBold(), '**', '**')} 
+                    onPress={() => handleAction(() => editor?.toggleBold())} 
                     style={[styles.toolbarButton, isBoldActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <ThemedText style={[styles.toolbarTextBold, { color: isBoldActive ? colors.tint : colors.text }]}>B</ThemedText>
@@ -99,7 +90,7 @@ export function EditorToolbar({
 
                 {/* Italic */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleItalic(), '*', '*')} 
+                    onPress={() => handleAction(() => editor?.toggleItalic())} 
                     style={[styles.toolbarButton, isItalicActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <ThemedText style={[styles.toolbarTextItalic, { color: isItalicActive ? colors.tint : colors.text }]}>I</ThemedText>
@@ -107,35 +98,39 @@ export function EditorToolbar({
 
                 {/* Strike */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleStrike(), '~~', '~~')} 
+                    onPress={() => handleAction(() => editor?.toggleStrike())} 
                     style={[styles.toolbarButton, isStrikeActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <ThemedText style={[styles.toolbarText, { textDecorationLine: 'line-through', color: isStrikeActive ? colors.tint : colors.text }]}>S</ThemedText>
                 </TouchableOpacity>
 
-                <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
+                {!showHeadingControls ? null : (
+                    <>
+                        <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
 
-                {/* H1 */}
-                <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleHeading(1), '# ')} 
-                    style={[styles.toolbarButton, headingLevel === 1 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
-                >
-                    <ThemedText style={[styles.toolbarText, { color: headingLevel === 1 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H1</ThemedText>
-                </TouchableOpacity>
+                        {/* H1 */}
+                        <TouchableOpacity
+                            onPress={() => handleAction(() => editor?.toggleHeading(1))}
+                            style={[styles.toolbarButton, headingLevel === 1 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                        >
+                            <ThemedText style={[styles.toolbarText, { color: headingLevel === 1 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H1</ThemedText>
+                        </TouchableOpacity>
 
-                {/* H2 */}
-                <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleHeading(2), '## ')} 
-                    style={[styles.toolbarButton, headingLevel === 2 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
-                >
-                    <ThemedText style={[styles.toolbarText, { color: headingLevel === 2 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H2</ThemedText>
-                </TouchableOpacity>
+                        {/* H2 */}
+                        <TouchableOpacity
+                            onPress={() => handleAction(() => editor?.toggleHeading(2))}
+                            style={[styles.toolbarButton, headingLevel === 2 && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
+                        >
+                            <ThemedText style={[styles.toolbarText, { color: headingLevel === 2 ? colors.tint : colors.text, fontFamily: Typography.fontFamily.bold }]}>H2</ThemedText>
+                        </TouchableOpacity>
+                    </>
+                )}
 
                 <View style={[styles.toolbarDivider, { backgroundColor: colors.border + '40' }]} />
 
                 {/* Quote */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleBlockquote(), '> ')} 
+                    onPress={() => handleAction(() => editor?.toggleBlockquote())} 
                     style={[styles.toolbarButton, isBlockquoteActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <Quote size={18} color={isBlockquoteActive ? colors.tint : colors.text} />
@@ -143,7 +138,7 @@ export function EditorToolbar({
 
                 {/* Bullet List */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleBulletList(), '- ')} 
+                    onPress={() => handleAction(() => editor?.toggleBulletList())} 
                     style={[styles.toolbarButton, isBulletActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <View style={[styles.bulletIcon, { borderColor: isBulletActive ? colors.tint : colors.text }]} />
@@ -151,7 +146,7 @@ export function EditorToolbar({
 
                 {/* Task List / Checklist */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleTaskList(), '[ ] ')} 
+                    onPress={() => handleAction(() => editor?.toggleTaskList())} 
                     style={[styles.toolbarButton, isTaskActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <View style={[styles.checkboxIcon, { borderColor: isTaskActive ? colors.tint : colors.text }]} />
@@ -161,7 +156,7 @@ export function EditorToolbar({
 
                 {/* Code */}
                 <TouchableOpacity 
-                    onPress={() => handleAction(() => editor?.toggleCode(), '`', '`')} 
+                    onPress={() => handleAction(() => editor?.toggleCode())} 
                     style={[styles.toolbarButton, isCodeActive && { backgroundColor: colors.tint + '20', borderRadius: 8 }]}
                 >
                     <Code size={18} color={isCodeActive ? colors.tint : colors.text} />

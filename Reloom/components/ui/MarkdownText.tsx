@@ -56,12 +56,26 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
 
 
         // Handle Bullets
-        if (line.startsWith('- ')) {
+        if (line.startsWith('- ') || line.startsWith('* ')) {
             return (
                 <View key={index} style={styles.listItem}>
                     <ThemedText style={{ color: colors.tint, marginRight: 8 }}>•</ThemedText>
                     <ThemedText style={[styles.paragraph, { color: colors.text }, style]}>
                         {renderInline(line.substring(2), [styles.paragraph, { color: colors.text }, style])}
+                    </ThemedText>
+                </View>
+            );
+        }
+
+        // Handle Ordered Lists — mirrors markdownConverter's /^(\d+)\.\s+/ rule
+        // so numbered entries render as lists in both the editor and reader.
+        const orderedMatch = line.match(/^(\d+)\.\s+(.*)$/);
+        if (orderedMatch) {
+            return (
+                <View key={index} style={styles.listItem}>
+                    <ThemedText style={{ color: colors.tint, marginRight: 8 }}>{orderedMatch[1]}.</ThemedText>
+                    <ThemedText style={[styles.paragraph, { color: colors.text }, style]}>
+                        {renderInline(orderedMatch[2], [styles.paragraph, { color: colors.text }, style])}
                     </ThemedText>
                 </View>
             );
