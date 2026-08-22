@@ -98,11 +98,10 @@ export default function AppearanceSettingsScreen() {
                         </View>
                         <View style={[styles.separator, { backgroundColor: colors.border }]} />
                         <SettingRow
-                            label="Dynamic Android Theme"
-                            description="Use Material You wallpaper colors from your device"
+                            label="Dynamic Color"
                             icon={<Palette size={20} color={colors.tint} weight="duotone" />}
                             colors={colors}
-                            style={styles.paddingBox}
+                            style={[styles.paddingBox, { paddingBottom: 28 }]}
                         >
                             <Toggle
                                 value={settings.materialYouEnabled}
@@ -165,10 +164,9 @@ export default function AppearanceSettingsScreen() {
 
                 <Section>
                     <Card style={styles.card} padding="none">
-                        <View style={styles.paddingBox}>
+                        <View style={[styles.paddingBox, { paddingTop: 20, paddingBottom: 20 }]}>
                             <SettingRow
                                 label="Editor Font size"
-                                description="Scale text for notes and biographies"
                                 icon={<TextT size={20} color={colors.tint} />}
                                 colors={colors}
                             />
@@ -191,7 +189,6 @@ export default function AppearanceSettingsScreen() {
                         <View style={styles.paddingBox}>
                             <SettingRow
                                 label="Journal Font size"
-                                description="Scale text for journals"
                                 icon={<TextT size={20} color={colors.tint} />}
                                 colors={colors}
                             />
@@ -213,8 +210,7 @@ export default function AppearanceSettingsScreen() {
                         <View style={[styles.separator, { backgroundColor: colors.border }]} />
                         <View style={styles.paddingBox}>
                             <SettingRow
-                                label="Content Padding"
-                                description="Adjust horizontal margins in journal"
+                                label="Journal Padding"
                                 icon={<SelectionBackground size={20} color={colors.tint} />}
                                 colors={colors}
                             />
@@ -359,11 +355,11 @@ function SettingRow({ label, description, icon, children, colors, style }: any) 
     return (
         <View style={[styles.settingRow, style]}>
             <View style={styles.settingInfo}>
-                <View style={styles.settingTitleGroup}>
+                <View style={[styles.settingTitleGroup, { marginBottom: description ? 4 : 0 }]}>
                     {icon}
                     <ThemedText style={styles.settingLabel}>{label}</ThemedText>
                 </View>
-                <ThemedText style={[styles.settingDesc, { color: colors.secondary }]}>{description}</ThemedText>
+                {description && <ThemedText style={[styles.settingDesc, { color: colors.secondary }]}>{description}</ThemedText>}
             </View>
             {children}
         </View>

@@ -215,7 +215,7 @@ export default function SettingsScreen() {
                         router.push('/settings/appearance');
                     }}
                     scaleTo={0.97}
-                    style={{ width: '100%', marginBottom: 8 }}
+                    style={{ width: '100%', marginBottom: theme === 'dark' ? 8 : 32 }}
                     innerStyle={{ borderRadius: DesignSystem.radius.lg }}
                 >
                     <Card style={styles.card} padding="none">
@@ -228,23 +228,6 @@ export default function SettingsScreen() {
                         />
                     </Card>
                 </ScalePressable>
-
-                <Card style={[styles.card, { marginBottom: theme === 'dark' ? 8 : 32 }]} padding="none">
-                    <SettingRow
-                        label="Dynamic Android Theme"
-                        icon={<Palette size={20} color={colors.tint} weight="duotone" />}
-                        colors={colors}
-                        style={[styles.paddingBox, { paddingVertical: 18 }]}
-                    >
-                        <Toggle
-                            value={settings.materialYouEnabled}
-                            onValueChange={(v) => {
-                                triggerHaptic();
-                                updateSetting('materialYouEnabled', v);
-                            }}
-                        />
-                    </SettingRow>
-                </Card>
 
                 {theme === 'dark' && (
                     <Card style={[styles.card, { marginBottom: 32 }]} padding="none">

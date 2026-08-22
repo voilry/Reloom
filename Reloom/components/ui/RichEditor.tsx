@@ -12,6 +12,14 @@ interface RichEditorProps {
     horizontalPadding?: number;
     topPadding?: number;
     bottomPadding?: number;
+    /**
+     * Journal edit mode. The journal Title is the first <h1> of the TenTap
+     * document and the Date is injected as a non-editable header above the
+     * editor (via journalDate) so both scroll with the body.
+     */
+    journalMeta?: boolean;
+    /** Formatted journal date string rendered as a non-editable header above the editor. */
+    journalDate?: string;
 }
 
 export const RichEditor: React.FC<RichEditorProps> = ({
@@ -23,6 +31,8 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     horizontalPadding = 20,
     topPadding = 16,
     bottomPadding = 120,
+    journalMeta = false,
+    journalDate = '',
 }) => {
     const { colors, theme } = useAppTheme();
 
@@ -33,14 +43,18 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     const secondaryColor = colors.secondary;
     const borderColor = colors.border;
     const surfaceColor = colors.surface || (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)');
-    // Reader uses fontSize:16, lineHeight:26 as base. Scale relative to prop.
-    const baseFontSize = fontSize;          // mirrors MarkdownText paragraph.fontSize
-    const baseLineHeight = lineHeight ?? 26; // mirrors MarkdownText paragraph.lineHeight
+    // Reader (MarkdownText.tsx) uses fontSize:16, lineHeight:26 as the base paragraph spec.
+    const baseFontSize = fontSize;
+    const baseLineHeight = lineHeight ?? 26;
 
     const customCSS = `
         @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap');
 
         *, *::before, *::after { box-sizing: border-box !important; }
+
+        /* Fix #5: Theme caret color across the whole editor body (incl. Android
+           selection teardrops / caret blink) */
+        * { caret-color: ${tintColor} !important; }
 
         html, body {
             width: 100% !important;
@@ -56,6 +70,9 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             -webkit-font-smoothing: antialiased;
             word-break: break-word !important;
             overflow-wrap: break-word !important;
+            /* Fix #4: Android IME / Enter-key composition bug */
+            -webkit-user-select: text !important;
+            user-select: text !important;
         }
 
         .ProseMirror {
@@ -70,7 +87,17 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             overflow-x: hidden !important;
             word-break: break-word !important;
             overflow-wrap: break-word !important;
+            /* Fix #5: Theme caret color */
+            caret-color: ${tintColor} !important;
+            /* Fix #5: Android selection handle color */
+            accent-color: ${tintColor} !important;
+            /* Fix #4: Android IME composition fix */
+            -webkit-user-select: text !important;
+            user-select: text !important;
         }
+
+        /* Fix #6: Autoscroll — ensure ProseMirror's scroll container is the body, not the editor */
+        .ProseMirror-focused { scroll-margin-bottom: ${bottomPadding}px !important; }
 
         /* Suppress all TipTap placeholder pseudo-elements */
         .ProseMirror [data-placeholder]::before,
@@ -88,11 +115,18 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             font-style: normal !important;
         }
 
-        /* === PARAGRAPH — mirrors MarkdownText paragraph style === */
+        /* Fix #5: Caret / selection theme color */
+        ::selection { background-color: ${tintColor}40 !important; }
+
+        /* === PARAGRAPH — mirrors MarkdownText paragraph style pixel-for-pixel
+           (fontSize + lineHeight come from the same values passed to MarkdownText,
+           margin-bottom 4px; side padding comes from horizontalPadding below,
+           which matches MarkdownText's paddingHorizontal). === */
         p {
             font-size: ${baseFontSize}px !important;
             line-height: ${baseLineHeight}px !important;
-            margin: 0 0 4px 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 4px !important;
             color: ${textColor} !important;
             font-family: 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
@@ -133,7 +167,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             border-radius: 4px !important;
             color: ${secondaryColor} !important;
         }
-        blockquote p { color: ${secondaryColor} !important; margin-bottom: 0 !important; }
+        blockquote p { color: ${secondaryColor} !important; margin: 0 !important; }
 
         /* === LISTS — mirrors MarkdownText listItem style === */
         ul, ol { padding-left: 20px !important; margin: 4px 0 !important; }
@@ -175,20 +209,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             opacity: 0.6 !important;
         }
 
-        /* === HORIZONTAL RULE — mirrors MarkdownText divider style exactly ===
-           Reader: height:1, backgroundColor:colors.border, marginVertical:14, opacity:0.6
-           The HorizontalRule node is provided by TipTap's CoreBridge (no extra bridge needed). */
-        hr {
-            border: none !important;
-            border-top: 1px solid ${borderColor} !important;
-            height: 0 !important;
-            margin: 14px 0 !important;
-            opacity: 0.6 !important;
-            width: 100% !important;
-            display: block !important;
-        }
-
-        /* === INLINE CODE — mirrors MarkdownText inlineCode style === */
+        /* === INLINE CODE — mirrors MarkdownText inlineCode: Menlo 14px, px6, r6 === */
         code {
             background-color: ${surfaceColor} !important;
             color: ${tintColor} !important;
@@ -201,21 +222,164 @@ export const RichEditor: React.FC<RichEditorProps> = ({
         strong, b { font-weight: 700 !important; font-family: 'Figtree', -apple-system, sans-serif !important; }
         em, i { font-style: italic !important; }
         s, del { text-decoration: line-through !important; opacity: 0.7 !important; }
-        ::selection { background-color: ${tintColor}40 !important; }
     `;
 
-    // Inject CSS when the WebView finishes loading
+    // Journal edit mode. The date header is injected ABOVE .ProseMirror by
+    // journalMetaJS, so it lives outside the editable region (can't be focused,
+    // typed, or deleted) yet still scrolls with the document. The title is the
+    // first h1 (mirrors the old native titleInput 32/38/800/-1sp), the 'Untitled'
+    // placeholder and divider-line rendering are driven by classes that
+    // journalMetaJS toggles (ProseMirror's schema strips classes, so we manage
+    // them from JS).
+    const journalMetaCSS = `
+        .reloom-journal-date {
+            font-size: 12px !important;
+            line-height: 16px !important;
+            font-weight: 700 !important;
+            font-family: 'Figtree', -apple-system, sans-serif !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            opacity: 0.4 !important;
+            padding: 8px 0 12px 0 !important;
+            color: ${textColor} !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            pointer-events: none !important;
+        }
+        .ProseMirror > h1:first-of-type {
+            font-size: 32px !important;
+            line-height: 38px !important;
+            font-weight: 800 !important;
+            font-family: 'Figtree', -apple-system, sans-serif !important;
+            letter-spacing: -1px !important;
+            margin: 0 0 16px 0 !important;
+            color: ${textColor} !important;
+        }
+        /* 'Untitled' placeholder — only shown while the title h1 is empty */
+        .ProseMirror > h1:first-of-type.reloom-title-empty::before {
+            content: 'Untitled';
+            color: ${secondaryColor} !important;
+            opacity: 0.55 !important;
+            pointer-events: none !important;
+            float: left !important;
+            height: 0 !important;
+            font-weight: 400 !important;
+        }
+        /* Divider paragraphs (---) render as a visible 1px line in the editor */
+        .ProseMirror p.reloom-divider {
+            height: 1px !important;
+            margin: 14px 0 !important;
+            background-color: ${borderColor} !important;
+            opacity: 0.6 !important;
+            border: none !important;
+            padding: 0 !important;
+            color: transparent !important;
+            font-size: 0 !important;
+            line-height: 0 !important;
+            overflow: hidden !important;
+        }
+    `;
+
+    // Injected into the WebView after load. Keeps the non-editable date header in
+    // place, shows the 'Untitled' placeholder whenever the title h1 is empty
+    // (visible directly on screen, hides when text is typed, reappears if
+    // cleared), and renders divider paragraphs as lines. Uses a lightweight
+    // observer on the ProseMirror subtree only and debounces via rAF to avoid
+    // frozen input.
+    const journalMetaJS = journalDate
+        ? `
+        (function () {
+            var dateText = ${JSON.stringify(journalDate)};
+            function ensureDate(pm) {
+                if (document.querySelector('.reloom-journal-date')) return;
+                var dateEl = document.createElement('div');
+                dateEl.className = 'reloom-journal-date';
+                dateEl.setAttribute('contenteditable', 'false');
+                dateEl.textContent = dateText;
+                if (pm && pm.parentNode) pm.parentNode.insertBefore(dateEl, pm);
+            }
+            function syncMeta() {
+                var pm = document.querySelector('.ProseMirror');
+                if (!pm) return;
+
+                ensureDate(pm);
+
+                var first = pm.firstElementChild;
+                var h1 = first && first.tagName === 'H1' ? first : null;
+                if (h1) {
+                    var empty = (h1.textContent || '').trim().length === 0;
+                    if (h1.classList.contains('reloom-title-empty') !== empty) {
+                        h1.classList.toggle('reloom-title-empty', empty);
+                    }
+                }
+
+                var ps = pm.querySelectorAll('p');
+                for (var i = 0; i < ps.length; i++) {
+                    var el = ps[i];
+                    var t = (el.textContent || '').trim();
+                    var isDivider = t === '---' || t === '___' || t === '***';
+                    if (el.classList.contains('reloom-divider') !== isDivider) {
+                        el.classList.toggle('reloom-divider', isDivider);
+                    }
+                }
+            }
+            var scheduled = false;
+            function scheduleSync() {
+                if (scheduled) return;
+                scheduled = true;
+                requestAnimationFrame(function () {
+                    scheduled = false;
+                    syncMeta();
+                });
+            }
+            function attachObserver() {
+                var pm = document.querySelector('.ProseMirror');
+                if (!pm) {
+                    var bodyObs = new MutationObserver(function (m, obs) {
+                        var p = document.querySelector('.ProseMirror');
+                        if (p) {
+                            obs.disconnect();
+                            scheduleSync();
+                            new MutationObserver(scheduleSync).observe(p, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true
+                            });
+                        }
+                    });
+                    bodyObs.observe(document.body, { childList: true, subtree: true });
+                    return;
+                }
+                scheduleSync();
+                new MutationObserver(scheduleSync).observe(pm, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+            attachObserver();
+        })();
+        `
+        : '';
+
+    const resolvedCSS = journalMeta ? `${customCSS}\n${journalMetaCSS}` : customCSS;
+
+    // Inject CSS when the WebView finishes loading.
+    // avoidIosKeyboard in useEditorBridge handles keyboard avoidance natively.
     const handleLoad = useCallback(() => {
         if (!editor) return;
-        editor.injectCSS(customCSS, 'reloom-theme');
-    }, [editor, customCSS]);
+        editor.injectCSS(resolvedCSS, 'reloom-theme');
+        if (journalMeta && journalMetaJS) {
+            editor.injectJS(journalMetaJS);
+        }
+    }, [editor, resolvedCSS, journalMeta, journalMetaJS]);
 
     return (
         <View style={[styles.container, style]}>
             <RichText
                 editor={editor}
                 style={{ flex: 1, width: '100%', backgroundColor: bgColor }}
-                containerStyle={{ flex: 1, width: '100%', backgroundColor: bgColor, overflow: 'hidden' }}
+                containerStyle={{ flex: 1, width: '100%', backgroundColor: bgColor }}
                 showsVerticalScrollIndicator={false}
                 onLoad={handleLoad}
             />

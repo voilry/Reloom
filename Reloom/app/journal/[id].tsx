@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, TextInput, Platform, Modal, Pressable, Keyboard, BackHandler, Share, LayoutAnimation } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, Modal, Pressable, Keyboard, BackHandler, Share, LayoutAnimation } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -19,10 +19,18 @@ import { ScalePressable } from '../../components/ui/ScalePressable';
 import { RichEditor } from '../../components/ui/RichEditor';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditorBridge, TenTapStartKit } from '@10play/tentap-editor';
-import { markdownToHtml, htmlToMarkdown } from '../../utils/markdownConverter';
+import { htmlToMarkdown, markdownToHtml, buildJournalDocumentHtml, extractJournalDocument } from '../../utils/markdownConverter';
 import * as Haptics from 'expo-haptics';
 
 const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
+
+const formatDisplayDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
 
 export default function JournalEditorScreen() {
     const { id, edit, date: initialDate } = useLocalSearchParams();
@@ -33,7 +41,13 @@ export default function JournalEditorScreen() {
     const { journalFontSize, journalPadding } = settings;
     const journalId = Number(id);
 
-    const [journal, setJournal] = useState<Journal | null>(null);
+    const [journal, setJournal] = useState<Journal | null>(() => {
+        if (id === 'new') {
+            const dateStr = (typeof initialDate === 'string' ? (initialDate as string) : undefined) || new Date().toISOString().split('T')[0];
+            return { id: 0, date: dateStr, title: '', content: '', createdAt: new Date() } as Journal;
+        }
+        return null;
+    });
     const [taggedPeople, setTaggedPeople] = useState<any[]>([]);
 
     const [isEditing, setIsEditing] = useState(() => edit === 'true' || id === 'new');
@@ -42,9 +56,13 @@ export default function JournalEditorScreen() {
     const [hasChanges, setHasChanges] = useState(false);
     const isDataLoadedRef = useRef(false);
 
-    // editorHtml is null until SQLite data loads. The WebView is gated on this so
-    // initialContent is always the real content when the WebView first boots.
-    const [editorHtml, setEditorHtml] = useState<string | null>(null);
+    // Title is the first <h1> of the document so it scrolls with the
+    // body. editorHtml is null until SQLite data loads; the WebView is
+    // gated on this so initialContent is always the real content.
+    const [editorHtml, setEditorHtml] = useState<string | null>(() => {
+        if (id === 'new') return buildJournalDocumentHtml({ title: '', body: '' });
+        return null;
+    });
 
     const [selectedPeople, setSelectedPeople] = useState<number[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -156,7 +174,7 @@ export default function JournalEditorScreen() {
             setOriginalContent('');
             setSelectedPeople([]);
             setOriginalSelectedPeople([]);
-            setEditorHtml('<p></p>');
+            setEditorHtml(buildJournalDocumentHtml({ title: '', body: '' }));
             isDataLoadedRef.current = true;
             return;
         }
@@ -169,7 +187,7 @@ export default function JournalEditorScreen() {
                 setContent(j.content || '');
                 setOriginalTitle(j.title || '');
                 setOriginalContent(j.content || '');
-                setEditorHtml(markdownToHtml(j.content || ''));
+                setEditorHtml(buildJournalDocumentHtml({ title: j.title || '', body: j.content || '' }));
                 isDataLoadedRef.current = true;
 
                 const tags = await JournalRepository.getTaggedPeople(journalId);
@@ -191,32 +209,40 @@ export default function JournalEditorScreen() {
 
         try {
             const html = await editor.getHTML();
-            const markdown = htmlToMarkdown(html);
+            // Title is the leading <h1> of the document. extractJournalDocument
+            // strips it so only the body markdown is stored; a blank title
+            // defaults to 'Untitled' (date is injected as non-editable header
+            // by RichEditor, real date lives in journal.date).
+            const { title: docTitle, bodyHtml } = extractJournalDocument(html);
+            const finalTitle = docTitle.trim() || 'Untitled';
+            const markdown = htmlToMarkdown(bodyHtml);
 
             let savedId = journalId;
+            const dateStr = (initialDate as string) || new Date().toISOString().split('T')[0];
 
             if (id === 'new') {
                 if (!markdown.trim() && !title.trim()) {
                     router.back();
                     return;
                 }
-                const dateStr = (initialDate as string) || new Date().toISOString().split('T')[0];
                 const created = await JournalRepository.create({
-                    title: title.trim(),
+                    title: finalTitle,
                     content: markdown,
                     date: dateStr,
                 });
                 savedId = created.id;
             } else {
-                await JournalRepository.update(journalId, markdown, title.trim());
+                await JournalRepository.update(journalId, markdown, finalTitle);
             }
 
             await JournalRepository.setTaggedPeople(savedId, selectedPeople);
 
+            setTitle(finalTitle);
             setContent(markdown);
             setOriginalContent(markdown);
-            setOriginalTitle(title.trim());
+            setOriginalTitle(finalTitle);
             setOriginalSelectedPeople(selectedPeople);
+            setEditorHtml(buildJournalDocumentHtml({ title: finalTitle, body: markdown }));
             setHasChanges(false);
 
             if (id === 'new') {
@@ -288,12 +314,7 @@ export default function JournalEditorScreen() {
         );
     }
 
-    const formattedDate = new Date(journal.date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
+    const formattedDate = formatDisplayDate(journal.date);
 
     return (
         <ThemedView style={[styles.container, { paddingBottom: isEditing && isKeyboardVisible ? keyboardHeight : insets.bottom }]}>
@@ -364,30 +385,21 @@ export default function JournalEditorScreen() {
 
             <View style={{ flex: 1 }}>
                 {isEditing && editorHtml !== null && (
-                    <View style={{ flex: 1, paddingHorizontal: journalPadding }}>
-                        <ThemedText type="tiny" style={[styles.fullDate, { marginTop: 8 }]}>{formattedDate}</ThemedText>
-                        <TextInput
-                            value={title}
-                            onChangeText={(t) => {
-                                setTitle(t);
-                                setHasChanges(true);
-                            }}
-                            placeholder="Untitled"
-                            placeholderTextColor={colors.icon + '80'}
-                            style={[styles.titleInput, { color: colors.text }]}
-                            selectionColor={colors.tint}
-                            maxLength={20}
+                    <View key={String(id)} style={{ flex: 1, paddingHorizontal: journalPadding }}>
+                        {/* Title lives as the first h1 of the TenTap document (scrolls with
+                            the body). The Date is injected by RichEditor as a non-editable
+                            header above the editor — it can't be focused, typed, or deleted.
+                            journalDate is the formatted date; journalMeta scopes the CSS/JS. */}
+                        <RichEditor
+                            editor={editor}
+                            fontSize={journalFontSize || 16}
+                            lineHeight={Math.round((journalFontSize || 16) * 1.6)}
+                            horizontalPadding={0}
+                            topPadding={0}
+                            placeholder="Pour your thoughts..."
+                            journalMeta
+                            journalDate={formattedDate}
                         />
-                        <View style={{ flex: 1 }}>
-                            <RichEditor
-                                editor={editor}
-                                fontSize={journalFontSize || 16}
-                                lineHeight={Math.round((journalFontSize || 16) * 1.6)}
-                                horizontalPadding={0}
-                                topPadding={0}
-                                placeholder="Pour your thoughts..."
-                            />
-                        </View>
                     </View>
                 )}
 
@@ -407,8 +419,11 @@ export default function JournalEditorScreen() {
                             <ThemedText type="display" style={styles.viewerTitle}>{journal.title}</ThemedText>
                         ) : null}
                         <View style={styles.viewerText}>
+                            {/* paddingHorizontal=0 matches RichEditor's horizontalPadding={0};
+                                the ScrollView's contentContainerStyle provides the outer padding. */}
                             <MarkdownText
                                 content={content}
+                                paddingHorizontal={0}
                                 style={{
                                     fontSize: journalFontSize || 16,
                                     lineHeight: Math.round((journalFontSize || 16) * 1.6)
@@ -521,7 +536,7 @@ export default function JournalEditorScreen() {
                         setContent(originalContent);
                         setTitle(originalTitle);
                         setSelectedPeople(originalSelectedPeople);
-                        editor.setContent(markdownToHtml(originalContent));
+                        editor.setContent(buildJournalDocumentHtml({ title: originalTitle, body: originalContent }));
                         setHasChanges(false);
                         setIsEditing(false);
                     }
@@ -566,14 +581,6 @@ const styles = StyleSheet.create({
     },
     viewerText: {
         paddingBottom: 40,
-    },
-    titleInput: {
-        fontSize: 32,
-        lineHeight: 38,
-        fontFamily: Typography.fontFamily.display,
-        letterSpacing: -1,
-        marginBottom: 16,
-        padding: 0,
     },
     tagsContainer: {
         marginTop: 64,

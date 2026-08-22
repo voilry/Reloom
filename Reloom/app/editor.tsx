@@ -310,6 +310,7 @@ export default function EditorScreen() {
                         <View style={styles.viewContent}>
                             <MarkdownText
                                 content={content}
+                                paddingHorizontal={20}
                                 style={{
                                     fontSize: settings.editorFontSize || 15,
                                     lineHeight: Math.round((settings.editorFontSize || 15) * 1.5)
@@ -384,7 +385,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     scrollContent: {
-        paddingHorizontal: 20,
+        // Horizontal padding is applied by MarkdownText (paddingHorizontal={20})
+        // to match RichEditor's horizontalPadding={20} exactly.
         paddingTop: 20,
         paddingBottom: 80,
     },

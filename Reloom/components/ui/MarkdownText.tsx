@@ -7,9 +7,16 @@ import { Typography } from '../../constants/Typography';
 interface MarkdownTextProps {
     content: string;
     style?: any;
+    /**
+     * Horizontal padding applied to the container. Must exactly match the
+     * RichEditor's `horizontalPadding` so words wrap at the same position
+     * in Read and Edit modes (journal passes 0 + outer padding; editor.tsx
+     * passes 20).
+     */
+    paddingHorizontal?: number;
 }
 
-export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style }) => {
+export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, paddingHorizontal = 0 }) => {
     const { colors } = useAppTheme();
 
     const parseLine = (rawLine: string, index: number) => {
@@ -142,7 +149,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style }) =>
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingHorizontal: paddingHorizontal ?? 0 }]}>
             {content.split(/\r\n|\r|\n/).map((line, i) => parseLine(line, i))}
         </View>
     );
