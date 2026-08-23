@@ -1,7 +1,7 @@
 
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Pressable, Platform, NativeScrollEvent, NativeSyntheticEvent, Image } from 'react-native';
-import Animated, { FadeIn, FadeInDown, SlideInDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Modal, Pressable, Platform, Image, InteractionManager } from 'react-native';
+import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -11,8 +11,7 @@ import { JournalRepository } from '../../db/repositories/JournalRepository';
 import { RelationshipRepository } from '../../db/repositories/RelationshipRepository';
 
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Typography } from '../../constants/Typography';
-import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, Check, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, AddressBook } from '@/components/ui/Icon';
+import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, AddressBook } from '@/components/ui/Icon';
 import { GroupRepository, Group } from '../../db/repositories/GroupRepository';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -77,15 +76,22 @@ export default function PersonDetailScreen() {
     const [journalToDelete, setJournalToDelete] = useState<number | null>(null);
     const [contactToDelete, setContactToDelete] = useState<number | null>(null);
 
-    useFocusEffect(
-        useCallback(() => {
-            if (id) loadData();
-        }, [id])
-    );
+    const loadGeneration = useRef(0);
 
-    const loadData = async () => {
-        const personId = Number(id);
+    const loadData = useCallback(async () => {
+        // expo-router params can arrive as string | string[]
+        const personId = Number(Array.isArray(id) ? id[0] : id);
+        if (!Number.isFinite(personId)) {
+            setPerson(null);
+            setIsLoading(false);
+            return;
+        }
+
+        const generation = ++loadGeneration.current;
+        const isStale = () => generation !== loadGeneration.current;
+
         const p = await PersonRepository.getById(personId);
+        if (isStale()) return;
         if (!p) {
             setPerson(null);
             setIsLoading(false);
@@ -95,27 +101,52 @@ export default function PersonDetailScreen() {
         setIsLoading(false); // Unblock screen render instantly (~5ms)
 
         try {
-            const [e, j, r, all, pg, g, c] = await Promise.all([
+            // Let the push transition finish before hitting the DB with
+            // secondary queries, so the open animation stays smooth.
+            await new Promise<void>(resolve => InteractionManager.runAfterInteractions(() => resolve()));
+            if (isStale()) return;
+
+            const [e, j, r, pg, g, c] = await Promise.all([
                 EntryRepository.getForPerson(personId),
                 JournalRepository.getJournalsForPerson(personId),
                 RelationshipRepository.getForPerson(personId),
-                PersonRepository.getAll(),
                 GroupRepository.getGroupsForPerson(personId),
                 GroupRepository.getAll(),
                 ContactRepository.getContactsForPerson(personId)
             ]);
+            if (isStale()) return;
+
+            // The full people list is only needed to resolve relationship
+            // names/avatars — skip the table scan entirely when there are none.
+            let relatedPeople: Person[] = [];
+            if (r.length > 0) {
+                const all = await PersonRepository.getAll();
+                if (isStale()) return;
+                relatedPeople = all.filter(x => x.id !== personId);
+            }
 
             setEntries(e);
             setJournals(j);
             setRelationships(r);
             setPersonGroups(pg);
             setAllGroups(g);
-            setAllPeople(all.filter(x => x.id !== personId));
+            setAllPeople(relatedPeople);
             setContacts(c);
         } catch (error) {
             console.error('Error loading secondary tab data:', error);
         }
-    };
+    }, [id]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (id) loadData();
+            return () => {
+                // Invalidate any in-flight load on blur/unmount so a slow
+                // stale response can never overwrite fresh state.
+                loadGeneration.current++;
+            };
+        }, [loadData])
+    );
 
     const toggleGroup = async (groupId: number) => {
         if (!person) return;
@@ -220,15 +251,17 @@ export default function PersonDetailScreen() {
     };
 
     const scrollY = useSharedValue(0);
+    const headerVisibleSV = useSharedValue(false);
 
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollY.value = event.contentOffset.y;
-            if (event.contentOffset.y > 220 && !headerVisible) {
-                runOnJS(setHeaderVisible)(true);
-            }
-            if (event.contentOffset.y <= 220 && headerVisible) {
-                runOnJS(setHeaderVisible)(false);
+            // Shared-value guard: dispatch to JS exactly once per transition
+            // instead of on every frame until the re-render commits.
+            const shouldShow = event.contentOffset.y > 220;
+            if (shouldShow !== headerVisibleSV.value) {
+                headerVisibleSV.value = shouldShow;
+                runOnJS(setHeaderVisible)(shouldShow);
             }
         },
     });
@@ -293,9 +326,7 @@ export default function PersonDetailScreen() {
             )}
 
             <View style={styles.topBarWrapper}>
-                <BlurView
-                    intensity={headerVisible ? (theme === 'dark' ? 60 : 40) : 0}
-                    tint={theme === 'dark' ? 'dark' : 'default'}
+                <View
                     style={[
                         styles.topBar,
                         {
@@ -306,6 +337,14 @@ export default function PersonDetailScreen() {
                         }
                     ]}
                 >
+                    {headerVisible && (
+                        <BlurView
+                            intensity={theme === 'dark' ? 60 : 40}
+                            tint={theme === 'dark' ? 'dark' : 'default'}
+                            style={StyleSheet.absoluteFill}
+                            pointerEvents="none"
+                        />
+                    )}
                     <View style={styles.topBarContent}>
                         <ScalePressable
                             style={styles.headerIconButton}
@@ -335,7 +374,7 @@ export default function PersonDetailScreen() {
                             <MoreHorizontal size={24} color={colors.text} />
                         </ScalePressable>
                     </View>
-                </BlurView>
+                </View>
             </View>
 
             <Animated.ScrollView

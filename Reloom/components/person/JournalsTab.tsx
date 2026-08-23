@@ -67,9 +67,9 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
                     </ThemedText>
                 </View>
             ) : (
-                journals.map((item, index) => (
+                journals.map((item) => (
                     <Swipeable
-                        key={index}
+                        key={item.journal.id}
                         renderRightActions={(_progress, dragX) => renderRightActions(item.journal.id, dragX)}
                         overshootRight={false}
                         friction={3}
