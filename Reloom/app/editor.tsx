@@ -41,6 +41,9 @@ export default function EditorScreen() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    // Incremented each time edit mode is entered; RichEditor re-converges its
+    // document to the latest app state on every bump (prewarm pattern).
+    const [sessionToken, setSessionToken] = useState(0);
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean, title: string, description: string, type: 'success' | 'error' | 'info' | 'warning', onClose?: () => void } | null>(null);
 
     const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -53,7 +56,10 @@ export default function EditorScreen() {
 
     const editor = useEditorBridge({
         autofocus: edit === 'true',
-        initialContent: editorHtml ?? '<p></p>',
+        // NOTE: intentionally NO initialContent. Boot-injection proved stale
+        // across save→re-edit cycles; RichEditor instead force-applies the
+        // exact app-state document (expectedDoc) once the editor is provably
+        // ready — one authoritative content path, no boot race.
         avoidIosKeyboard: true,
         bridgeExtensions,
         onChange: () => {
@@ -166,6 +172,11 @@ export default function EditorScreen() {
             setContent(markdown);
             setOriginalContent(markdown);
             setOriginalTitle(title.trim() || originalTitle);
+            // Refresh the editor-boot snapshot to the just-saved document.
+            // Without this, re-entering edit mode on the same screen instance
+            // boots the WebView with the PRE-save content (the stale-editor
+            // bug), and saving that view would silently drop the newer text.
+            setEditorHtml(markdownToHtml(markdown));
             setHasChanges(false);
             setIsEditing(false);
             setLastUpdated(new Date());
@@ -258,6 +269,12 @@ export default function EditorScreen() {
                     <ScalePressable
                         onPress={() => {
                             setIsEditing(true);
+                            setSessionToken(t => t + 1);
+                            // RichEditor re-syncs its doc on session entry; that
+                            // programmatic setContent fires onChange. Clear the
+                            // synthetic dirty flag once the sync window passes —
+                            // genuine typing afterwards re-marks it dirty.
+                            setTimeout(() => setHasChanges(false), 1200);
                         }}
                         style={[styles.iconButton, { backgroundColor: colors.tint + '10' }]}
                         innerStyle={{ borderRadius: 18 }}
@@ -278,15 +295,27 @@ export default function EditorScreen() {
             {renderHeader()}
 
             <View style={{ flex: 1 }}>
-                {isEditing && editorHtml !== null && (
-                    <RichEditor
-                        editor={editor}
-                        fontSize={settings.editorFontSize || 15}
-                        lineHeight={Math.round((settings.editorFontSize || 15) * 1.5)}
-                        horizontalPadding={20}
-                        topPadding={32}
-                        placeholder="Start writing..."
-                    />
+                {/*
+                    PREWARM: the editor stays mounted (hidden) while reading so
+                    the WebView boots and syncs its document in the background.
+                    Tapping Edit therefore switches instantly — no boot delay and
+                    no placeholder flash on existing notes. sessionToken makes
+                    every entry into edit mode re-sync the live doc to app state
+                    (covers save→re-edit and discard→re-edit on one instance).
+                */}
+                {editorHtml !== null && (
+                    <View style={[{ flex: 1 }, !isEditing && { display: 'none' }]}>
+                        <RichEditor
+                            editor={editor}
+                            fontSize={settings.editorFontSize || 15}
+                            lineHeight={Math.round((settings.editorFontSize || 15) * 1.5)}
+                            horizontalPadding={20}
+                            topPadding={32}
+                            placeholder="Start writing..."
+                            expectedDoc={editorHtml ?? undefined}
+                            sessionToken={sessionToken}
+                        />
+                    </View>
                 )}
 
                 {!isEditing && (

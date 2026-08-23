@@ -96,7 +96,9 @@ export default function JournalEditorScreen() {
         // (RichEditor's journalFocusTitle); editing an existing entry focuses
         // the body directly.
         autofocus: edit === 'true' && id !== 'new',
-        initialContent: editorHtml ?? '<p></p>',
+        // NOTE: intentionally NO initialContent. RichEditor force-applies the
+        // exact app-state document (expectedDoc) via setContent once the editor
+        // is provably ready — one authoritative content path, no boot race.
         avoidIosKeyboard: true,
         bridgeExtensions,
         onChange: () => {
@@ -191,15 +193,15 @@ export default function JournalEditorScreen() {
             setOriginalSelectedPeople([]);
             setEditorHtml(markdownToHtml(''));
             isDataLoadedRef.current = true;
+            // Same synthetic-dirty reset as the Edit button: the boot doc-sync
+            // fires onChange once; real typing afterwards re-marks it dirty.
+            setTimeout(() => setHasChanges(false), 1200);
             return;
         }
 
         try {
             const j = await JournalRepository.getById(journalId);
             if (j) {
-                if (typeof __DEV__ !== 'undefined' && __DEV__) {
-                    console.log('[journal] boot editorHtml:', markdownToHtml(j.content || ''));
-                }
                 setJournal(j);
                 setTitle(j.title || '');
                 setContent(j.content || '');
@@ -369,6 +371,13 @@ export default function JournalEditorScreen() {
                                 <ScalePressable
                                     onPress={() => {
                                         setIsEditing(true);
+                                        // RichEditor force-syncs the doc after the
+                                        // WebView load (stale-boot protection); that
+                                        // programmatic setContent fires onChange. Clear
+                                        // the synthetic dirty flag once the sync window
+                                        // has passed — genuine typing afterwards simply
+                                        // re-marks it dirty.
+                                        setTimeout(() => setHasChanges(false), 1200);
                                     }}
                                     style={[styles.headerButton, { backgroundColor: colors.border + '20' }]}
                                     innerStyle={{ borderRadius: 18 }}
@@ -416,6 +425,7 @@ export default function JournalEditorScreen() {
                             journalMeta
                             journalDate={formattedDate}
                             journalTitle={title}
+                            expectedDoc={editorHtml ?? undefined}
                             onTitleChange={(t) => {
                                 setTitle(t);
                                 if (isDataLoadedRef.current) setHasChanges(true);

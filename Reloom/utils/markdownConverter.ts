@@ -154,12 +154,6 @@ export function markdownToHtml(markdown: string): string {
 export function htmlToMarkdown(html: string): string {
     if (!html || !html.trim()) return '';
 
-    // Debug: raw serialized editor HTML before any conversion — this is exactly
-    // what editor.getHTML() returned on save (including <hr>/<hr /> for rules).
-    if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log('[htmlToMarkdown] raw HTML from editor.getHTML():', html);
-    }
-
     let md = html;
 
     // Remove scripts and styles

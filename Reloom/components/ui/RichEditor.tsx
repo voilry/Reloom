@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelRatio, View, StyleSheet } from 'react-native';
 import { RichText, type EditorBridge } from '@10play/tentap-editor';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -30,6 +30,19 @@ interface RichEditorProps {
     onTitleFocusChange?: (focused: boolean) => void;
     /** Auto-focus the title header on boot (used for brand-new journals). */
     journalFocusTitle?: boolean;
+    /**
+     * Authoritative document HTML for this edit session. Applied right after
+     * the WebView finishes loading, guaranteeing the visible doc always equals
+     * the latest app state — even if the platform layer somehow booted the
+     * page with a stale initialContent (same-instance save → re-edit bug).
+     */
+    expectedDoc?: string;
+    /**
+     * Bump to force a document re-sync on an already-mounted (prewarmed)
+     * editor. Screens increment this each time edit mode is entered; the
+     * initial value is handled by the mount sync.
+     */
+    sessionToken?: number;
 }
 
 export const RichEditor: React.FC<RichEditorProps> = ({
@@ -47,6 +60,8 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     onTitleChange,
     onTitleFocusChange,
     journalFocusTitle = false,
+    expectedDoc,
+    sessionToken = 0,
 }) => {
     const { colors, theme } = useAppTheme();
 
@@ -578,14 +593,114 @@ export const RichEditor: React.FC<RichEditorProps> = ({
 
     // Inject CSS + enhancement JS when the WebView finishes loading.
     // avoidIosKeyboard in useEditorBridge handles keyboard avoidance natively.
+    //
+    // expectedDoc sync: makes stale-boot content structurally impossible.
+    // Whatever document the webview layer presents at session start — a freshly
+    // booted page with stale injected content OR a RECYCLED native view whose
+    // old DOM never navigated away — it is force-converged to `expectedDoc`
+    // (the latest app state) before the user can interact.
+    //
+    // Readiness gating matters: the web side registers its message handler in
+    // a useEffect AFTER tiptap creates the editor (useTenTap.tsx), so a
+    // setContent action posted earlier is SILENTLY DROPPED. We therefore probe
+    // with getHTML() — it resolves only once the handler is live and never
+    // rejects (AsyncMessages promises have no timeout), so each probe races a
+    // local timeout and retries until the editor answers.
+    //
+    // The sync runs from THREE triggers: on component mount, after every real
+    // page load (covers iOS's deliberate second navigation), and — forced — on
+    // every sessionToken bump (entry into edit mode on a prewarmed editor).
+    // An in-flight flag prevents concurrent runs.
+    //
+    // ANTI-STOMP: appliedDocRef remembers the last document WE pushed. Non-
+    // forced syncs skip when the live doc is already authoritative, so a slow
+    // boot probe can never land an outdated snapshot mid-typing (random text
+    // loss / broken IME composition). Forced session syncs always apply, but
+    // they fire the instant edit mode is entered — long before a human can
+    // place the caret, let alone compose.
+    const expectedDocRef = useRef<string | null | undefined>(expectedDoc);
+    expectedDocRef.current = expectedDoc;
+    const syncInFlightRef = useRef(false);
+    const appliedDocRef = useRef<string | null>(null);
+
+    // Hidden until the authoritative document has been applied, so an
+    // existing note never flashes the empty-doc placeholder ("Start
+    // writing...") before its real text arrives.
+    const [docReady, setDocReady] = useState(expectedDoc == null);
+
+    const syncExpectedDoc = useCallback((force = false) => {
+        const doc = expectedDocRef.current;
+        if (!editor || doc == null || syncInFlightRef.current) return;
+        if (!force && appliedDocRef.current === doc) return;
+        syncInFlightRef.current = true;
+
+        const probeOnce = async (): Promise<string | null> => {
+            // Skip entirely while the native view isn't attached yet — posting
+            // to a null webviewRef only produces warning-spam and a promise
+            // that can never settle.
+            if (!(editor as any).webviewRef?.current) return null;
+            const raced = await Promise.race([
+                editor.getHTML().catch(() => null),
+                new Promise<null>(resolve => setTimeout(() => resolve(null), 500)),
+            ]);
+            return typeof raced === 'string' ? raced : null;
+        };
+
+        void (async () => {
+            // Re-read the latest expectation: the screen may have updated it
+            // while we were waiting for the boot probe.
+            const target = expectedDocRef.current ?? doc;
+            // Wait for a live editor for as long as it takes: slow page loads
+            // must never exhaust the wait (a dropped sync means stale content).
+            let bootDoc: string | null = null;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                bootDoc = await probeOnce();
+                if (bootDoc !== null) break;
+                await new Promise(resolve => setTimeout(resolve, 150));
+            }
+            if (bootDoc === null) {
+                // Never leave the editor permanently blank on pathological
+                // boots — reveal whatever the platform managed to load.
+                setDocReady(true);
+                syncInFlightRef.current = false;
+                return;
+            }
+            editor.setContent(target);
+            appliedDocRef.current = target;
+            setDocReady(true);
+            syncInFlightRef.current = false;
+        })();
+    }, [editor]);
+
+    useEffect(() => {
+        syncExpectedDoc();
+    }, [syncExpectedDoc]);
+
+    // Session re-sync: prewarmed (always-mounted) editors don't remount per
+    // edit session, so screens bump sessionToken on every entry into edit mode
+    // to converge the live document back to the latest app state. The very
+    // first value is skipped — the mount effect above owns that run. Forced:
+    // after a discard or an external change the live doc may hold uncommitted
+    // text that non-forced equality checks would happily keep.
+    const lastSessionRef = useRef(sessionToken);
+    useEffect(() => {
+        if (lastSessionRef.current === sessionToken) return;
+        lastSessionRef.current = sessionToken;
+        syncExpectedDoc(true);
+    }, [sessionToken, syncExpectedDoc]);
+
     const handleLoad = useCallback(() => {
         if (!editor) return;
         editor.injectCSS(resolvedCSS, 'reloom-theme');
         editor.injectJS(enhanceJS);
-    }, [editor, resolvedCSS, enhanceJS]);
+        syncExpectedDoc();
+    }, [editor, resolvedCSS, enhanceJS, syncExpectedDoc]);
 
     return (
-        <View style={[styles.container, style]}>
+        <View
+            style={[styles.container, style, { opacity: docReady ? 1 : 0 }]}
+            pointerEvents={docReady ? 'auto' : 'none'}
+        >
             <RichText
                 editor={editor}
                 style={{ flex: 1, width: '100%', backgroundColor: bgColor }}
