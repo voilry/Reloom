@@ -311,10 +311,10 @@ export default function EditorScreen() {
                             lineHeight={Math.round((settings.editorFontSize || 15) * 1.5)}
                             horizontalPadding={20}
                             topPadding={32}
-                            placeholder="Start writing..."
-                            expectedDoc={editorHtml ?? undefined}
-                            sessionToken={sessionToken}
-                        />
+                        placeholder="Start writing..."
+                        expectedDoc={editorHtml ?? undefined}
+                        sessionToken={sessionToken}
+                    />
                     </View>
                 )}
 

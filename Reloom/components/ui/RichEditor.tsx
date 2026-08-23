@@ -43,6 +43,13 @@ interface RichEditorProps {
      * initial value is handled by the mount sync.
      */
     sessionToken?: number;
+    /** @mention query under the caret ('' after bare '@', null = closed). */
+    onMentionQuery?: (query: string | null) => void;
+    /**
+     * Connection names highlighted as @mentions in the body (journal mode).
+     * Streamed into the page for the CSS Custom Highlight painter.
+     */
+    mentionNames?: string[];
 }
 
 export const RichEditor: React.FC<RichEditorProps> = ({
@@ -62,6 +69,8 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     journalFocusTitle = false,
     expectedDoc,
     sessionToken = 0,
+    onMentionQuery,
+    mentionNames,
 }) => {
     const { colors, theme } = useAppTheme();
 
@@ -268,6 +277,13 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     // editable document, yet scrolling with it. These rules style those
     // widgets plus the divider-line rendering for '---' paragraphs.
     const journalMetaCSS = `
+        /* @mention highlight — CSS Custom Highlight API paints ranges the JS
+           registers as 'reloom-mention' (see syncMentionHighlights). Pure
+           paint: no DOM change, ProseMirror never notices. */
+        ::highlight(reloom-mention) {
+            color: ${tintColor} !important;
+            font-weight: 600 !important;
+        }
         /* Date — mirrors the reader's fullDate (ThemedText tiny + Figtree-Bold,
            12/16, uppercase, ls 1.5, opacity .4). Padding-top 12 matches the
            reader ScrollView's contentContainer paddingTop so the header starts
@@ -378,6 +394,187 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                     pm.classList.toggle('is-editor-empty', empty);
                 }
             }
+
+            // ---- @mention detection (journal mode) --------------------------
+            // Streams the partial query after a caret-adjacent '@' to RN, which
+            // shows the connection suggestion bar. null closes it.
+            function detectMention() {
+                if (!JOURNAL) return;
+                var q = null;
+                try {
+                    var sel = window.getSelection();
+                    if (sel && sel.rangeCount) {
+                        var range = sel.getRangeAt(0);
+                        var node = range.startContainer;
+                        if (node.nodeType === 3) {
+                            var host = node.parentElement && node.parentElement.closest('.reloom-journal-title');
+                            if (!host) {
+                                var before = String(node.textContent || '').slice(0, range.startOffset);
+                                var m = before.match(/(?:^|\\s)@([^\\s@]{0,24})$/);
+                                if (m) q = m[1];
+                            }
+                        }
+                    }
+                } catch (_e) {}
+                postMsg({ type: 'reloom-mention', value: q });
+            }
+
+            var mentionTimer = null;
+            function scheduleMention() {
+                if (mentionTimer) return;
+                mentionTimer = setTimeout(function () {
+                    mentionTimer = null;
+                    detectMention();
+                }, 120);
+            }
+
+            // ---- caret auto-scroll -----------------------------------------
+            // Keeps the caret between the top edge and the keyboard+toolbar
+            // band. KEYBOARD OCCLUSION IS SELF-CALIBRATED: we remember the
+            // viewport height while unfocused (baseVh) and measure the current
+            // deficit. This is immune to resize-vs-pan platform differences
+            // and to RN-side inset semantics — whatever the keyboard does to
+            // the visible area, the measured deficit IS the truth.
+            function currentVh() {
+                return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            }
+            var baseVh = currentVh();
+
+            function editingFocused() {
+                var active = document.activeElement;
+                return !!active && !!active.classList && (active.classList.contains('ProseMirror') || active.isContentEditable === true);
+            }
+
+            function caretOffsetNeeded() {
+                var sel = window.getSelection();
+                if (!sel || !sel.rangeCount) return 0;
+                var r = sel.getRangeAt(0).getBoundingClientRect();
+                if (!r || (r.width === 0 && r.height === 0)) return 0;
+                var vh = currentVh();
+                if (vh > baseVh) baseVh = vh;               // grew back: keyboard closed / layout relaxed
+                var kb = Math.max(0, Math.min(baseVh - vh, baseVh * 0.8));
+                var topLimit = 12;
+                var bottomLimit = vh - 56 - kb;             // 56 ≈ RN toolbar + breathing room
+                if (bottomLimit <= topLimit + 40) bottomLimit = vh - 40;
+                if (r.top < topLimit) return r.top - topLimit;
+                if (r.bottom > bottomLimit) return r.bottom - bottomLimit;
+                return 0;
+            }
+
+            // Find the element that ACTUALLY scrolls this page. TenTap's page
+            // may not scroll at the root: probe the standard scrollingElement
+            // first, then walk up from the caret through ancestors that truly
+            // have vertical overflow.
+            function candidateScrollers() {
+                var list = [];
+                var se = document.scrollingElement || document.documentElement;
+                if (se && se.scrollHeight > se.clientHeight + 2) list.push(se);
+                try {
+                    var sel = window.getSelection();
+                    if (sel && sel.rangeCount) {
+                        var el = sel.getRangeAt(0).startContainer;
+                        if (el && el.nodeType === 3) el = el.parentElement;
+                        while (el && el !== document.body) {
+                            if (el.scrollHeight > el.clientHeight + 2) {
+                                var ov = '';
+                                try { ov = getComputedStyle(el).overflowY; } catch (_e) {}
+                                if (ov === 'auto' || ov === 'scroll' || ov === '') list.push(el);
+                            }
+                            el = el.parentElement;
+                        }
+                    }
+                } catch (_e) {}
+                if (!list.length && se) list.push(se); // last resort even if it claims no overflow
+                return list;
+            }
+
+            function scrollCaretIntoView() {
+                try {
+                    var dy = caretOffsetNeeded();
+                    if (dy > 4 || dy < -4) {
+                        dy = Math.ceil(dy);
+                        var scrollers = candidateScrollers();
+                        for (var i = 0; i < scrollers.length; i++) {
+                            var el = scrollers[i];
+                            var before = el.scrollTop;
+                            el.scrollTop = before + dy;
+                            if (el.scrollTop !== before) break;   // this one really scrolls
+                        }
+                    }
+                } catch (_e) {}
+            }
+
+            // Baseline upkeep runs on its own light tick so baseVh tracks the
+            // unfocused viewport even when no caret logic executes.
+            setInterval(function () {
+                try {
+                    if (!editingFocused()) {
+                        var vh = currentVh();
+                        if (vh > baseVh) baseVh = vh;
+                    }
+                } catch (_e) {}
+            }, 400);
+
+            var scrollTimer = null;
+            function scheduleScroll() {
+                if (scrollTimer) return;
+                scrollTimer = setTimeout(function () {
+                    scrollTimer = null;
+                    scrollCaretIntoView();
+                }, 140);
+            }
+
+            // Viewport geometry changes arrive in WAVES (keyboard resize, then
+            // the RN toolbar mounting shrinks the page again, then IME settle).
+            // A single correction races them — so re-check a few times; every
+            // run is idempotent (scrolls only when the caret is actually out
+            // of the safe band).
+            function scheduleScrollBurst() {
+                setTimeout(scrollCaretIntoView, 80);
+                setTimeout(scrollCaretIntoView, 320);
+                setTimeout(scrollCaretIntoView, 700);
+            }
+
+            // Persistence watchdog: corrects PERSISTENT caret violations while
+            // an editable is focused (two consecutive out-of-band ticks).
+            //
+            // USER-SCROLL RESPECT (Android ignores WebView scrollEnabled, so
+            // gestures are real): any touch pauses enforcement for a grace
+            // window — reading around while the keyboard is up must never be
+            // fought. Editing naturally re-anchors via selectionchange.
+            var userScrollUntil = 0;
+            function markUserScroll() {
+                userScrollUntil = Date.now() + 1400;
+            }
+            document.addEventListener('touchstart', markUserScroll, { passive: true });
+            document.addEventListener('touchmove', markUserScroll, { passive: true });
+
+            var outTicks = 0;
+            setInterval(function () {
+                try {
+                    if (!editingFocused()) { outTicks = 0; return; }
+                    if (Date.now() < userScrollUntil) { outTicks = 0; return; }
+                    var dy = caretOffsetNeeded();
+                    if (dy !== 0) {
+                        outTicks++;
+                        if (outTicks >= 2) {
+                            scrollCaretIntoView();
+                            outTicks = 0;
+                        }
+                    } else {
+                        outTicks = 0;
+                    }
+                } catch (_e) {}
+            }, 150);
+
+            document.addEventListener('selectionchange', function () {
+                scheduleMention();
+                scheduleScroll();
+            });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', scheduleScrollBurst);
+            }
+            window.addEventListener('resize', scheduleScrollBurst);
 
             function ensureDate(pm) {
                 if (!DATE_TEXT || document.querySelector('.reloom-journal-date')) return;
@@ -500,10 +697,48 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 }
             }
 
+            // ---- @mention highlight (journal mode) -------------------------
+            // Paints @Name tokens in the tint color using the CSS Custom
+            // Highlight API — pure paint, ZERO DOM mutation, so ProseMirror's
+            // reconciler never notices. Names stream in from RN as
+            // window.reloomMentionNames.
+            function syncMentionHighlights() {
+                try {
+                    if (!JOURNAL || !window.CSS || !CSS.highlights || typeof Highlight === 'undefined') return;
+                    var pm = document.querySelector('.ProseMirror');
+                    if (!pm) return;
+                    var names = window.reloomMentionEscaped || [];
+                    var all = pm.textContent || '';
+                    if (!names.length || all.indexOf('@') === -1) {
+                        CSS.highlights.delete('reloom-mention');
+                        return;
+                    }
+                    var esc = (window.reloomMentionEscaped || []).slice().sort(function (a, b) { return b.length - a.length; });
+                    var re = new RegExp('(@(?:' + esc.join('|') + '))(?=$|[^\\\\w\\u2019-])', 'g');
+                    var ranges = [];
+                    var walker = document.createTreeWalker(pm, NodeFilter.SHOW_TEXT, null);
+                    var node;
+                    while ((node = walker.nextNode())) {
+                        var t = node.textContent || '';
+                        re.lastIndex = 0;
+                        var m;
+                        while ((m = re.exec(t)) !== null) {
+                            if (m[0].length === 0) { re.lastIndex++; continue; }
+                            var r = document.createRange();
+                            r.setStart(node, m.index);
+                            r.setEnd(node, m.index + m[0].length);
+                            ranges.push(r);
+                        }
+                    }
+                    CSS.highlights.set('reloom-mention', new (Highlight.bind.apply(Highlight, [null].concat(ranges)))());
+                } catch (_e) {}
+            }
+
             function syncAll() {
                 var pm = document.querySelector('.ProseMirror');
                 if (!pm) return;
                 syncDocEmpty(pm);
+                syncMentionHighlights();
                 if (!JOURNAL) return;
                 ensureDate(pm);
                 ensureTitle(pm);
@@ -585,9 +820,24 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 onTitleChange(typeof msg.value === 'string' ? msg.value.replace(/\u00a0/g, ' ') : '');
             } else if (msg.type === 'reloom-title-focus' && onTitleFocusChange) {
                 onTitleFocusChange(msg.value === true);
+            } else if (msg.type === 'reloom-mention' && onMentionQuery) {
+                onMentionQuery(typeof msg.value === 'string' ? msg.value : null);
             }
         } catch (_err) { /* non-JSON messages are not ours */ }
-    }, [onTitleChange, onTitleFocusChange]);
+    }, [onTitleChange, onTitleFocusChange, onMentionQuery]);
+
+    // Stream mention patterns for the editor-side @Name highlighter. Names are
+    // regex-escaped RN-side (the injected script is a template literal, so the
+    // escaping itself must not live there).
+    const mentionNamesKey = (mentionNames || []).join('\u0001');
+    useEffect(() => {
+        if (!editor || !journalMeta) return;
+        const names = mentionNamesKey ? mentionNamesKey.split('\u0001') : [];
+        const escaped = names
+            .filter(n => n && n.trim())
+            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        editor.webviewRef.current?.injectJavaScript(`window.reloomMentionEscaped = ${JSON.stringify(escaped)};true;`);
+    }, [editor, journalMeta, mentionNamesKey]);
 
     const resolvedCSS = journalMeta ? `${customCSS}\n${journalMetaCSS}` : customCSS;
 
@@ -707,7 +957,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 containerStyle={{ flex: 1, width: '100%', backgroundColor: bgColor }}
                 showsVerticalScrollIndicator={false}
                 onLoad={handleLoad}
-                {...(journalMeta && (onTitleChange || onTitleFocusChange)
+                {...(journalMeta && (onTitleChange || onTitleFocusChange || onMentionQuery)
                     ? { exclusivelyUseCustomOnMessage: false, onMessage: handleWebviewMessage }
                     : {})}
             />

@@ -14,10 +14,31 @@ interface MarkdownTextProps {
      * passes 20).
      */
     paddingHorizontal?: number;
+    /**
+     * Connection names to highlight as @mentions. When provided, any
+     * "@Full Name" whose name matches one of these entries renders in the
+     * tint color (journal reader). Omitted elsewhere — plain text stays.
+     */
+    mentionNames?: string[];
 }
 
-export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, paddingHorizontal = 0 }) => {
+export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, paddingHorizontal = 0, mentionNames }) => {
     const { colors } = useAppTheme();
+
+    // Mention matcher: longest-name-first alternation of the provided
+    // connection names. Rebuilt only when the name list identity changes.
+    const mentionRegex = React.useMemo(() => {
+        if (!mentionNames || mentionNames.length === 0) return null;
+        const escaped = Array.from(new Set(mentionNames.filter(n => n && n.trim())))
+            .sort((a, b) => b.length - a.length)
+            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        if (escaped.length === 0) return null;
+        try {
+            return new RegExp(`(@(?:${escaped.join('|')}))(?=$|[^\\w'’-])`, 'gi');
+        } catch {
+            return null;
+        }
+    }, [mentionNames]);
 
     const parseLine = (rawLine: string, index: number) => {
         const line = rawLine.replace(/\r/g, '').trim();
@@ -110,7 +131,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
         );
     };
 
-    const renderInline = (text: string, baseStyle?: any) => {
+    const renderInlineMd = (text: string, baseStyle?: any) => {
         const parts = [];
         let lastIdx = 0;
 
@@ -160,6 +181,34 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
         }
 
         return parts.length > 0 ? parts : text;
+    };
+
+    // Outer inline pass: highlights @Name mentions (when a name list is
+    // provided) and renders markdown styling inside the remaining segments.
+    const renderInline = (text: string, baseStyle?: any) => {
+        if (!mentionRegex) return renderInlineMd(text, baseStyle);
+        const out: any[] = [];
+        let lastIdx = 0;
+        const re = new RegExp(mentionRegex.source, 'gi');
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            if (m.index > lastIdx) {
+                out.push(renderInlineMd(text.substring(lastIdx, m.index), baseStyle));
+            }
+            out.push(
+                <Text key={`mention-${m.index}`} style={[baseStyle, { color: colors.tint, fontFamily: Typography.fontFamily.semibold }]}>
+                    {/* Reader shows just the colored name — the '@' is an
+                        editing affordance and stays editor-only. */}
+                    {m[0].slice(1)}
+                </Text>
+            );
+            lastIdx = m.index + m[0].length;
+            if (m[0].length === 0) re.lastIndex++;
+        }
+        if (lastIdx < text.length) {
+            out.push(renderInlineMd(text.substring(lastIdx), baseStyle));
+        }
+        return out.length > 0 ? out : text;
     };
 
     return (

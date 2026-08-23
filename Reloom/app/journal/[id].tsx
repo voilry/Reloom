@@ -17,6 +17,8 @@ import { EditorToolbar } from '../../components/ui/EditorToolbar';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { RichEditor } from '../../components/ui/RichEditor';
+import { MentionSuggestionBar, type MentionPerson } from '../../components/ui/MentionSuggestionBar';
+import { PersonRepository } from '../../db/repositories/PersonRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditorBridge, TenTapStartKit } from '@10play/tentap-editor';
 import { htmlToMarkdown, markdownToHtml } from '../../utils/markdownConverter';
@@ -60,6 +62,12 @@ export default function JournalEditorScreen() {
         return null;
     });
     const [taggedPeople, setTaggedPeople] = useState<any[]>([]);
+    // @mention machinery: all connections for query filtering, plus the
+    // activity-ranked subset shown for a bare '@' (most-tagged/most-reminded
+    // first, via the existing getPeopleSortedByActivity system).
+    const [persons, setPersons] = useState<MentionPerson[]>([]);
+    const [topPersons, setTopPersons] = useState<MentionPerson[]>([]);
+    const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 
     const [isEditing, setIsEditing] = useState(() => edit === 'true' || id === 'new');
     const [title, setTitle] = useState('');
@@ -176,6 +184,15 @@ export default function JournalEditorScreen() {
     }, [id]);
 
     const loadData = async () => {
+        // Connections power @mention suggestions + reader highlighting.
+        PersonRepository.getAll('name').then(list => {
+            setPersons(list.map((p: any) => ({ id: p.id, name: p.name, avatarUri: p.avatarUri })));
+        }).catch(() => { /* suggestions degrade gracefully to empty */ });
+        // Activity-ranked subset for the bare-'@' suggestion state.
+        PersonRepository.getPeopleSortedByActivity().then(list => {
+            setTopPersons(list.slice(0, 6).map((p: any) => ({ id: p.id, name: p.name, avatarUri: p.avatarUri })));
+        }).catch(() => { /* non-critical */ });
+
         if (id === 'new') {
             const dateStr = (initialDate as string) || new Date().toISOString().split('T')[0];
             setJournal({
@@ -426,6 +443,8 @@ export default function JournalEditorScreen() {
                             journalDate={formattedDate}
                             journalTitle={title}
                             expectedDoc={editorHtml ?? undefined}
+                            onMentionQuery={setMentionQuery}
+                            mentionNames={persons.map(p => p.name)}
                             onTitleChange={(t) => {
                                 setTitle(t);
                                 if (isDataLoadedRef.current) setHasChanges(true);
@@ -457,6 +476,7 @@ export default function JournalEditorScreen() {
                             <MarkdownText
                                 content={content}
                                 paddingHorizontal={0}
+                                mentionNames={persons.map(p => p.name)}
                                 style={{
                                     fontSize: journalFontSize || 16,
                                     lineHeight: Math.round((journalFontSize || 16) * 1.6)
@@ -492,6 +512,52 @@ export default function JournalEditorScreen() {
                     </ScrollView>
                 )}
 
+                {isEditing && isKeyboardVisible && !titleFocused && mentionQuery !== null && (
+                    <MentionSuggestionBar
+                        query={mentionQuery}
+                        persons={persons}
+                        topPersons={topPersons}
+                        onPick={(person) => {
+                            // Replace the partial '@query' before the caret with
+                            // the full '@Name ' token, then record the person in
+                            // the existing tagged-people system.
+                            //
+                            // Hardened against the two known failure modes:
+                            //  - selection lost / span mismatch -> ABORT (never
+                            //    insert blindly at an unknown caret)
+                            //  - Android Fabric can execute injected scripts
+                            //    twice -> 400ms same-key debounce
+                            const safeName = JSON.stringify(`@${person.name} `);
+                            editor.webviewRef.current?.injectJavaScript(`
+                                (function () {
+                                    var KEY = '_reloomMentionPickAt';
+                                    var now = Date.now();
+                                    if (window[KEY] && now - window[KEY] < 400) return;
+                                    var sel = window.getSelection();
+                                    if (!sel || !sel.rangeCount) return;
+                                    var range = sel.getRangeAt(0);
+                                    var node = range.startContainer;
+                                    if (node.nodeType !== 3) return;
+                                    var before = String(node.textContent || '').slice(0, range.startOffset);
+                                    var m = before.match(/(?:^|\\s)@([^\\s@]{0,24})$/);
+                                    if (!m) return;
+                                    var r = document.createRange();
+                                    r.setStart(node, range.startOffset - m[1].length - 1);
+                                    r.setEnd(node, range.startOffset);
+                                    if (r.toString() !== '@' + m[1]) return;
+                                    sel.removeAllRanges();
+                                    sel.addRange(r);
+                                    window[KEY] = now;
+                                    document.execCommand('insertText', false, ${safeName});
+                                })();
+                                true;
+                            `);
+                            setSelectedPeople(prev => (prev.includes(person.id) ? prev : [...prev, person.id]));
+                            if (isDataLoadedRef.current) setHasChanges(true);
+                            setMentionQuery(null);
+                        }}
+                    />
+                )}
                 {isEditing && isKeyboardVisible && !titleFocused && (
                     <EditorToolbar editor={editor} />
                 )}
