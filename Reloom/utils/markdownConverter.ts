@@ -54,9 +54,11 @@ export function markdownToHtml(markdown: string): string {
 
             if (!trimmed) {
                 closeLists();
-                // Use empty <p></p> — ProseMirror renders this as a paragraph break
-                // without the extra line height that <p><br></p> produces.
-                htmlLines.push('<p></p>');
+                // Blank markdown lines are PARAGRAPH SEPARATORS, not content.
+                // Emitting <p></p> here used to resurrect a phantom empty
+                // paragraph after every save→reload cycle (editor showed a
+                // double gap, reader an extra blank line). Paragraph spacing
+                // comes from <p> margins alone.
                 continue;
             }
 

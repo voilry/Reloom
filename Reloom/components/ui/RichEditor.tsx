@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelRatio, View, StyleSheet } from 'react-native';
 import { RichText, type EditorBridge } from '@10play/tentap-editor';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { escapedMentionPatterns } from '../../utils/mentions';
 
 interface RichEditorProps {
     editor: EditorBridge;
@@ -92,7 +93,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     const fs = (n: number) => Math.round(n * fontScale * 100) / 100;
 
     const customCSS = `
-        @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap');
 
         *, *::before, *::after { box-sizing: border-box !important; }
 
@@ -454,7 +455,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 if (vh > baseVh) baseVh = vh;               // grew back: keyboard closed / layout relaxed
                 var kb = Math.max(0, Math.min(baseVh - vh, baseVh * 0.8));
                 var topLimit = 12;
-                var bottomLimit = vh - 56 - kb;             // 56 ≈ RN toolbar + breathing room
+                var bottomLimit = vh - 92 - kb;         // 92 ≈ toolbar + comfortable headroom (caret rests higher)
                 if (bottomLimit <= topLimit + 40) bottomLimit = vh - 40;
                 if (r.top < topLimit) return r.top - topLimit;
                 if (r.bottom > bottomLimit) return r.bottom - bottomLimit;
@@ -832,12 +833,33 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     const mentionNamesKey = (mentionNames || []).join('\u0001');
     useEffect(() => {
         if (!editor || !journalMeta) return;
-        const names = mentionNamesKey ? mentionNamesKey.split('\u0001') : [];
-        const escaped = names
-            .filter(n => n && n.trim())
-            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const escaped = escapedMentionPatterns(mentionNamesKey ? mentionNamesKey.split('\u0001') : []);
         editor.webviewRef.current?.injectJavaScript(`window.reloomMentionEscaped = ${JSON.stringify(escaped)};true;`);
     }, [editor, journalMeta, mentionNamesKey]);
+
+    // Prewarm support (journal): on every sessionToken bump, push the latest
+    // title INTO the already-mounted webview. The injected title div is built
+    // once at page boot, so without this a discarded/edited title would go
+    // stale across sessions. Body text is handled by the expectedDoc sync.
+    const journalTitleRef = useRef(journalTitle);
+    journalTitleRef.current = journalTitle;
+    const lastTitleSyncRef = useRef(sessionToken);
+    useEffect(() => {
+        if (!editor || !journalMeta) return;
+        if (lastTitleSyncRef.current === sessionToken) return;
+        lastTitleSyncRef.current = sessionToken;
+        const t = JSON.stringify(journalTitleRef.current || '');
+        editor.webviewRef.current?.injectJavaScript(`
+            (function () {
+                var el = document.querySelector('.reloom-journal-title');
+                if (!el) return;
+                var v = ${t};
+                el.textContent = v;
+                el.classList.toggle('reloom-filled', String(v || '').trim().length > 0);
+            })();
+            true;
+        `);
+    }, [editor, journalMeta, sessionToken]);
 
     const resolvedCSS = journalMeta ? `${customCSS}\n${journalMetaCSS}` : customCSS;
 

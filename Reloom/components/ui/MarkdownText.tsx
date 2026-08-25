@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Platform } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Typography } from '../../constants/Typography';
+import { escapedMentionPatterns } from '../../utils/mentions';
 
 interface MarkdownTextProps {
     content: string;
@@ -28,10 +29,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
     // Mention matcher: longest-name-first alternation of the provided
     // connection names. Rebuilt only when the name list identity changes.
     const mentionRegex = React.useMemo(() => {
-        if (!mentionNames || mentionNames.length === 0) return null;
-        const escaped = Array.from(new Set(mentionNames.filter(n => n && n.trim())))
-            .sort((a, b) => b.length - a.length)
-            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const escaped = escapedMentionPatterns(mentionNames || []);
         if (escaped.length === 0) return null;
         try {
             return new RegExp(`(@(?:${escaped.join('|')}))(?=$|[^\\w'’-])`, 'gi');
@@ -42,6 +40,9 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
 
     const parseLine = (rawLine: string, index: number) => {
         const line = rawLine.replace(/\r/g, '').trim();
+        // Blank markdown lines are paragraph separators — paragraph margins
+        // already provide the rhythm; rendering them adds phantom gaps.
+        if (!line) return null;
         // Handle Horizontal Rule — explicit check first, then regex fallback
         if (line === '---' || line === '___' || /^[-*_]{3,}$/.test(line)) {
             return (
@@ -224,6 +225,7 @@ const styles = StyleSheet.create({
     },
     h1: {
         fontSize: 24,
+        fontFamily: Typography.fontFamily.black,
         fontWeight: '900',
         marginTop: 16,
         marginBottom: 8,
@@ -231,6 +233,7 @@ const styles = StyleSheet.create({
     },
     h2: {
         fontSize: 20,
+        fontFamily: Typography.fontFamily.extrabold,
         fontWeight: '800',
         marginTop: 12,
         marginBottom: 6,

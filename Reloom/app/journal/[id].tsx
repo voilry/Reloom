@@ -22,6 +22,7 @@ import { PersonRepository } from '../../db/repositories/PersonRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEditorBridge, TenTapStartKit } from '@10play/tentap-editor';
 import { htmlToMarkdown, markdownToHtml } from '../../utils/markdownConverter';
+import { extractMentionedIds } from '../../utils/mentions';
 import * as Haptics from 'expo-haptics';
 
 const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
@@ -85,6 +86,10 @@ export default function JournalEditorScreen() {
     });
 
     const [selectedPeople, setSelectedPeople] = useState<number[]>([]);
+    // Prewarm + session machinery, mirroring editor.tsx: the editor stays
+    // mounted (hidden) while reading so entering edit is instant; the token
+    // forces doc/title re-convergence on each entry.
+    const [sessionToken, setSessionToken] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -252,6 +257,11 @@ export default function JournalEditorScreen() {
             const markdown = htmlToMarkdown(html);
             const finalTitle = title.trim() || 'Untitled';
 
+            // Tag reconciliation: tags mirror the @mentions actually present
+            // in the text — deleting a mention from the body removes that
+            // person's tag on save.
+            const mentionedIds = extractMentionedIds(markdown, persons);
+
             let savedId = journalId;
             const dateStr = (initialDate as string) || new Date().toISOString().split('T')[0];
 
@@ -270,13 +280,14 @@ export default function JournalEditorScreen() {
                 await JournalRepository.update(journalId, markdown, finalTitle);
             }
 
-            await JournalRepository.setTaggedPeople(savedId, selectedPeople);
+            await JournalRepository.setTaggedPeople(savedId, mentionedIds);
 
             setTitle(finalTitle);
             setContent(markdown);
             setOriginalContent(markdown);
             setOriginalTitle(finalTitle);
-            setOriginalSelectedPeople(selectedPeople);
+            setSelectedPeople(mentionedIds);
+            setOriginalSelectedPeople(mentionedIds);
             setEditorHtml(markdownToHtml(markdown));
             setHasChanges(false);
 
@@ -388,12 +399,12 @@ export default function JournalEditorScreen() {
                                 <ScalePressable
                                     onPress={() => {
                                         setIsEditing(true);
-                                        // RichEditor force-syncs the doc after the
-                                        // WebView load (stale-boot protection); that
-                                        // programmatic setContent fires onChange. Clear
-                                        // the synthetic dirty flag once the sync window
-                                        // has passed — genuine typing afterwards simply
-                                        // re-marks it dirty.
+                                        setSessionToken(t => t + 1);
+                                        // RichEditor re-syncs doc+title on session
+                                        // entry; that programmatic setContent fires
+                                        // onChange. Clear the synthetic dirty flag
+                                        // once the sync window passes — genuine
+                                        // typing afterwards re-marks it dirty.
                                         setTimeout(() => setHasChanges(false), 1200);
                                     }}
                                     style={[styles.headerButton, { backgroundColor: colors.border + '20' }]}
@@ -426,8 +437,18 @@ export default function JournalEditorScreen() {
             />
 
             <View style={{ flex: 1 }}>
-                {isEditing && editorHtml !== null && (
-                    <View key={String(id)} style={{ flex: 1, paddingHorizontal: journalPadding }}>
+                {/*
+                    PREWARM (mirrors editor.tsx): the editor stays mounted and
+                    hidden while reading, so tapping Edit is instant — no boot
+                    delay, no placeholder flash. sessionToken makes every entry
+                    re-converge body (expectedDoc sync) AND the injected title
+                    header (RichEditor's title re-sync) to current RN state.
+                */}
+                {editorHtml !== null && (
+                    <View
+                        key={String(id)}
+                        style={[{ flex: 1, paddingHorizontal: journalPadding }, !isEditing && { display: 'none' }]}
+                    >
                         {/* Date + Title are plain header widgets ABOVE the editor body
                             (injected by RichEditor, scrolling together with it). The title
                             is an independent contenteditable field — its value streams back
@@ -443,6 +464,7 @@ export default function JournalEditorScreen() {
                             journalDate={formattedDate}
                             journalTitle={title}
                             expectedDoc={editorHtml ?? undefined}
+                            sessionToken={sessionToken}
                             onMentionQuery={setMentionQuery}
                             mentionNames={persons.map(p => p.name)}
                             onTitleChange={(t) => {

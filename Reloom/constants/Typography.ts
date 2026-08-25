@@ -10,6 +10,8 @@ export const Typography = {
         semibold: 'Figtree-SemiBold',
         bold: 'Figtree-Bold',
         boldItalic: 'Figtree-BoldItalic',
+        extrabold: 'Figtree-ExtraBold',
+        black: 'Figtree-Black',
         display: 'Display-Bold',
         serif: 'Serif-Bold',
     },
