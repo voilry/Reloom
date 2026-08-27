@@ -57,109 +57,95 @@ export class ReminderRepository {
         .orderBy(asc(reminders.time));
     }
 
+    static async cancelNotification(notificationId: string | null | undefined) {
+        if (!notificationId) return;
+        const ids = notificationId.split(',')
+            .map(id => id.trim())
+            .filter(id => Boolean(id) && id !== 'null' && id !== 'undefined');
+        await Promise.allSettled(ids.map(nid => 
+            Notifications.cancelScheduledNotificationAsync(nid).catch(() => {})
+        ));
+    }
+
     static async create(data: NewReminder) {
         const result = await db.insert(reminders).values({ ...data, notificationId: null }).returning();
         const newReminder = result[0];
 
         if (data.date && data.time && !data.completed) {
-            setTimeout(async () => {
-                try {
-                    // Check if reminder still exists before updating
+            try {
+                const notificationId = await this.scheduleNotifications(
+                    data.title, 
+                    data.description || '', 
+                    data.date, 
+                    data.time as string, 
+                    data.nudgeType || 'on_time', 
+                    data.customNudgesCount || 0
+                );
+                if (notificationId) {
                     const check = await db.select().from(reminders).where(eq(reminders.id, newReminder.id));
                     if (check.length > 0 && !check[0].completed) {
-                        const notificationId = await this.scheduleNotifications(
-                            data.title, 
-                            data.description || '', 
-                            data.date, 
-                            data.time as string, 
-                            data.nudgeType || 'on_time', 
-                            data.customNudgesCount || 0
-                        );
-                        if (notificationId) {
-                            // Re-verify reminder still exists after async schedule
-                            const recheck = await db.select().from(reminders).where(eq(reminders.id, newReminder.id));
-                            if (recheck.length > 0 && !recheck[0].completed) {
-                                await db.update(reminders).set({ notificationId }).where(eq(reminders.id, newReminder.id)).catch(() => {});
-                            } else {
-                                const ids = notificationId.split(',').map(id => id.trim()).filter(Boolean);
-                                await Promise.all(ids.map(nid => Notifications.cancelScheduledNotificationAsync(nid).catch(() => {})));
-                            }
-                        }
+                        await db.update(reminders).set({ notificationId }).where(eq(reminders.id, newReminder.id));
+                        newReminder.notificationId = notificationId;
+                    } else {
+                        await this.cancelNotification(notificationId);
                     }
-                } catch (err) {
-                    console.error('Error scheduling notification in background:', err);
                 }
-            }, 300);
+            } catch (err) {
+                console.error('Error scheduling reminder notification:', err);
+            }
         }
 
         return newReminder;
     }
 
     static async update(id: number, data: Partial<NewReminder>) {
-        const result = await db.update(reminders).set(data).where(eq(reminders.id, id)).returning();
-        const updatedReminder = result[0];
+        const existing = await db.select().from(reminders).where(eq(reminders.id, id));
+        const current = existing[0];
 
-        setTimeout(async () => {
-            try {
-                const existing = await db.select().from(reminders).where(eq(reminders.id, id));
-                if (existing.length > 0) {
-                    const current = existing[0];
-                    if (current.notificationId) {
-                        const ids = current.notificationId.split(',')
-                            .map(id => id.trim())
-                            .filter(id => Boolean(id) && id !== 'null' && id !== 'undefined');
-                        await Promise.all(ids.map(nid => 
-                            Notifications.cancelScheduledNotificationAsync(nid).catch(() => {})
-                        ));
-                    }
+        if (current && current.notificationId) {
+            await this.cancelNotification(current.notificationId);
+        }
 
-                    let newNotificationId: string | null = null;
-                    const isCompleted = data.completed ?? current.completed;
+        let newNotificationId: string | null = null;
+        const isCompleted = data.completed ?? current?.completed ?? false;
 
-                    if (!isCompleted) {
-                        const newTitle = data.title ?? current.title;
-                        const newDesc = data.description ?? current.description;
-                        const newDate = data.date ?? current.date;
-                        const newTime = data.time ?? current.time;
-                        const newNudgeType = data.nudgeType ?? current.nudgeType ?? 'on_time';
-                        const newCustomCount = data.customNudgesCount ?? current.customNudgesCount ?? 0;
-                        
-                        if (newDate && newTime) {
-                            newNotificationId = await this.scheduleNotifications(
-                                newTitle, 
-                                newDesc || '', 
-                                newDate, 
-                                newTime, 
-                                newNudgeType, 
-                                newCustomCount
-                            ).catch(() => null);
-                        }
-                    }
-
-                    await db.update(reminders).set({ notificationId: newNotificationId }).where(eq(reminders.id, id)).catch(() => {});
-                }
-            } catch (err) {
-                console.error('Error updating notification background state:', err);
+        if (!isCompleted) {
+            const newTitle = data.title ?? current?.title ?? '';
+            const newDesc = data.description ?? current?.description ?? '';
+            const newDate = data.date ?? current?.date ?? '';
+            const newTime = data.time ?? current?.time ?? '';
+            const newNudgeType = data.nudgeType ?? current?.nudgeType ?? 'on_time';
+            const newCustomCount = data.customNudgesCount ?? current?.customNudgesCount ?? 0;
+            
+            if (newDate && newTime && newTitle) {
+                newNotificationId = await this.scheduleNotifications(
+                    newTitle, 
+                    newDesc, 
+                    newDate, 
+                    newTime, 
+                    newNudgeType, 
+                    newCustomCount
+                ).catch(() => null);
             }
-        }, 300);
+        }
 
-        return updatedReminder;
+        const result = await db.update(reminders).set({
+            ...data,
+            notificationId: newNotificationId
+        }).where(eq(reminders.id, id)).returning();
+
+        return result[0];
     }
 
     static async delete(id: number) {
         const existing = await db.select().from(reminders).where(eq(reminders.id, id));
         if (existing.length > 0 && existing[0].notificationId) {
-            const ids = existing[0].notificationId.split(',')
-                .map(id => id.trim())
-                .filter(id => Boolean(id) && id !== 'null' && id !== 'undefined');
-            await Promise.all(ids.map(nid => 
-                Notifications.cancelScheduledNotificationAsync(nid).catch(() => {})
-            ));
+            await this.cancelNotification(existing[0].notificationId);
         }
         await db.delete(reminders).where(eq(reminders.id, id));
     }
 
-    private static async scheduleNotifications(
+    public static async scheduleNotifications(
         title: string, 
         body: string, 
         dateStr: string, 
@@ -208,9 +194,10 @@ export class ReminderRepository {
         } else if (nudgeType === 'custom' && customNudgesCount > 0) {
             const diffMs = triggerDate.getTime() - Date.now();
             const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins > 5) {
-                const step = Math.floor(diffMins / customNudgesCount);
-                for (let i = 1; i < customNudgesCount; i++) {
+            if (diffMins > 2) {
+                const count = Math.min(customNudgesCount, 10);
+                const step = Math.max(1, Math.floor(diffMins / (count + 1)));
+                for (let i = 1; i <= count; i++) {
                     const offset = i * step;
                     if (offset > 0 && offset < diffMins) {
                         offsets.push(offset);
@@ -219,7 +206,9 @@ export class ReminderRepository {
             }
         }
 
-        const notificationPromises = offsets.map(async (offset) => {
+        const uniqueOffsets = Array.from(new Set(offsets));
+
+        const notificationPromises = uniqueOffsets.map(async (offset) => {
             const pingTime = new Date(triggerDate.getTime() - offset * 60000);
             if (pingTime.getTime() > Date.now()) {
                 const labelSuffix = offset === 0 ? "" : ` (in ${offset}m)`;

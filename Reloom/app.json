@@ -22,6 +22,9 @@
       },
       "package": "com.voileet.reloom"
     },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive"
+    },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
@@ -37,8 +40,7 @@
         {
           "android": {
             "buildArchs": [
-              "arm64-v8a",
-              "x86_64"
+              "arm64-v8a"
             ]
           }
         }

@@ -28,7 +28,16 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
 
     if (!visible || !reminder) return null;
 
-    const formattedDate = new Date(reminder.date + 'T00:00:00').toLocaleDateString('default', {
+    const parseReminderDate = (dateStr: string) => {
+        if (!dateStr) return new Date();
+        const parts = dateStr.split('-').map(Number);
+        if (parts.length >= 3 && !parts.some(isNaN)) {
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+        return new Date(dateStr);
+    };
+
+    const formattedDate = parseReminderDate(reminder.date).toLocaleDateString('default', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',

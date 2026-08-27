@@ -44,6 +44,9 @@ function WheelPicker({ items, value, onChange, width }: { items: { label: string
         const safeIndex = Math.max(0, Math.min(items.length - 1, index));
         if (safeIndex !== activeIndex) {
             setActiveIndex(safeIndex);
+            if (items[safeIndex]) {
+                onChange(items[safeIndex].value);
+            }
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
         }
     };
@@ -52,10 +55,11 @@ function WheelPicker({ items, value, onChange, width }: { items: { label: string
         const y = e.nativeEvent.contentOffset.y;
         const index = Math.round(y / ITEM_HEIGHT);
         const safeIndex = Math.max(0, Math.min(items.length - 1, index));
-        if (items[safeIndex] && items[safeIndex].value !== value) {
+        setActiveIndex(safeIndex);
+        if (items[safeIndex]) {
             onChange(items[safeIndex].value);
         }
-    }, [items, value, onChange]);
+    }, [items, onChange]);
 
     return (
         <View style={{ height: ITEM_HEIGHT * 5, width, position: 'relative' }}>
@@ -195,12 +199,15 @@ export function DatePicker({ value, onChange, label, placeholder = 'Select Date'
     }, [months]);
 
     useEffect(() => {
-        if (days.length > 0 && !days.find(d => d.value === tempDay)) {
-            setTempDay(days[0].value);
-        } else if (tempDay > daysInMonth) {
-            setTempDay(daysInMonth);
+        if (days.length > 0) {
+            const maxDay = days[days.length - 1].value;
+            if (tempDay > maxDay) {
+                setTempDay(maxDay);
+            } else if (!days.find(d => d.value === tempDay)) {
+                setTempDay(days[0].value);
+            }
         }
-    }, [days, daysInMonth]);
+    }, [days]);
 
     return (
         <View style={styles.container}>

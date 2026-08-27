@@ -112,6 +112,16 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                 case 'linkedin': 
                     url = `https://linkedin.com/in/${cleanValue}`; 
                     break;
+                case 'x':
+                case 'twitter':
+                    url = `https://x.com/${cleanValue}`;
+                    break;
+                case 'telegram':
+                    url = `https://t.me/${cleanValue}`;
+                    break;
+                case 'github':
+                    url = `https://github.com/${cleanValue}`;
+                    break;
                 case 'website':
                 default: 
                     url = `https://${trimmedValue}`; 

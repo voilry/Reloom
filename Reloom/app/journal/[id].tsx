@@ -27,13 +27,24 @@ import * as Haptics from 'expo-haptics';
 
 const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
 
-const formatDisplayDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', {
+const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length >= 3 && !parts.some(isNaN)) {
+        return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
+    return new Date(dateStr).toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
         year: 'numeric'
     });
+};
 
 export default function JournalEditorScreen() {
     const { id, edit, date: initialDate } = useLocalSearchParams();
@@ -215,9 +226,7 @@ export default function JournalEditorScreen() {
             setOriginalSelectedPeople([]);
             setEditorHtml(markdownToHtml(''));
             isDataLoadedRef.current = true;
-            // Same synthetic-dirty reset as the Edit button: the boot doc-sync
-            // fires onChange once; real typing afterwards re-marks it dirty.
-            setTimeout(() => setHasChanges(false), 1200);
+            setHasChanges(false);
             return;
         }
 
@@ -231,6 +240,7 @@ export default function JournalEditorScreen() {
                 setOriginalContent(j.content || '');
                 setEditorHtml(markdownToHtml(j.content || ''));
                 isDataLoadedRef.current = true;
+                setHasChanges(false);
 
                 const tags = await JournalRepository.getTaggedPeople(journalId);
                 setTaggedPeople(tags);
@@ -250,16 +260,10 @@ export default function JournalEditorScreen() {
         }
 
         try {
-            // The editor document holds ONLY the body. The title lives in RN
-            // state (streamed from the header widget via onTitleChange) and is
-            // written straight to the DB; blank titles default to 'Untitled'.
             const html = await editor.getHTML();
             const markdown = htmlToMarkdown(html);
             const finalTitle = title.trim() || 'Untitled';
 
-            // Tag reconciliation: tags mirror the @mentions actually present
-            // in the text — deleting a mention from the body removes that
-            // person's tag on save.
             const mentionedIds = extractMentionedIds(markdown, persons);
 
             let savedId = journalId;
@@ -400,12 +404,7 @@ export default function JournalEditorScreen() {
                                     onPress={() => {
                                         setIsEditing(true);
                                         setSessionToken(t => t + 1);
-                                        // RichEditor re-syncs doc+title on session
-                                        // entry; that programmatic setContent fires
-                                        // onChange. Clear the synthetic dirty flag
-                                        // once the sync window passes — genuine
-                                        // typing afterwards re-marks it dirty.
-                                        setTimeout(() => setHasChanges(false), 1200);
+                                        setHasChanges(false);
                                     }}
                                     style={[styles.headerButton, { backgroundColor: colors.border + '20' }]}
                                     innerStyle={{ borderRadius: 18 }}
@@ -527,7 +526,10 @@ export default function JournalEditorScreen() {
                                         </ScalePressable>
                                     ))
                                 ) : (
-                                    <ThemedText type="small" style={{ color: colors.secondary, marginLeft: 4, opacity: 0.5 }}>No connections mentioned</ThemedText>
+                                    <View style={styles.emptyTagsContainer}>
+                                        <ThemedText type="small" style={{ color: colors.secondary, textAlign: 'center', opacity: 0.6 }}>No connections mentioned</ThemedText>
+                                        <ThemedText type="tiny" style={{ color: colors.secondary, textAlign: 'center', opacity: 0.4, marginTop: 4 }}>use @ to mention</ThemedText>
+                                    </View>
                                 )}
                             </View>
                         </View>
@@ -722,6 +724,12 @@ const styles = StyleSheet.create({
     tagsFlexGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+    },
+    emptyTagsContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
     },
     personTag: {
         flexDirection: 'row',

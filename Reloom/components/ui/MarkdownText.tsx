@@ -149,26 +149,26 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
             const matchStr = match[0];
             if (matchStr.startsWith('**') && matchStr.endsWith('**')) {
                 parts.push(
-                    <Text key={match.index} style={[baseStyle, { fontFamily: Typography.fontFamily.bold }]}>
+                    <Text key={match.index} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { fontFamily: Typography.fontFamily.bold }]}>
                         {matchStr.substring(2, matchStr.length - 2)}
                     </Text>
                 );
             } else if (matchStr.startsWith('*') && matchStr.endsWith('*')) {
                 parts.push(
-                    <Text key={match.index} style={[baseStyle, { fontFamily: Typography.fontFamily.italic }]}>
+                    <Text key={match.index} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { fontFamily: Typography.fontFamily.italic }]}>
                         {matchStr.substring(1, matchStr.length - 1)}
                     </Text>
                 );
             } else if (matchStr.startsWith('~~') && matchStr.endsWith('~~')) {
                 parts.push(
-                    <Text key={match.index} style={[baseStyle, { textDecorationLine: 'line-through', opacity: 0.7 }]}>
+                    <Text key={match.index} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { textDecorationLine: 'line-through', opacity: 0.7 }]}>
                         {matchStr.substring(2, matchStr.length - 2)}
                     </Text>
                 );
             } else if (matchStr.startsWith('`') && matchStr.endsWith('`')) {
                 parts.push(
                     <View key={match.index} style={[styles.inlineCodeContainer, { backgroundColor: colors.surface }]}>
-                        <Text style={[baseStyle, styles.inlineCode, { color: colors.tint }]}>
+                        <Text allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, styles.inlineCode, { color: colors.tint }]}>
                             {matchStr.substring(1, matchStr.length - 1)}
                         </Text>
                     </View>
@@ -197,7 +197,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
                 out.push(renderInlineMd(text.substring(lastIdx, m.index), baseStyle));
             }
             out.push(
-                <Text key={`mention-${m.index}`} style={[baseStyle, { color: colors.tint, fontFamily: Typography.fontFamily.semibold }]}>
+                <Text key={`mention-${m.index}`} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { color: colors.tint, fontFamily: Typography.fontFamily.semibold }]}>
                     {/* Reader shows just the colored name — the '@' is an
                         editing affordance and stays editor-only. */}
                     {m[0].slice(1)}

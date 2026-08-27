@@ -87,7 +87,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     return (
         <View style={{
             position: 'absolute',
-            bottom: 30,
+            bottom: 23,
             left: 0,
             right: 0,
             alignItems: 'center', // centers the capsule

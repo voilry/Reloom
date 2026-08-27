@@ -85,12 +85,8 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     // Reader (MarkdownText.tsx) uses fontSize:16, lineHeight:26 as the base paragraph spec.
     const baseFontSize = fontSize;
     const baseLineHeight = lineHeight ?? 26;
-    // Reader <Text> follows the OS font-size setting (allowFontScaling); WebView
-    // CSS pixels do not. Scale our CSS sizes by the same factor so Edit mode
-    // matches Read mode on devices with a non-default system font size. RN
-    // explicit lineHeights are NOT scaled — keep them literal here too.
-    const fontScale = PixelRatio.getFontScale();
-    const fs = (n: number) => Math.round(n * fontScale * 100) / 100;
+    // Keep exact font size scale matching the app's fixed design system
+    const fs = (n: number) => n;
 
     const customCSS = `
         @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap');
@@ -975,6 +971,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
         >
             <RichText
                 editor={editor}
+                textZoom={100}
                 style={{ flex: 1, width: '100%', backgroundColor: bgColor }}
                 containerStyle={{ flex: 1, width: '100%', backgroundColor: bgColor }}
                 showsVerticalScrollIndicator={false}

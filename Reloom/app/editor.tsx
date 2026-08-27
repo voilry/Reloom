@@ -270,11 +270,7 @@ export default function EditorScreen() {
                         onPress={() => {
                             setIsEditing(true);
                             setSessionToken(t => t + 1);
-                            // RichEditor re-syncs its doc on session entry; that
-                            // programmatic setContent fires onChange. Clear the
-                            // synthetic dirty flag once the sync window passes —
-                            // genuine typing afterwards re-marks it dirty.
-                            setTimeout(() => setHasChanges(false), 1200);
+                            setHasChanges(false);
                         }}
                         style={[styles.iconButton, { backgroundColor: colors.tint + '10' }]}
                         innerStyle={{ borderRadius: 18 }}
@@ -295,14 +291,6 @@ export default function EditorScreen() {
             {renderHeader()}
 
             <View style={{ flex: 1 }}>
-                {/*
-                    PREWARM: the editor stays mounted (hidden) while reading so
-                    the WebView boots and syncs its document in the background.
-                    Tapping Edit therefore switches instantly — no boot delay and
-                    no placeholder flash on existing notes. sessionToken makes
-                    every entry into edit mode re-sync the live doc to app state
-                    (covers save→re-edit and discard→re-edit on one instance).
-                */}
                 {editorHtml !== null && (
                     <View style={[{ flex: 1 }, !isEditing && { display: 'none' }]}>
                         <RichEditor
@@ -311,10 +299,10 @@ export default function EditorScreen() {
                             lineHeight={Math.round((settings.editorFontSize || 15) * 1.5)}
                             horizontalPadding={20}
                             topPadding={32}
-                        placeholder="Start writing..."
-                        expectedDoc={editorHtml ?? undefined}
-                        sessionToken={sessionToken}
-                    />
+                            placeholder="Start writing..."
+                            expectedDoc={editorHtml ?? undefined}
+                            sessionToken={sessionToken}
+                        />
                     </View>
                 )}
 

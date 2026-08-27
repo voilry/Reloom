@@ -4,7 +4,21 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState, useMemo } from 'react';
-import { useColorScheme, View, Platform, Text } from 'react-native';
+import { useColorScheme, View, Platform, Text, TextInput, AppState } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
+
+// Prevent system font scaling from overriding the app's typography scale
+if ((Text as any).defaultProps == null) {
+  (Text as any).defaultProps = {};
+}
+(Text as any).defaultProps.allowFontScaling = false;
+(Text as any).defaultProps.maxFontSizeMultiplier = 1;
+
+if ((TextInput as any).defaultProps == null) {
+  (TextInput as any).defaultProps = {};
+}
+(TextInput as any).defaultProps.allowFontScaling = false;
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,7 +53,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
-  const { settings, isLoading: settingsLoading, refreshKey } = useSettings();
+  const { settings, isLoading: settingsLoading, refreshKey, checkForUpdates } = useSettings();
   const { colors: appColors, isDark } = useAppTheme();
   
   // Track if we are fully ready to show the app
@@ -91,7 +105,25 @@ function RootLayoutContent() {
     }
   }, [migrationSuccess]);
 
-  const { checkForUpdates } = useSettings();
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const hideNavBar = async () => {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden');
+          await NavigationBar.setBehaviorAsync('overlay-swipe');
+        } catch (e) {
+          // Ignore platform or permission errors
+        }
+      };
+      hideNavBar();
+      const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active') {
+          hideNavBar();
+        }
+      });
+      return () => subscription.remove();
+    }
+  }, []);
 
   useEffect(() => {
     if (isReady) {

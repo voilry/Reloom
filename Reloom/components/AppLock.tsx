@@ -142,6 +142,11 @@ export function AppLock() {
 
     const validatePin = async (input: string) => {
         const storedPin = await SecureStore.getItemAsync('reloom_app_pin');
+        if (!storedPin) {
+            console.warn('AppLock: stored PIN is missing, unlocking');
+            handleSuccess();
+            return;
+        }
         if (input === storedPin) {
             handleSuccess();
         } else {

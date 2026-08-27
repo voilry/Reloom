@@ -23,6 +23,8 @@ export function Input({ label, error, style, containerStyle, ...rest }: InputPro
             )}
             <View style={styles.inputWrapper}>
                 <TextInput
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1}
                     style={[
                         styles.input,
                         {

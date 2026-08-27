@@ -110,10 +110,11 @@ export class EntryRepository {
             }
             
             const combinedContent = `${existing[0].content}\n\n${newSection}`;
-            await db.update(entries)
+            const updated = await db.update(entries)
                 .set({ content: combinedContent })
-                .where(eq(entries.id, existing[0].id));
-            return existing[0];
+                .where(eq(entries.id, existing[0].id))
+                .returning();
+            return updated[0] || { ...existing[0], content: combinedContent };
         }
 
         const result = await db.insert(entries).values({

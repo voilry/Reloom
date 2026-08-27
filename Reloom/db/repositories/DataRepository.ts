@@ -1,9 +1,17 @@
 import { db } from '../index';
 import { people, entries, journals, journalTags, entryTypes, relationships, groups, personGroups, reminders, contacts } from '../schema';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Notifications from 'expo-notifications';
+import { ReminderRepository } from './ReminderRepository';
+import { eq } from 'drizzle-orm';
 
 export const DataRepository = {
     async clearAllData(): Promise<void> {
+        try {
+            await Notifications.cancelAllScheduledNotificationsAsync();
+        } catch (e) {
+            console.error('Failed to cancel notifications during clearAllData:', e);
+        }
         await db.delete(journalTags);
         await db.delete(journals);
         await db.delete(relationships);
@@ -65,6 +73,12 @@ export const DataRepository = {
 
     async importData(importedInput: any): Promise<void> {
         console.log('Starting data import...');
+
+        try {
+            await Notifications.cancelAllScheduledNotificationsAsync();
+        } catch (e) {
+            console.error('Failed to cancel notifications prior to import:', e);
+        }
 
         // Support both wrapped and unwrapped formats for maximum compatibility
         const imported = importedInput?.data ? importedInput.data : importedInput;
@@ -183,7 +197,10 @@ export const DataRepository = {
 
                 console.log(`Restoring ${rem?.length || 0} reminders...`);
                 if (rem?.length) {
-                    const mappedReminders = rem.map(mapDates);
+                    const mappedReminders = rem.map((r: any) => {
+                        const m = mapDates(r);
+                        return { ...m, notificationId: null };
+                    });
                     await tx.insert(reminders).values(mappedReminders);
                 }
 
@@ -193,6 +210,28 @@ export const DataRepository = {
                     await tx.insert(contacts).values(mappedContacts);
                 }
             });
+
+            // Reschedule active future reminders
+            try {
+                const activeReminders = await db.select().from(reminders);
+                for (const item of activeReminders) {
+                    if (!item.completed && item.date && item.time) {
+                        const notifId = await ReminderRepository.scheduleNotifications(
+                            item.title,
+                            item.description || '',
+                            item.date,
+                            item.time,
+                            item.nudgeType || 'on_time',
+                            item.customNudgesCount || 0
+                        );
+                        if (notifId) {
+                            await db.update(reminders).set({ notificationId: notifId }).where(eq(reminders.id, item.id));
+                        }
+                    }
+                }
+            } catch (scheduleError) {
+                console.error('Failed to reschedule imported notifications:', scheduleError);
+            }
 
             console.log('Import successful!');
         } catch (error: any) {

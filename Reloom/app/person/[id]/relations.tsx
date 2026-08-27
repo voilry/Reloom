@@ -89,9 +89,9 @@ export default function RelationsScreen() {
     };
 
     const handleConfirmLink = async () => {
-        if (!selectedTarget || !person) return;
+        if (!selectedTarget || !person || !relationType.trim()) return;
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await RelationshipRepository.add(person.id, selectedTarget.id, relationType.trim() || 'Connection');
+        await RelationshipRepository.add(person.id, selectedTarget.id, relationType.trim());
         resetModal();
         loadData();
     };
@@ -431,19 +431,29 @@ export default function RelationsScreen() {
                                     />
 
                                     {/* Confirm */}
-                                    <ScalePressable
-                                        onPress={handleConfirmLink}
-                                        style={[
-                                            styles.confirmBtn,
-                                            { backgroundColor: colors.tint, ...DesignSystem.shadows.md }
-                                        ]}
-                                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
-                                    >
-                                        <Check size={20} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />
-                                        <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontSize: 14, fontFamily: Typography.fontFamily.bold, marginLeft: 4 }}>
-                                            Confirm
-                                        </ThemedText>
-                                    </ScalePressable>
+                                    {(() => {
+                                        const canConfirm = relationType.trim().length > 0;
+                                        return (
+                                            <ScalePressable
+                                                disabled={!canConfirm}
+                                                onPress={canConfirm ? handleConfirmLink : undefined}
+                                                style={[
+                                                    styles.confirmBtn,
+                                                    { 
+                                                        backgroundColor: colors.tint,
+                                                        opacity: canConfirm ? 1 : 0.35,
+                                                        ...(canConfirm ? DesignSystem.shadows.md : {})
+                                                    }
+                                                ]}
+                                                innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                            >
+                                                <Check size={20} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />
+                                                <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontSize: 14, fontFamily: Typography.fontFamily.bold, marginLeft: 4 }}>
+                                                    Confirm
+                                                </ThemedText>
+                                            </ScalePressable>
+                                        );
+                                    })()}
 
                                     <ScalePressable
                                         onPress={() => setStep('pick')}

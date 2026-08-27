@@ -191,6 +191,8 @@ export default function CalendarScreen() {
         return map;
     }, [people, journals, reminders]);
 
+    const isLeapYear = (year: number) => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+
     const getEventsForDate = (date: Date | null) => {
         if (!date) return [];
         const y = date.getFullYear();
@@ -198,12 +200,17 @@ export default function CalendarScreen() {
         const d = String(date.getDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${d}`;
         const monthDay = `${m}-${d}`;
+        const isCurrentLeap = isLeapYear(y);
+        const isFeb28NonLeap = !isCurrentLeap && m === '02' && d === '28';
 
         const events: Event[] = [];
 
         people.forEach(p => {
-            if (p.birthdate && p.birthdate.endsWith(monthDay)) {
-                events.push({ type: 'birthday', id: p.id, title: `${p.name}'s Birthday`, person: p });
+            if (p.birthdate) {
+                const isMatch = p.birthdate.endsWith(monthDay) || (isFeb28NonLeap && p.birthdate.endsWith('-02-29'));
+                if (isMatch) {
+                    events.push({ type: 'birthday', id: p.id, title: `${p.name}'s Birthday`, person: p });
+                }
             }
             if (p.firstMet === dateStr) {
                 events.push({ type: 'met', id: p.id, title: `Met ${p.name}`, person: p });
@@ -240,9 +247,11 @@ export default function CalendarScreen() {
         const d = String(date.getDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${d}`;
         const monthDay = `${m}-${d}`;
+        const isCurrentLeap = isLeapYear(y);
+        const isFeb28NonLeap = !isCurrentLeap && m === '02' && d === '28';
 
         const base = eventMap[dateStr] || { birthday: false, met: false, journal: false, reminder: false };
-        const birthday = people.some(p => p.birthdate && p.birthdate.endsWith(monthDay));
+        const birthday = people.some(p => p.birthdate && (p.birthdate.endsWith(monthDay) || (isFeb28NonLeap && p.birthdate.endsWith('-02-29'))));
 
         return {
             ...base,
@@ -282,6 +291,10 @@ export default function CalendarScreen() {
         } else if (selStr > todayStr) {
             setShowAddReminder(true);
         } else {
+            const hasJournal = eventMap[selStr]?.journal || journals.some(j => j.date === selStr && (j.content?.trim() || j.title?.trim()));
+            if (hasJournal) {
+                return;
+            }
             router.push({
                 pathname: '/journal/[id]',
                 params: {
@@ -572,22 +585,34 @@ export default function CalendarScreen() {
                                     </ThemedText>
                                 </View>
                                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                                    <ScalePressable
-                                        onPress={handleQuickAddJournal}
-                                        style={[styles.addEventBtn, { backgroundColor: colors.surface }]}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                    >
-                                        {(() => {
-                                            const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
-                                            const sel = selectedDate || new Date();
-                                            const selStr = `${sel.getFullYear()}-${String(sel.getMonth() + 1).padStart(2, '0')}-${String(sel.getDate()).padStart(2, '0')}`;
-                                            
-                                            if (!settings.showJournalTab || selStr > todayStr) {
-                                                return <BellDot size={24} color={colors.tint} weight="fill" />;
-                                            }
-                                            return <Plus size={24} color={colors.tint} weight="fill" />;
-                                        })()}
-                                    </ScalePressable>
+                                    {(() => {
+                                        const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+                                        const sel = selectedDate || new Date();
+                                        const selStr = `${sel.getFullYear()}-${String(sel.getMonth() + 1).padStart(2, '0')}-${String(sel.getDate()).padStart(2, '0')}`;
+                                        const isReminderMode = !settings.showJournalTab || selStr > todayStr;
+                                        const journalAlreadyExists = !isReminderMode && !!(eventMap[selStr]?.journal || journals.some(j => j.date === selStr && (j.content?.trim() || j.title?.trim())));
+
+                                        return (
+                                            <ScalePressable
+                                                disabled={journalAlreadyExists}
+                                                onPress={journalAlreadyExists ? undefined : handleQuickAddJournal}
+                                                style={[
+                                                    styles.addEventBtn,
+                                                    { 
+                                                        backgroundColor: colors.surface,
+                                                        opacity: journalAlreadyExists ? 0.35 : 1
+                                                    }
+                                                ]}
+                                                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                            >
+                                                {isReminderMode ? (
+                                                    <BellDot size={24} color={colors.tint} weight="fill" />
+                                                ) : (
+                                                    <Plus size={24} color={colors.tint} weight="fill" />
+                                                )}
+                                            </ScalePressable>
+                                        );
+                                    })()}
                                     <ScalePressable
                                         onPress={() => setShowDetailModal(false)}
                                         style={[styles.closeModalBtn, { backgroundColor: colors.surface }]}

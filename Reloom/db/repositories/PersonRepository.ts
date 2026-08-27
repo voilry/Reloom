@@ -2,6 +2,7 @@ import { db } from '../index';
 import { people, entries, journalTags, reminders, relationships, personGroups, contacts } from '../schema';
 import { eq, desc, isNotNull, asc, sql, or } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import * as Notifications from 'expo-notifications';
 
 export type Person = InferSelectModel<typeof people>;
 export type NewPerson = InferInsertModel<typeof people>;
@@ -42,6 +43,21 @@ export class PersonRepository {
     }
 
     static async delete(id: number) {
+        // Query reminders first to cancel scheduled OS notifications
+        try {
+            const personReminders = await db.select().from(reminders).where(eq(reminders.personId, id));
+            await Promise.allSettled(
+                personReminders.map(r => {
+                    if (r.notificationId) {
+                        return Notifications.cancelScheduledNotificationAsync(r.notificationId).catch(() => {});
+                    }
+                    return Promise.resolve();
+                })
+            );
+        } catch (e) {
+            console.error('Failed to cancel notifications for deleted person:', e);
+        }
+
         // Fallback explicit delete for child and junction records
         await db.delete(entries).where(eq(entries.personId, id));
         await db.delete(journalTags).where(eq(journalTags.personId, id));

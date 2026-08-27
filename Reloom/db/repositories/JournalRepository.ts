@@ -59,12 +59,16 @@ export class JournalRepository {
     }
 
     static async tagPerson(journalId: number, personId: number) {
+        const existing = await db.select().from(journalTags)
+            .where(and(eq(journalTags.journalId, journalId), eq(journalTags.personId, personId)));
+        if (existing.length > 0) return existing;
         return await db.insert(journalTags).values({ journalId, personId }).returning();
     }
 
     static async setTaggedPeople(journalId: number, personIds: number[]) {
         await this.removeAllTags(journalId);
-        for (const personId of personIds) {
+        const uniqueIds = Array.from(new Set(personIds.filter(Boolean)));
+        for (const personId of uniqueIds) {
             await this.tagPerson(journalId, personId);
         }
     }

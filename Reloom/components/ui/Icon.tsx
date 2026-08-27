@@ -20,6 +20,8 @@ export const Icon = ({ name, size = 24, color = '#000', style }: IconProps) => {
 
     return (
         <Text
+            allowFontScaling={false}
+            maxFontSizeMultiplier={1}
             style={[
                 {
                     fontFamily: 'MingCute',

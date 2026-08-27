@@ -26,6 +26,15 @@ import { Swipeable } from 'react-native-gesture-handler';
 
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
 
+const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length >= 3 && !parts.some(isNaN)) {
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return new Date(dateStr);
+};
+
 const renderRightActions = (id: number, dragX: RNAnimated.AnimatedInterpolation<number>, colors: any, onDelete: (id: number) => void) => {
     const trans = dragX.interpolate({
         inputRange: [-80, 0],
@@ -81,7 +90,7 @@ const JournalItem = memo(({ item, index, colors, router, hapticsEnabled, onDelet
             <Card style={[{ backgroundColor: colors.surface, borderColor: colors.text + '10' }]} padding="lg">
                 <View style={styles.cardHeader}>
                     <Badge variant="tint" icon={<Calendar size={12} color={colors.tint} weight="bold" />}>
-                        {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {parseLocalDate(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </Badge>
                 </View>
 
@@ -255,7 +264,7 @@ export default function JournalScreen() {
             // Comprehensive Date Match
             let dateMatch = false;
             if (j.date) {
-                const d = new Date(j.date);
+                const d = parseLocalDate(j.date);
                 if (!isNaN(d.getTime())) {
                     const formats = [
                         d.toLocaleDateString('default', { month: 'long', day: 'numeric' }).toLowerCase(),

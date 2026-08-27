@@ -84,6 +84,7 @@ export const ManageGroupMembersModal = ({
         return {
             opacity,
             transform: [{ translateY }, { scale }],
+            pointerEvents: opacity < 0.1 ? 'none' : 'auto',
         };
     });
 

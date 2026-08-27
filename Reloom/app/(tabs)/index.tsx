@@ -44,6 +44,15 @@ import { AddressBook } from '@/components/ui/Icon';
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
 import { UpdateModal } from '../../components/ui/UpdateModal';
 
+const formatLocalDateShort = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length >= 3 && !parts.some(isNaN)) {
+        return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
 const PersonItem = memo(({ item, index, colors, theme, onPress, onLongPress }: any) => (
     <View>
         <ScalePressable
@@ -746,7 +755,7 @@ export default function PeopleScreen() {
                                                             <View style={{ marginTop: 8, alignItems: 'center' }}>
                                                                 <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 13, maxWidth: 80 }}>{p.name}</ThemedText>
                                                                 <ThemedText type="tiny" style={{ color: colors.tint, marginTop: 2, fontWeight: '700' }}>
-                                                                    {new Date(p.birthdate!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                    {formatLocalDateShort(p.birthdate!)}
                                                                 </ThemedText>
                                                             </View>
                                                         </ScalePressable>
@@ -800,7 +809,7 @@ export default function PeopleScreen() {
                                                                 <View style={[styles.highlightTitleRow, { marginBottom: 4 }]}>
                                                                     <Book size={14} color={colors.tint} weight="bold" />
                                                                     <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', marginLeft: 6 }}>
-                                                                        {new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                        {formatLocalDateShort(h.date)}
                                                                     </ThemedText>
                                                                 </View>
                                                                 {h.title && (

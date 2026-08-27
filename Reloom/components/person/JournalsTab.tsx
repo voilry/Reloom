@@ -20,6 +20,15 @@ interface JournalsTabProps {
     isAcrylic?: boolean;
 }
 
+const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length >= 3 && !parts.some(isNaN)) {
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return new Date(dateStr);
+};
+
 export function JournalsTab({ journals, personName, onDelete, isAcrylic }: JournalsTabProps) {
     const router = useRouter();
     const { colors, hapticsEnabled, theme } = useAppTheme();
@@ -92,7 +101,7 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
                                 <View style={styles.entryHeader}>
                                     <View style={[styles.journalDateBadge, { backgroundColor: colors.tint + '15' }]}>
                                         <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800' }}>
-                                            {new Date(item.journal.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {parseLocalDate(item.journal.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </ThemedText>
                                     </View>
                                 </View>

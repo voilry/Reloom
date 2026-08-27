@@ -6,8 +6,9 @@
 export function markdownToHtml(markdown: string): string {
     if (!markdown || typeof markdown !== 'string' || !markdown.trim()) return '<p></p>';
 
-    // If input is already valid HTML, return as-is
-    if (markdown.trim().startsWith('<') && markdown.trim().endsWith('>')) {
+    // If input is already valid formatted HTML block from editor, return as-is
+    const trimmedInput = markdown.trim();
+    if (/^<(p|h[1-6]|ul|ol|blockquote|div|table|pre)[\s>]/i.test(trimmedInput) && /<\/(p|h[1-6]|ul|ol|blockquote|div|table|pre)>$/i.test(trimmedInput)) {
         return markdown;
     }
 
