@@ -551,28 +551,38 @@ export default function JournalEditorScreen() {
                             //    insert blindly at an unknown caret)
                             //  - Android Fabric can execute injected scripts
                             //    twice -> 400ms same-key debounce
-                            const safeName = JSON.stringify(`@${person.name} `);
+                            const personName = person.name;
+                            const safeName = JSON.stringify(personName);
                             editor.webviewRef.current?.injectJavaScript(`
                                 (function () {
                                     var KEY = '_reloomMentionPickAt';
                                     var now = Date.now();
                                     if (window[KEY] && now - window[KEY] < 400) return;
+                                    window[KEY] = now;
+
+                                    if (window.reloomInsertMention) {
+                                        var ok = window.reloomInsertMention(${safeName});
+                                        if (ok) return;
+                                    }
+
                                     var sel = window.getSelection();
                                     if (!sel || !sel.rangeCount) return;
                                     var range = sel.getRangeAt(0);
                                     var node = range.startContainer;
-                                    if (node.nodeType !== 3) return;
+                                    if (node && node.nodeType === 1) {
+                                        node = node.childNodes[range.startOffset - 1] || node.lastChild || node;
+                                    }
+                                    if (!node || node.nodeType !== 3) return;
+                                    var M_RE = new RegExp('(?:^|[\\\\s\\\\n\\\\r\\\\u200B\\\\uFEFF])@([^\\\\s@\\\\u200B\\\\uFEFF]{0,24})$');
                                     var before = String(node.textContent || '').slice(0, range.startOffset);
-                                    var m = before.match(/(?:^|\\s)@([^\\s@]{0,24})$/);
+                                    var m = before.match(M_RE);
                                     if (!m) return;
                                     var r = document.createRange();
                                     r.setStart(node, range.startOffset - m[1].length - 1);
                                     r.setEnd(node, range.startOffset);
-                                    if (r.toString() !== '@' + m[1]) return;
                                     sel.removeAllRanges();
                                     sel.addRange(r);
-                                    window[KEY] = now;
-                                    document.execCommand('insertText', false, ${safeName});
+                                    document.execCommand('insertText', false, '@' + ${safeName} + ' ');
                                 })();
                                 true;
                             `);

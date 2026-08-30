@@ -197,7 +197,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content, style, padd
                 out.push(renderInlineMd(text.substring(lastIdx, m.index), baseStyle));
             }
             out.push(
-                <Text key={`mention-${m.index}`} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { color: colors.tint, fontFamily: Typography.fontFamily.semibold }]}>
+                <Text key={`mention-${m.index}`} allowFontScaling={false} maxFontSizeMultiplier={1} style={[baseStyle, { color: colors.tint, fontFamily: Typography.fontFamily.semibold, fontStyle: 'normal', textDecorationLine: 'none' }]}>
                     {/* Reader shows just the colored name — the '@' is an
                         editing affordance and stays editor-only. */}
                     {m[0].slice(1)}

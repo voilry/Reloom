@@ -280,6 +280,8 @@ export const RichEditor: React.FC<RichEditorProps> = ({
         ::highlight(reloom-mention) {
             color: ${tintColor} !important;
             font-weight: 600 !important;
+            font-style: normal !important;
+            text-decoration: none !important;
         }
         /* Date — mirrors the reader's fullDate (ThemedText tiny + Figtree-Bold,
            12/16, uppercase, ls 1.5, opacity .4). Padding-top 12 matches the
@@ -480,26 +482,88 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             // ---- @mention detection (journal mode) --------------------------
             // Streams the partial query after a caret-adjacent '@' to RN, which
             // shows the connection suggestion bar. null closes it.
+            var MENTION_RE = new RegExp('(?:^|[\\\\s\\\\n\\\\r\\\\u200B\\\\uFEFF])@([^\\\\s@\\\\u200B\\\\uFEFF]{0,24})$');
+
             function detectMention() {
                 if (!JOURNAL) return;
                 var q = null;
                 try {
-                    var sel = window.getSelection();
-                    if (sel && sel.rangeCount) {
-                        var range = sel.getRangeAt(0);
-                        var node = range.startContainer;
-                        if (node.nodeType === 3) {
-                            var host = node.parentElement && node.parentElement.closest('.reloom-journal-title');
-                            if (!host) {
-                                var before = String(node.textContent || '').slice(0, range.startOffset);
-                                var m = before.match(/(?:^|\\s)@([^\\s@]{0,24})$/);
-                                if (m) q = m[1];
+                    var pm = document.querySelector('.ProseMirror');
+                    if (pm && pm.editor && pm.editor.state) {
+                        var state = pm.editor.state;
+                        var $from = state.selection ? state.selection.$from : null;
+                        if ($from && $from.parent) {
+                            var textBefore = $from.parent.textBetween(0, $from.parentOffset);
+                            var m = textBefore.match(MENTION_RE);
+                            if (m) q = m[1];
+                        }
+                    }
+                    if (q === null) {
+                        var sel = window.getSelection();
+                        if (sel && sel.rangeCount) {
+                            var range = sel.getRangeAt(0);
+                            var node = range.startContainer;
+                            if (node && node.nodeType === 1) {
+                                node = node.childNodes[range.startOffset - 1] || node.childNodes[range.startOffset] || node.lastChild || node;
+                            }
+                            if (node && node.nodeType === 3) {
+                                var host = node.parentElement && node.parentElement.closest('.reloom-journal-title');
+                                if (!host) {
+                                    var before = String(node.textContent || '').slice(0, range.startOffset);
+                                    var m2 = before.match(MENTION_RE);
+                                    if (m2) q = m2[1];
+                                }
                             }
                         }
                     }
                 } catch (_e) {}
                 postMsg({ type: 'reloom-mention', value: q });
             }
+
+            window.reloomInsertMention = function (name) {
+                try {
+                    var pm = document.querySelector('.ProseMirror');
+                    if (!pm || !pm.editor) return false;
+                    var editor = pm.editor;
+                    var state = editor.state;
+                    var $from = state.selection ? state.selection.$from : null;
+                    if (!$from || !$from.parent) return false;
+
+                    var textBefore = $from.parent.textBetween(0, $from.parentOffset);
+                    var m = textBefore.match(MENTION_RE);
+                    if (!m) return false;
+
+                    var matchLength = m[1].length + 1;
+                    var from = state.selection.from - matchLength;
+                    var to = state.selection.from;
+
+                    if (from < 0 || to < from) return false;
+
+                    var tr = state.tr;
+                    tr.delete(from, to);
+                    tr.setStoredMarks([]);
+                    var insertText = '@' + name + ' ';
+                    tr.insertText(insertText, from);
+
+                    var insertEnd = from + insertText.length;
+                    var inlineMarkNames = ['bold', 'italic', 'strike', 'code', 'underline'];
+                    if (state.schema && state.schema.marks) {
+                        inlineMarkNames.forEach(function (markName) {
+                            var markType = state.schema.marks[markName];
+                            if (markType) {
+                                tr.removeMark(from, insertEnd, markType);
+                            }
+                        });
+                    }
+
+                    tr.setStoredMarks([]);
+                    editor.view.dispatch(tr);
+                    editor.view.focus();
+                    return true;
+                } catch (_e) {
+                    return false;
+                }
+            };
 
             var mentionTimer = null;
             function scheduleMention() {
