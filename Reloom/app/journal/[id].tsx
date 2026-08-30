@@ -397,7 +397,7 @@ export default function JournalEditorScreen() {
                 borderBottom={false}
                 bottomPadding={2}
                 rightContent={
-                    <View style={[styles.headerActions, { marginRight: -6 }]}>
+                    <View style={styles.headerActions}>
                         {!isEditing ? (
                             <>
                                 <ScalePressable
@@ -428,7 +428,7 @@ export default function JournalEditorScreen() {
                                 ]}
                                 innerStyle={{ borderRadius: 18 }}
                             >
-                                <Check size={24} color={canSave ? colors.tintContrast : colors.secondary} weight="bold" />
+                                <Check size={20} color={canSave ? colors.tintContrast : colors.secondary} weight="bold" />
                             </ScalePressable>
                         )}
                     </View>
