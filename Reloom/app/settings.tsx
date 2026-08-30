@@ -75,26 +75,52 @@ export default function SettingsScreen() {
 
             if (Platform.OS === 'android') {
                 const SAF = (FileSystem as any).StorageAccessFramework;
-                if (!SAF) throw new Error("Storage Access Framework not available");
+                if (SAF) {
+                    let initialUri: string | null = null;
+                    try {
+                        initialUri = SAF.getUriForDirectoryInRoot('Documents');
+                    } catch (e) {
+                        // ignore and open default
+                    }
 
-                const permissions = await SAF.requestDirectoryPermissionsAsync();
+                    const permissions = await SAF.requestDirectoryPermissionsAsync(initialUri);
+                    if (!permissions.granted) {
+                        showAlert("Permission Denied", "Could not save without folder access.", "error");
+                        return;
+                    }
 
-                if (permissions.granted) {
-                    const uri = await SAF.createFileAsync(
-                        permissions.directoryUri,
-                        fileName,
-                        'application/octet-stream'
-                    );
-                    await FileSystem.writeAsStringAsync(uri, jsonString, { encoding: 'utf8' });
-                    showAlert("Success", "Reloom backup saved to your selected folder.", "success");
-                } else {
-                    showAlert("Permission Denied", "Could not save without folder access.", "error");
+                    try {
+                        const uri = await SAF.createFileAsync(
+                            permissions.directoryUri,
+                            fileName,
+                            'application/octet-stream'
+                        );
+                        await FileSystem.writeAsStringAsync(uri, jsonString, { encoding: 'utf8' });
+                        showAlert("Success", "Reloom backup saved to your selected folder.", "success");
+                        return;
+                    } catch (safErr: any) {
+                        console.warn('SAF folder write error:', safErr);
+                        const msg = String(safErr?.message || '');
+                        if (msg.includes('writable') || msg.includes('msd') || msg.includes('downloads')) {
+                            showAlert(
+                                "Folder Restricted",
+                                "Android prevents saving directly into the root Downloads folder. Please select the 'Documents' folder or create a new subfolder.",
+                                "error"
+                            );
+                        } else {
+                            showAlert(
+                                "Export Error",
+                                `Could not write to the selected folder: ${safErr?.message || "Please choose another folder."}`,
+                                "error"
+                            );
+                        }
+                        return;
+                    }
                 }
-                return;
             }
 
             // iOS Implementation (Save to Files via Share Sheet)
-            const cacheDir = (FileSystem as any).cacheDirectory;
+            const cacheDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
             const fileUri = `${cacheDir}${fileName}`;
             await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: 'utf8' });
 
@@ -107,9 +133,9 @@ export default function SettingsScreen() {
             } else {
                 showAlert("Export Error", "Sharing is not available on this device.", "error");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Export error:', error);
-            showAlert("Export Failed", "There was an error generating your backup file.", "error");
+            showAlert("Export Failed", `There was an error generating your backup file: ${error?.message || "Please try again."}`, "error");
         }
     };
 
