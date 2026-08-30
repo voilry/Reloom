@@ -385,6 +385,91 @@ export const RichEditor: React.FC<RichEditorProps> = ({
                 } catch (_e) {}
             }
 
+            window.reloomSetContent = function (html) {
+                try {
+                    var pm = document.querySelector('.ProseMirror');
+                    if (!pm || !pm.editor) return false;
+                    var editor = pm.editor;
+                    var state = editor.state;
+                    var view = editor.view;
+
+                    var element = document.createElement('div');
+                    element.innerHTML = html || '';
+                    var parser = null;
+                    try {
+                        var PM = window.ProseMirrorModel || window.prosemirrorModel;
+                        if (PM && PM.DOMParser) {
+                            parser = PM.DOMParser.fromSchema(state.schema);
+                        }
+                    } catch (_pErr) {}
+
+                    if (!parser && editor.parser) {
+                        parser = editor.parser;
+                    }
+
+                    if (parser) {
+                        var newDoc = parser.parse(element);
+                        if (newDoc) {
+                            var tr = state.tr;
+                            tr.replaceWith(0, state.doc.content.size, newDoc.content);
+                            tr.setMeta('addToHistory', false);
+                            view.dispatch(tr);
+                            return true;
+                        }
+                    }
+                    return false;
+                } catch (_e) {
+                    return false;
+                }
+            };
+
+            window.reloomClearHistory = function () {
+                try {
+                    var pm = document.querySelector('.ProseMirror');
+                    if (!pm || !pm.editor) return;
+                    var editor = pm.editor;
+
+                    if (editor.commands && typeof editor.commands.clearHistory === 'function') {
+                        editor.commands.clearHistory();
+                    }
+
+                    var state = editor.state;
+                    if (state && state.plugins) {
+                        var plugin = state.plugins.find(function(p) {
+                            return p.key && p.key.indexOf('history') !== -1;
+                        });
+                        if (plugin && plugin.getState) {
+                            var currentHist = plugin.getState(state);
+                            if (currentHist && currentHist.done && currentHist.done.eventCount > 0) {
+                                var emptyBranch = (currentHist.undone && currentHist.undone.eventCount === 0) ? currentHist.undone : null;
+                                if (emptyBranch) {
+                                    var cleanHist = {
+                                        done: emptyBranch,
+                                        undone: emptyBranch,
+                                        prevRanges: null,
+                                        prevTime: 0,
+                                        prevComposition: -1
+                                    };
+                                    var tr = state.tr;
+                                    tr.setMeta(plugin.key, { historyState: cleanHist });
+                                    tr.setMeta('addToHistory', false);
+                                    editor.view.dispatch(tr);
+                                }
+                            }
+                        }
+                    }
+
+                    if (editor.storage && editor.storage.history) {
+                        if (editor.storage.history.undoStack && typeof editor.storage.history.undoStack.clear === 'function') {
+                            editor.storage.history.undoStack.clear();
+                        }
+                        if (editor.storage.history.redoStack && typeof editor.storage.history.redoStack.clear === 'function') {
+                            editor.storage.history.redoStack.clear();
+                        }
+                    }
+                } catch (_e) {}
+            };
+
             function syncDocEmpty(pm) {
                 var empty = (pm.textContent || '').trim().length === 0;
                 if (pm.classList.contains('is-editor-empty') !== empty) {
@@ -935,6 +1020,26 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             }
             editor.setContent(target);
             appliedDocRef.current = target;
+
+            const clearHistoryScript = `
+                (function() {
+                    if (window.reloomClearHistory) window.reloomClearHistory();
+                    else {
+                        try {
+                            var pm = document.querySelector('.ProseMirror');
+                            if (pm && pm.editor && pm.editor.commands && pm.editor.commands.clearHistory) {
+                                pm.editor.commands.clearHistory();
+                            }
+                        } catch(e) {}
+                    }
+                })();
+                true;
+            `;
+            editor.injectJS(clearHistoryScript);
+            setTimeout(() => {
+                editor.injectJS(clearHistoryScript);
+            }, 60);
+
             setDocReady(true);
             syncInFlightRef.current = false;
         })();

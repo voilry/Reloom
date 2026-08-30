@@ -162,7 +162,14 @@ export function EditorToolbar({
                     <Code size={18} color={isCodeActive ? colors.tint : colors.text} />
                 </TouchableOpacity>
             </ScrollView>
-            <TouchableOpacity onPress={() => Keyboard.dismiss()} style={[styles.toolbarButton, { paddingLeft: 8 }]}>
+            <TouchableOpacity 
+                onPress={() => {
+                    triggerHaptic();
+                    if (editor) editor.blur();
+                    Keyboard.dismiss();
+                }} 
+                style={[styles.toolbarButton, { paddingLeft: 8 }]}
+            >
                 <X size={18} color={colors.secondary} />
             </TouchableOpacity>
         </View>
@@ -174,9 +181,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 8,
-        height: 44,
+        height: 38,
         borderTopWidth: StyleSheet.hairlineWidth,
-        marginBottom: Platform.OS === 'android' ? 12 : 6,
+        marginBottom: Platform.OS === 'android' ? 2 : 0,
     },
     toolbarScroll: {
         alignItems: 'center',
@@ -184,7 +191,7 @@ const styles = StyleSheet.create({
     },
     toolbarButton: {
         width: 36,
-        height: 38,
+        height: 34,
         justifyContent: 'center',
         alignItems: 'center',
         marginHorizontal: 1,
