@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, ScrollView, TouchableOpacity, Modal,
     TextInput, Platform, KeyboardAvoidingView, Pressable,
-    Animated as RNAnimated
+    Animated as RNAnimated, DeviceEventEmitter
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ThemedView } from '../../../components/ui/ThemedView';
@@ -15,8 +15,9 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import {
     Trash, Plus, Link, CaretRight, MagnifyingGlass as Search,
-    ArrowsLeftRight, X, Check, UserRemove
+    ArrowsLeftRight, X, Check, UserRemove, Graph, List
 } from '@/components/ui/Icon';
+import { SocialWebCanvas, getRelationColor } from '../../../components/person/SocialWebCanvas';
 import { useAppTheme } from '../../../hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
@@ -41,6 +42,9 @@ export default function RelationsScreen() {
     const [person, setPerson] = useState<Person | null>(null);
     const [relationships, setRelationships] = useState<Relationship[]>([]);
     const [allPeople, setAllPeople] = useState<Person[]>([]);
+    const [allRelationships, setAllRelationships] = useState<Relationship[]>([]);
+    const [viewMode, setViewMode] = useState<'web' | 'list'>('web');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
     // Step control
     const [step, setStep] = useState<Step>('list');
@@ -57,16 +61,31 @@ export default function RelationsScreen() {
         if (!p) return;
         setPerson(p);
 
-        const [rels, people] = await Promise.all([
+        const [rels, people, allRels] = await Promise.all([
             RelationshipRepository.getForPerson(personId),
-            PersonRepository.getAll()
+            PersonRepository.getAll(),
+            RelationshipRepository.getAll()
         ]);
 
         setRelationships(rels);
         setAllPeople(people.filter(x => x.id !== personId));
+        setAllRelationships(allRels);
     };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
+    const categories = useMemo(() => {
+        const set = new Set<string>();
+        relationships.forEach(r => {
+            if (r.relationType) set.add(r.relationType.trim());
+        });
+        return Array.from(set);
+    }, [relationships]);
+
+    const displayedRelationships = useMemo(() => {
+        if (selectedCategory === 'all') return relationships;
+        return relationships.filter(r => r.relationType?.trim().toLowerCase() === selectedCategory.toLowerCase());
+    }, [relationships, selectedCategory]);
+
     const getOtherPerson = (rel: Relationship): Person | undefined => {
         const otherId = rel.sourcePersonId === personId ? rel.targetPersonId : rel.sourcePersonId;
         return allPeople.find(p => p.id === otherId);
@@ -92,6 +111,7 @@ export default function RelationsScreen() {
         if (!selectedTarget || !person || !relationType.trim()) return;
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         await RelationshipRepository.add(person.id, selectedTarget.id, relationType.trim());
+        DeviceEventEmitter.emit('showToast', { message: 'Connection linked', type: 'info' });
         resetModal();
         loadData();
     };
@@ -99,6 +119,7 @@ export default function RelationsScreen() {
     const handleDelete = async (relId: number) => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         await RelationshipRepository.delete(relId);
+        DeviceEventEmitter.emit('showToast', { message: 'Connection unlinked', type: 'info' });
         loadData();
     };
 
@@ -149,6 +170,7 @@ export default function RelationsScreen() {
             <ScreenHeader
                 onBack={() => router.back()}
                 style={styles.header}
+                bottomPadding={viewMode === 'web' ? 8 : 16}
                 alignCenter={false}
                 centerContent={
                     <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 0 }}>
@@ -161,90 +183,201 @@ export default function RelationsScreen() {
                     </View>
                 }
                 rightContent={
-                    <ScalePressable
-                        onPress={openPicker}
-                        style={[styles.linkCapsule, { backgroundColor: colors.tint }]}
-                        innerStyle={{ borderRadius: 20 }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        scaleTo={0.92}
-                    >
-                        <Plus size={14} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
-                        <ThemedText style={[styles.linkCapsuleText, { color: theme === 'light' ? '#fff' : '#000' }]}>Link</ThemedText>
-                    </ScalePressable>
+                    <View style={styles.headerRightActions}>
+                        {relationships.length > 0 && (
+                            <ScalePressable
+                                onPress={() => {
+                                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                    setViewMode(prev => (prev === 'web' ? 'list' : 'web'));
+                                }}
+                                style={[styles.viewToggleBtn, { backgroundColor: colors.surface }]}
+                                innerStyle={{ borderRadius: 18 }}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                scaleTo={0.92}
+                                overlayColor="transparent"
+                            >
+                                {viewMode === 'web' ? (
+                                    <List size={18} color={colors.text} />
+                                ) : (
+                                    <Graph size={18} color={colors.text} weight="fill" />
+                                )}
+                            </ScalePressable>
+                        )}
+
+                        <ScalePressable
+                            onPress={openPicker}
+                            style={[styles.linkCapsule, { backgroundColor: colors.tint }]}
+                            innerStyle={{ borderRadius: 20 }}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            scaleTo={0.92}
+                        >
+                            <Plus size={15} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
+                            <ThemedText style={[styles.linkCapsuleText, { color: theme === 'light' ? '#fff' : '#000' }]}>Link</ThemedText>
+                        </ScalePressable>
+                    </View>
                 }
             />
 
-            {/* ─── Connections List ─────────────────────────────────────────── */}
-            <ScrollView
-                contentContainerStyle={[
-                    styles.listContent,
-                    relationships.length === 0 && { flexGrow: 1, justifyContent: 'center', paddingBottom: insets.bottom + 120 },
-                    relationships.length > 0 && { paddingBottom: insets.bottom + 40 }
-                ]}
-                showsVerticalScrollIndicator={false}
-            >
-                {relationships.length > 0 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
-                        <ThemedText style={{ color: colors.secondary, fontSize: 14, fontFamily: Typography.fontFamily.semibold, opacity: 0.8 }}>
-                            Connections
-                        </ThemedText>
-                        <ThemedText style={{ color: colors.tint, fontSize: 13, fontWeight: '800', marginLeft: 8 }}>{relationships.length}</ThemedText>
-                    </View>
-                )}
+            {/* ─── Circle Filter Chips (Shown in List View) ───────────────── */}
+            {viewMode === 'list' && relationships.length > 0 && categories.length > 1 && (
+                <View style={styles.filterRowContainer}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.filterScroll}
+                    >
+                        <ScalePressable
+                            onPress={() => {
+                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                setSelectedCategory('all');
+                            }}
+                            style={[
+                                styles.filterChip,
+                                { backgroundColor: selectedCategory === 'all' ? colors.tint : colors.surface }
+                            ]}
+                            innerStyle={{ borderRadius: 16 }}
+                            scaleTo={0.92}
+                        >
+                            <ThemedText style={[
+                                styles.filterChipText,
+                                { color: selectedCategory === 'all' ? (theme === 'light' ? '#fff' : '#000') : colors.text }
+                            ]}>
+                                All ({relationships.length})
+                            </ThemedText>
+                        </ScalePressable>
 
-                {relationships.length === 0 ? (
+                        {categories.map((cat: string) => {
+                            const count = relationships.filter(r => r.relationType?.trim().toLowerCase() === cat.toLowerCase()).length;
+                            const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+                            const catColor = getRelationColor(cat, colors.tint);
+                            return (
+                                <ScalePressable
+                                    key={cat}
+                                    onPress={() => {
+                                        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                        setSelectedCategory(isSelected ? 'all' : cat);
+                                    }}
+                                    style={[
+                                        styles.filterChip,
+                                        { backgroundColor: isSelected ? catColor : colors.surface }
+                                    ]}
+                                    innerStyle={{ borderRadius: 16 }}
+                                    scaleTo={0.92}
+                                >
+                                    <ThemedText style={[
+                                        styles.filterChipText,
+                                        { color: isSelected ? (theme === 'light' ? '#fff' : '#000') : colors.text }
+                                    ]}>
+                                        {cat} ({count})
+                                    </ThemedText>
+                                </ScalePressable>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            )}
+
+            {/* ─── Social Web View, List View, or Empty State ──────────────── */}
+            {relationships.length === 0 ? (
+                <View style={[styles.emptyContainer, { paddingBottom: insets.bottom + 80 }]}>
                     <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
                         <ArrowsLeftRight size={48} color={colors.tint} weight="fill" />
-                        <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Connections</ThemedText>
+                        <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
+                            No Connections
+                        </ThemedText>
                         <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
                             tap link to add
                         </ThemedText>
                     </Animated.View>
-                ) : (
-                    relationships.map((rel, index) => {
-                        const other = getOtherPerson(rel);
-                        if (!other) return null;
-                        return (
-                            <Animated.View
-                                key={rel.id}
-                                layout={Layout.springify()}
-                                style={{ marginBottom: 10 }}
-                            >
+                </View>
+            ) : viewMode === 'web' ? (
+                <SocialWebCanvas
+                    centerPerson={person}
+                    relationships={relationships}
+                    allPeople={allPeople}
+                    allRelationships={allRelationships}
+                    selectedCategory={selectedCategory}
+                    onSelectCategory={setSelectedCategory}
+                    categories={categories}
+                    onSelectPerson={(target) => router.push(`/person/${target.id}`)}
+                    onDeleteRelationship={handleDelete}
+                    onAddLink={openPicker}
+                />
+            ) : (
+                <ScrollView
+                    contentContainerStyle={[
+                        styles.listContent,
+                        displayedRelationships.length === 0 && { flexGrow: 1, justifyContent: 'center', paddingBottom: insets.bottom + 120 },
+                        displayedRelationships.length > 0 && { paddingBottom: insets.bottom + 40 }
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {displayedRelationships.length > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
+                            <ThemedText style={{ color: colors.secondary, fontSize: 14, fontFamily: Typography.fontFamily.semibold, opacity: 0.8 }}>
+                                Connections
+                            </ThemedText>
+                            <ThemedText style={{ color: colors.tint, fontSize: 13, fontWeight: '800', marginLeft: 8 }}>{displayedRelationships.length}</ThemedText>
+                        </View>
+                    )}
+
+                    {displayedRelationships.length === 0 ? (
+                        <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
+                            <ArrowsLeftRight size={48} color={colors.tint} weight="fill" />
+                            <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
+                                {selectedCategory !== 'all' ? `No ${selectedCategory} Connections` : 'No Connections'}
+                            </ThemedText>
+                            <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
+                                tap link to add
+                            </ThemedText>
+                        </Animated.View>
+                    ) : (
+                        displayedRelationships.map((rel: Relationship, index: number) => {
+                            const other = getOtherPerson(rel);
+                            if (!other) return null;
+                            const roleColor = getRelationColor(rel.relationType, colors.tint);
+                            return (
                                 <Animated.View
-                                    entering={FadeInDown.delay(index * 40).duration(350)}
+                                    key={rel.id}
+                                    layout={Layout.springify()}
+                                    style={{ marginBottom: 10 }}
                                 >
-                                    <Swipeable
-                                        renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
-                                        overshootRight={false}
-                                        friction={3}
-                                        overshootFriction={8}
-                                        rightThreshold={60}
+                                    <Animated.View
+                                        entering={FadeInDown.delay(index * 40).duration(350)}
                                     >
-                                        <ScalePressable
-                                            onPress={() => router.push(`/person/${other.id}`)}
-                                            innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                        <Swipeable
+                                            renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
+                                            overshootRight={false}
+                                            friction={3}
+                                            overshootFriction={8}
+                                            rightThreshold={60}
                                         >
-                                            <Card style={styles.relCard}>
-                                                <Avatar name={other.name} uri={other.avatarUri} size={48} />
-                                                <View style={styles.relInfo}>
-                                                    <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
-                                                </View>
-                                                {rel.relationType ? (
-                                                    <View style={[styles.roleBadge, { backgroundColor: theme === 'dark' ? colors.tint + '20' : colors.tint + '10' }]}>
-                                                        <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
-                                                            {rel.relationType}
-                                                        </ThemedText>
+                                            <ScalePressable
+                                                onPress={() => router.push(`/person/${other.id}`)}
+                                                innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                            >
+                                                <Card style={styles.relCard}>
+                                                    <Avatar name={other.name} uri={other.avatarUri} size={48} />
+                                                    <View style={styles.relInfo}>
+                                                        <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
                                                     </View>
-                                                ) : null}
-                                            </Card>
-                                        </ScalePressable>
-                                    </Swipeable>
+                                                    {rel.relationType ? (
+                                                        <View style={[styles.roleBadge, { backgroundColor: roleColor + (theme === 'dark' ? '25' : '15') }]}>
+                                                            <ThemedText type="tiny" style={{ color: roleColor, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
+                                                                {rel.relationType}
+                                                            </ThemedText>
+                                                        </View>
+                                                    ) : null}
+                                                </Card>
+                                            </ScalePressable>
+                                        </Swipeable>
+                                    </Animated.View>
                                 </Animated.View>
-                            </Animated.View>
-                        );
-                    })
-                )}
-            </ScrollView>
+                            );
+                        })
+                    )}
+                </ScrollView>
+            )}
 
             {/* ─── Full Screen Picker/Label Modal ──────────────────────── */}
             <Modal
@@ -480,7 +613,19 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
 
     // Header
-    header: { paddingBottom: 12 },
+    header: { paddingBottom: 0 },
+    headerRightActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    viewToggleBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     linkCapsule: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -491,6 +636,25 @@ const styles = StyleSheet.create({
     },
     linkCapsuleText: {
         fontSize: 13,
+        fontFamily: Typography.fontFamily.bold,
+    },
+
+    // Circle Filter Chips
+    filterRowContainer: {
+        paddingTop: 8,
+        paddingBottom: 14,
+    },
+    filterScroll: {
+        paddingHorizontal: 20,
+        gap: 8,
+    },
+    filterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    filterChipText: {
+        fontSize: 12,
         fontFamily: Typography.fontFamily.bold,
     },
 
@@ -528,6 +692,11 @@ const styles = StyleSheet.create({
     },
 
     // Empty
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     emptyState: {
         alignItems: 'center',
     },

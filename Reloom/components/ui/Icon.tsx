@@ -37,7 +37,8 @@ export const Icon = ({ name, size = 24, color = '#000', style }: IconProps) => {
 };
 
 // Individual exports for Phosphor compatibility
-export const Plus = (props: any) => <Icon name={props.weight === 'fill' ? 'plus_fill' : 'plus_line'} {...props} />;
+export const Plus = (props: any) => <Icon name={props.weight === 'fill' ? 'add_fill' : 'add_line'} {...props} />;
+export const Add = Plus;
 export const X = (props: any) => <Icon name={props.weight === 'fill' ? 'close_fill' : 'close_line'} {...props} />;
 export const Trash = (props: any) => <Icon name={props.weight === 'fill' ? 'delete_2_fill' : 'delete_2_line'} {...props} />;
 export const UserPlus = (props: any) => <Icon name={props.weight === 'fill' ? 'user_add_fill' : 'user_add_line'} {...props} />;
@@ -130,7 +131,9 @@ export const Tag = (props: any) => <Icon name={props.weight === 'fill' ? 'tag_fi
 export const UsersThree = (props: any) => <Icon name={props.weight === 'fill' ? 'group_fill' : 'group_line'} {...props} />;
 export const LightningSlash = (props: any) => <Icon name={props.weight === 'fill' ? 'flash_line' : 'flash_line'} {...props} />;
 export const RadioButton = (props: any) => <Icon name={props.weight === 'fill' ? 'round_fill' : 'round_line'} {...props} />;
-export const Graph = (props: any) => <Icon name={props.weight === 'fill' ? 'node_fill' : 'node_line'} {...props} />;
+export const Graph = (props: any) => <Icon name={props.weight === 'fill' ? 'mind_map_fill' : 'mind_map_line'} {...props} />;
+export const Filter = (props: any) => <Icon name={props.weight === 'fill' ? 'filter_fill' : 'filter_line'} {...props} />;
+export const Funnel = Filter;
 export const FloppyDisk = (props: any) => <Icon name={props.weight === 'fill' ? 'save_fill' : 'save_line'} {...props} />;
 export const CaretLeftDouble = (props: any) => <Icon name={props.weight === 'fill' ? 'arrows_left_fill' : 'arrows_left_line'} {...props} />;
 export const ClockCounterClockwise = (props: any) => <Icon name={props.weight === 'fill' ? 'history_fill' : 'history_line'} {...props} />;
