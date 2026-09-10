@@ -7,7 +7,7 @@ import { ThemedText } from '../../components/ui/ThemedText';
 import { useSettings, ThemeMode } from '../../store/SettingsContext';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, Clock, ArrowUp, ArrowDown, List, ArrowsDownUp, Palette } from '@/components/ui/Icon';
+import { Sun, Moon, Compass, Cards, TextT, MagicWand, SelectionBackground, PaintBrush, ArrowUp, ArrowDown, List, ArrowsDownUp, Palette } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -234,22 +234,6 @@ export default function AppearanceSettingsScreen() {
 
                 <Section>
                     <Card style={styles.card} padding="none">
-                        <SettingRow
-                            label="Add Timestamp to Notes"
-                            description="Automatically add date and time when merging notes"
-                            icon={<Clock size={20} color={colors.tint} style={{ marginBottom: -2 }} />}
-                            colors={colors}
-                            style={styles.paddingBox}
-                        >
-                            <Toggle
-                                value={settings.addTimestampToNotes}
-                                onValueChange={(v) => {
-                                    triggerHaptic();
-                                    updateSetting('addTimestampToNotes', v);
-                                }}
-                            />
-                        </SettingRow>
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
                         <SettingRow
                             label="Acrylic Profiles"
                             description="Enable blurred avatar backgrounds in profile"

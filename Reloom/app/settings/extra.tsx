@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { useSettings } from '../../store/SettingsContext';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { CloudArrowUp, Layout } from '@/components/ui/Icon';
+import { CloudArrowUp, Layout, Clock } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,6 +68,22 @@ export default function ExtraSettingsScreen() {
                                 onValueChange={(v) => {
                                     triggerHaptic();
                                     updateSetting('showQuickArray', v);
+                                }}
+                            />
+                        </SettingRow>
+                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                        <SettingRow
+                            label="Add Timestamp to Notes"
+                            description="Automatically add date and time when merging notes"
+                            icon={<Clock size={20} color={colors.tint} style={{ marginBottom: -2 }} />}
+                            colors={colors}
+                            style={[styles.paddingBox, { paddingVertical: 18 }]}
+                        >
+                            <Toggle
+                                value={settings.addTimestampToNotes}
+                                onValueChange={(v) => {
+                                    triggerHaptic();
+                                    updateSetting('addTimestampToNotes', v);
                                 }}
                             />
                         </SettingRow>

@@ -36,9 +36,9 @@ export const Icon = ({ name, size = 24, color = '#000', style }: IconProps) => {
     );
 };
 
-// Individual exports for Phosphor compatibility
-export const Plus = (props: any) => <Icon name={props.weight === 'fill' ? 'add_fill' : 'add_line'} {...props} />;
-export const Add = Plus;
+export const Plus = (props: any) => <Icon name={props.weight === 'fill' ? 'plus_fill' : 'plus_line'} {...props} />;
+export const Add = (props: any) => <Icon name={props.weight === 'fill' ? 'add_fill' : 'add_line'} {...props} />;
+export const AddIcon = Add;
 export const X = (props: any) => <Icon name={props.weight === 'fill' ? 'close_fill' : 'close_line'} {...props} />;
 export const Trash = (props: any) => <Icon name={props.weight === 'fill' ? 'delete_2_fill' : 'delete_2_line'} {...props} />;
 export const UserPlus = (props: any) => <Icon name={props.weight === 'fill' ? 'user_add_fill' : 'user_add_line'} {...props} />;

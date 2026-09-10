@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue, Keyboard } from 'react-native';
+import { View, StyleSheet, Platform, Modal, Pressable, FlatList, DimensionValue, Keyboard, Animated as RNAnimated } from 'react-native';
 import Animated, { SlideInDown, FadeIn } from 'react-native-reanimated';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -21,49 +21,125 @@ const ITEM_HEIGHT = 44;
 function WheelPicker({ items, value, onChange, width }: { items: { label: string, value: any }[], value: any, onChange: (value: any) => void, width: DimensionValue }) {
     const { colors, hapticsEnabled } = useAppTheme();
     const listRef = useRef<FlatList>(null);
-    const [activeIndex, setActiveIndex] = useState(() => items.findIndex(i => i.value === value));
-
     const initialIndex = React.useMemo(() => {
         const idx = items.findIndex(i => i.value === value);
         return idx !== -1 ? idx : 0;
     }, [items, value]);
+    // Native-driven scroll position. Row highlight (scale/opacity) is
+    // interpolated on the native thread every frame — zero setState while
+    // scrolling, so the list holds 60fps even on fast flings.
+    const scrollY = useRef(new RNAnimated.Value(initialIndex * ITEM_HEIGHT)).current;
+    const lastTick = useRef(-1);
+    const lastHapticAt = useRef(0);
+    // Last settled index — onScrollEndDrag + onMomentumScrollEnd both fire
+    // for a single flick, so guard against committing twice.
+    // Initialized to the mount position so the sync effect below no-ops
+    // until a genuinely external change arrives.
+    const committedRef = useRef<number | null>(initialIndex);
+    // Haptics flag via ref so the stable scroll event below never goes stale.
+    const hapticsRef = useRef(hapticsEnabled);
+    hapticsRef.current = hapticsEnabled;
 
-    useEffect(() => {
-        const index = items.findIndex(i => i.value === value);
-        if (index !== -1 && index !== activeIndex) {
-            setActiveIndex(index);
+    // Created ONCE. Re-creating the Animated.event mapping on every parent
+    // render (i.e. on every commit) re-attached the native listener
+    // mid-settle and dropped in-flight updates for a frame — that was the
+    // old-highlight flash. Listener only tracks detents for throttled
+    // clicks: no setState and no onChange here, so the JS thread stays free.
+    const scrollEvent = React.useMemo(() => RNAnimated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        {
+            useNativeDriver: true,
+            listener: (e: any) => {
+                const tick = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+                if (tick !== lastTick.current) {
+                    lastTick.current = tick;
+                    const now = Date.now();
+                    if (hapticsRef.current && Platform.OS !== 'web' && now - lastHapticAt.current > 70) {
+                        lastHapticAt.current = now;
+                        Haptics.selectionAsync().catch(() => {});
+                    }
+                }
+            },
         }
-    }, [value, items]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), []);
 
-    const handleScroll = (e: any) => {
-        const y = e.nativeEvent.contentOffset.y;
-        const index = Math.round(y / ITEM_HEIGHT);
-        const safeIndex = Math.max(0, Math.min(items.length - 1, index));
-        if (safeIndex !== activeIndex) {
-            setActiveIndex(safeIndex);
-            if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-        }
-    };
+    // Stable identity: a fresh renderItem closure on every commit made
+    // FlatList rebuild visible rows mid-settle — same flash family as the
+    // event re-attach. Rows now only re-render on theme change.
+    const renderWheelItem = React.useCallback(({ item, index }: { item: { label: string, value: any }, index: number }) => {
+        // Row is centered exactly when scrollY = index * H
+        // (2H header spacer, 5H viewport) — matches snap rests,
+        // so highlight and snap always agree.
+        const inputRange = [
+            (index - 2) * ITEM_HEIGHT,
+            (index - 1) * ITEM_HEIGHT,
+            index * ITEM_HEIGHT,
+            (index + 1) * ITEM_HEIGHT,
+            (index + 2) * ITEM_HEIGHT,
+        ];
+        const scale = scrollY.interpolate({
+            inputRange,
+            outputRange: [0.85, 0.93, 1.08, 0.93, 0.85],
+            extrapolate: 'clamp',
+        });
+        const opacity = scrollY.interpolate({
+            inputRange,
+            outputRange: [0.3, 0.5, 1, 0.5, 0.3],
+            extrapolate: 'clamp',
+        });
+        return (
+            <View style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
+                <RNAnimated.Text style={{
+                    fontSize: 19,
+                    fontWeight: '700',
+                    color: colors.text,
+                    opacity,
+                    transform: [{ scale }],
+                }}>
+                    {item.label}
+                </RNAnimated.Text>
+            </View>
+        );
+    }, [scrollY, colors.text]);
 
     const handleScrollEnd = React.useCallback((e: any) => {
         const y = e.nativeEvent.contentOffset.y;
-        const index = Math.round(y / ITEM_HEIGHT);
-        const safeIndex = Math.max(0, Math.min(items.length - 1, index));
+        const safeIndex = Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_HEIGHT)));
+        lastTick.current = safeIndex;
+        if (safeIndex === committedRef.current) return;
+        committedRef.current = safeIndex;
         if (items[safeIndex] && items[safeIndex].value !== value) {
             onChange(items[safeIndex].value);
         }
     }, [items, value, onChange]);
 
+    // Re-sync position when the value changes from OUTSIDE a gesture
+    // (modal reopen resets the temps). Our own commits already match
+    // committedRef, so this never fights the finger. Without it the wheel
+    // keeps its old scroll position while showing a new value.
+    useEffect(() => {
+        if (items.length === 0) return;
+        const idx = items.findIndex(i => i.value === value);
+        const target = idx !== -1 ? idx : items.length - 1;
+        if (target === committedRef.current) return;
+        committedRef.current = target;
+        lastTick.current = target;
+        // Mute ticks caused by this programmatic jump (not a user gesture).
+        lastHapticAt.current = Date.now();
+        listRef.current?.scrollToOffset({ offset: target * ITEM_HEIGHT, animated: false });
+    }, [value, items]);
+
     return (
         <View style={{ height: ITEM_HEIGHT * 5, width, position: 'relative' }}>
-            <FlatList
+            <RNAnimated.FlatList
                 ref={listRef}
                 data={items}
                 keyExtractor={(item) => String(item.value)}
                 showsVerticalScrollIndicator={false}
                 snapToInterval={ITEM_HEIGHT}
                 decelerationRate={Platform.OS === 'ios' ? 'fast' : 0.985}
-                onScroll={handleScroll}
+                onScroll={scrollEvent}
                 onMomentumScrollEnd={handleScrollEnd}
                 onScrollEndDrag={handleScrollEnd}
                 scrollEventThrottle={16}
@@ -76,21 +152,7 @@ function WheelPicker({ items, value, onChange, width }: { items: { label: string
                 initialScrollIndex={items.length > 0 ? initialIndex : undefined}
                 ListHeaderComponent={<View style={{ height: ITEM_HEIGHT * 2 }} />}
                 ListFooterComponent={<View style={{ height: ITEM_HEIGHT * 2 }} />}
-                renderItem={({ item, index }) => {
-                    const isSelected = index === activeIndex;
-                    return (
-                        <View style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
-                            <ThemedText style={{
-                                fontSize: isSelected ? 20 : 16,
-                                fontWeight: isSelected ? '800' : '500',
-                                opacity: isSelected ? 1 : 0.4,
-                                color: colors.text
-                            }}>
-                                {item.label}
-                            </ThemedText>
-                        </View>
-                    );
-                }}
+                renderItem={renderWheelItem}
             />
         </View>
     );
@@ -181,26 +243,29 @@ export function TimePicker({ value, onChange, label, placeholder = 'Select Time'
                                 style={[styles.pickerContainer, { backgroundColor: colors.card }]}
                             >
                                 <View style={styles.header}>
-                                    <ScalePressable
-                                        onPress={() => setShow(false)}
-                                        style={[styles.cancelButton, { backgroundColor: colors.surface }]}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                        scaleTo={0.93}
-                                    >
-                                        <ThemedText style={{ color: colors.secondary, fontWeight: '700', fontSize: 13 }}>Cancel</ThemedText>
-                                    </ScalePressable>
+                                    <View style={[styles.headerSide, { alignItems: 'flex-start' }]}>
+                                        <ScalePressable
+                                            onPress={() => setShow(false)}
+                                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                            scaleTo={0.93}
+                                            overlayColor="transparent"
+                                        >
+                                            <ThemedText style={{ color: colors.secondary, fontWeight: '600', fontSize: 16 }}>Cancel</ThemedText>
+                                        </ScalePressable>
+                                    </View>
                                     <View style={{ flex: 1, alignItems: 'center' }}>
                                         <ThemedText type="sectionHeader" style={{ fontSize: 14, textAlign: 'center', opacity: 0.8 }}>{label || 'Select Time'}</ThemedText>
                                     </View>
-                                    <ScalePressable
-                                        onPress={handleSave}
-                                        style={[styles.doneButton, { backgroundColor: colors.tint + '15' }]}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                        innerStyle={{ borderRadius: 12 }}
-                                        scaleTo={0.93}
-                                    >
-                                        <ThemedText style={{ color: colors.tint, fontWeight: '700', fontSize: 13 }}>Done</ThemedText>
-                                    </ScalePressable>
+                                    <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>
+                                        <ScalePressable
+                                            onPress={handleSave}
+                                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                            scaleTo={0.93}
+                                            overlayColor="transparent"
+                                        >
+                                            <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 16 }}>Done</ThemedText>
+                                        </ScalePressable>
+                                    </View>
                                 </View>
 
                                 <View style={styles.pickerWrapper}>
@@ -264,19 +329,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 24,
-        marginBottom: 8,
+        paddingVertical: 16,
+        marginBottom: 4,
     },
-    cancelButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
+    // Equal-width side slots: "Cancel" is wider than "Done", so without
+    // this the middle title drifts right. Fixed slots keep it truly centered.
+    headerSide: {
+        width: 70,
+        justifyContent: 'center',
     },
-    doneButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
-    },
+
     pickerWrapper: {
         flexDirection: 'row',
         justifyContent: 'center',

@@ -14,7 +14,7 @@ import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import {
-    Trash, Plus, Link, CaretRight, MagnifyingGlass as Search,
+    Trash, Plus, AddIcon, Link, CaretRight, MagnifyingGlass as Search,
     ArrowsLeftRight, X, Check, UserRemove, Graph, List
 } from '@/components/ui/Icon';
 import { SocialWebCanvas, getRelationColor } from '../../../components/person/SocialWebCanvas';
@@ -211,7 +211,7 @@ export default function RelationsScreen() {
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             scaleTo={0.92}
                         >
-                            <Plus size={15} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
+                            <AddIcon size={15} color={theme === 'light' ? '#fff' : '#000'} weight="fill" />
                             <ThemedText style={[styles.linkCapsuleText, { color: theme === 'light' ? '#fff' : '#000' }]}>Link</ThemedText>
                         </ScalePressable>
                     </View>

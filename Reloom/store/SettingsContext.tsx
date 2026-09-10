@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS: Settings = {
     defaultSort: 'name',
     enableReminders: true,
     showQuickArray: false,
-    addTimestampToNotes: false,
+    addTimestampToNotes: true,
     journalFontSize: 16,
     journalPadding: 28,
     profileBlurBackground: false,

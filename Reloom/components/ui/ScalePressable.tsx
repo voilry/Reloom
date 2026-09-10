@@ -1,14 +1,14 @@
 import React from 'react';
 import { Pressable, StyleProp, ViewStyle, Insets, StyleSheet, Platform, View } from 'react-native';
-import Animated, { 
-    useAnimatedStyle, 
-    useSharedValue, 
-    withSpring, 
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
     withTiming,
+    Easing,
     WithSpringConfig,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { DesignSystem } from '../../constants/DesignSystem';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface ScalePressableProps {
@@ -64,17 +64,46 @@ export function ScalePressable({
     const handlePressIn = () => {
         if (disabled) return;
         if (scale) {
-            scaleValue.value = withSpring(scaleTo, springConfig || DesignSystem.animation.springs.heavy);
+            // iOS-style press-down: quick timing with ease-out cubic.
+            // Reaches scaleTo in ~110ms so fast taps still fully shrink,
+            // but lands softly instead of hitting linearly (robotic feel).
+            if (springConfig) {
+                scaleValue.value = withSpring(scaleTo, springConfig);
+            } else {
+                scaleValue.value = withTiming(scaleTo, {
+                    duration: 110,
+                    easing: Easing.out(Easing.cubic),
+                });
+            }
         }
-        highlightOpacity.value = withTiming(1, { duration: 120 });
+        highlightOpacity.value = withTiming(1, {
+            duration: 90,
+            easing: Easing.out(Easing.quad),
+        });
     };
 
     const handlePressOut = () => {
         if (disabled) return;
         if (scale) {
-            scaleValue.value = withSpring(1, { damping: 25, stiffness: 200, mass: 1 });
+            // Fast iOS-style release: ~0.7 damping ratio, settles in ~200ms.
+            // Previous 22/550/0.6 took ~400ms+ which read as "lag" vs the
+            // quick 110ms shrink. Higher stiffness = snaps back in sync
+            // with the finger lift instead of trailing behind it.
+            scaleValue.value = withSpring(
+                1,
+                springConfig || {
+                    damping: 28,
+                    stiffness: 800,
+                    mass: 0.5,
+                    overshootClamping: false,
+                }
+            );
         }
-        highlightOpacity.value = withTiming(0, { duration: 250 });
+        // Short fade so it clears with the scale, not after it.
+        highlightOpacity.value = withTiming(0, {
+            duration: 150,
+            easing: Easing.out(Easing.quad),
+        });
     };
 
     const handlePress = () => {
