@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Avatar } from '../ui/Avatar';
 import { DatePicker } from '../ui/DatePicker';
-import { X, Camera, Check } from '@/components/ui/Icon';
+import { X, PhotoAlbum, Check } from '@/components/ui/Icon';
 import * as ImagePicker from 'expo-image-picker';
 import { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -122,7 +122,7 @@ export function EditPersonModal({ visible, onClose, onSave, person }: EditPerson
                                 <View style={styles.avatarWrapper}>
                                     <Avatar name={name} uri={avatarUri} size={110} />
                                     <View style={[styles.cameraBadge, { backgroundColor: colors.tint, borderColor: colors.background }]}>
-                                        <Camera size={18} color={theme === 'dark' ? '#000' : '#fff'} />
+                                        <PhotoAlbum size={18} color={theme === 'dark' ? '#000' : '#fff'} weight="fill" />
                                     </View>
                                 </View>
                             </TouchableOpacity>

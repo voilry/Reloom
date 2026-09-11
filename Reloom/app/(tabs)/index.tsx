@@ -17,7 +17,7 @@ import { JournalRepository } from '../../db/repositories/JournalRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Button } from '../../components/ui/Button';
-import { Plus, MagnifyingGlass as Search, Camera, X, Check, CaretRight, CaretLeft, Faders as Filter, Gear as Settings, User as UserIcon, Folder, Calendar, PencilLine as PenLine, Bell, Book, PushPin, MapPin } from '@/components/ui/Icon';
+import { Plus, MagnifyingGlass as Search, SearchNoResults, Camera, X, Check, CaretRight, CaretLeft, Faders as Filter, Gear as Settings, User as UserIcon, Folder, Calendar, PencilLine as PenLine, Bell, Book, PushPin, MapPin } from '@/components/ui/Icon';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Colors } from '../../constants/Colors';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -834,7 +834,7 @@ export default function PeopleScreen() {
                 ListEmptyComponent={
                     (isLoading || isDashboardActive) ? null : (
                         <View style={styles.emptyContainer}>
-                            {search ? <Search size={48} color={colors.icon} weight="fill" /> : <UserIcon size={48} color={colors.tint} weight="fill" />}
+                            {search ? <SearchNoResults size={64} color={colors.icon} weight="fill" /> : <UserIcon size={48} color={colors.tint} weight="fill" />}
                             <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>
                                 {search ? 'No results' : selectedGroupId ? 'Group Empty' : 'Network'}
                             </ThemedText>
@@ -1388,7 +1388,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 20,
-        marginTop: 16,
+        marginTop: 6,
         marginBottom: 2,
         textAlign: 'center',
         fontFamily: Typography.fontFamily.bold,

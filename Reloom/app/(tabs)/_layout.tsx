@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Users, Calendar, BookOpen, Plus, User as UserIcon, PencilLine as PenLine, AddressBook, Bell, Book, X } from '@/components/ui/Icon';
+import { UsersTwo, Calendar, BookOpen, Plus, User as UserIcon, PencilLine as PenLine, AddressBook, Bell, Book, X } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Platform, View, TouchableOpacity, StyleSheet, Modal, DeviceEventEmitter, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,7 +20,7 @@ const ADD_BUTTON_SIZE = 46; // <-- Change this to adjust the + button size
 const GAP_BETWEEN_NAV_AND_BUTTON = 4; // <-- Change this to adjust the distance between navigation and + button
 
 const ICONS: Record<string, any> = {
-    index: Users,
+    index: UsersTwo,
     calendar: Calendar,
     journal: BookOpen,
 };

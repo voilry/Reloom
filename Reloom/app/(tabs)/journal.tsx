@@ -11,7 +11,7 @@ import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Book, Plus, X, MagnifyingGlass as Search, Tag, User, Trash, Calendar, CaretRight as ChevronRight, Pencil as PenTool } from '@/components/ui/Icon';
+import { Book, Plus, X, MagnifyingGlass as Search, SearchNoResults, Tag, User, Trash, Calendar, CaretRight as ChevronRight, Pencil as PenTool } from '@/components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { Card } from '../../components/ui/Card';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -339,7 +339,7 @@ export default function JournalScreen() {
                 ListEmptyComponent={
                     isLoading ? null : (
                         <View style={styles.emptyContainer}>
-                            {searchQuery ? <Search size={48} color={colors.icon} weight="fill" /> : <PenTool size={48} color={colors.tint} weight="fill" />}
+                            {searchQuery ? <SearchNoResults size={64} color={colors.icon} weight="fill" /> : <PenTool size={48} color={colors.tint} weight="fill" />}
                             <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>
                                 {searchQuery ? 'No results' : 'Journal'}
                             </ThemedText>
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 20,
-        marginTop: 16,
+        marginTop: 6,
         marginBottom: 2,
         textAlign: 'center',
         fontFamily: Typography.fontFamily.bold,

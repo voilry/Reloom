@@ -15,7 +15,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
 import {
     Trash, Plus, AddIcon, Link, CaretRight, MagnifyingGlass as Search,
-    ArrowsLeftRight, X, Check, UserRemove, Graph, List
+    ArrowsLeftRight, X, Check, UserRemove, Graph, List, Candles
 } from '@/components/ui/Icon';
 import { SocialWebCanvas, getRelationColor } from '../../../components/person/SocialWebCanvas';
 import { useAppTheme } from '../../../hooks/useAppTheme';
@@ -415,7 +415,7 @@ export default function RelationsScreen() {
                                 </View>
 
                                 {/* Search */}
-                                <View style={styles.modalContent}>
+                                <View style={[styles.modalContent, { flex: 1 }]}>
                                     <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
                                         <Search size={16} color={colors.icon} style={{ marginRight: 8 }} />
                                         <TextInput
@@ -430,7 +430,7 @@ export default function RelationsScreen() {
 
                                     {/* People List */}
                                     <ScrollView
-                                        style={{ marginTop: 16 }}
+                                        style={{ flex: 1, marginTop: 16 }}
                                         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                                         showsVerticalScrollIndicator={false}
                                         keyboardShouldPersistTaps="handled"
@@ -458,10 +458,11 @@ export default function RelationsScreen() {
                                         ))}
                                         {filteredPeople.length === 0 && (
                                             <View style={styles.noResults}>
-                                                <ThemedText style={{ color: colors.secondary }}>
+                                                <Candles size={56} color={colors.tint} weight="fill" />
+                                                <ThemedText style={{ color: colors.secondary, marginTop: 10 }}>
                                                     {availablePeople.length === 0
                                                         ? 'Everyone is already connected.'
-                                                        : 'No people found.'}
+                                                        : 'No person found.'}
                                                 </ThemedText>
                                             </View>
                                         )}

@@ -42,7 +42,8 @@ export const AddIcon = Add;
 export const X = (props: any) => <Icon name={props.weight === 'fill' ? 'close_fill' : 'close_line'} {...props} />;
 export const Trash = (props: any) => <Icon name={props.weight === 'fill' ? 'delete_2_fill' : 'delete_2_line'} {...props} />;
 export const UserPlus = (props: any) => <Icon name={props.weight === 'fill' ? 'user_add_fill' : 'user_add_line'} {...props} />;
-export const Users = (props: any) => <Icon name={props.weight === 'fill' ? 'group_fill' : 'group_line'} {...props} />;
+export const Users = (props: any) => <Icon name={props.weight === 'fill' ? 'group_3_fill' : 'group_3_line'} {...props} />;
+export const UsersTwo = (props: any) => <Icon name={props.weight === 'fill' ? 'group_2_fill' : 'group_2_line'} {...props} />;
 export const Calendar = (props: any) => <Icon name={props.weight === 'fill' ? 'calendar_fill' : 'calendar_line'} {...props} />;
 export const Clock = (props: any) => <Icon name={props.weight === 'fill' ? 'time_fill' : 'time_line'} {...props} />;
 export const TimeDuration = (props: any) => <Icon name={props.weight === 'fill' ? 'time_duration_fill' : 'time_duration_line'} {...props} />;
@@ -67,6 +68,7 @@ export const Airplane = (props: any) => <Icon name={props.weight === 'fill' ? 'f
 export const MusicNote = (props: any) => <Icon name={props.weight === 'fill' ? 'music_2_fill' : 'music_2_line'} {...props} />;
 export const Smiley = (props: any) => <Icon name={props.weight === 'fill' ? 'emoji_fill' : 'emoji_line'} {...props} />;
 export const AddressBook = (props: any) => <Icon name={props.weight === 'fill' ? 'contacts_fill' : 'contacts_line'} {...props} />;
+export const ContactsFour = (props: any) => <Icon name={props.weight === 'fill' ? 'contacts_4_fill' : 'contacts_4_line'} {...props} />;
 export const LockKey = (props: any) => <Icon name={props.weight === 'fill' ? 'lock_fill' : 'lock_line'} {...props} />;
 export const LockKeyOpen = (props: any) => <Icon name={props.weight === 'fill' ? 'unlock_fill' : 'unlock_line'} {...props} />;
 export const Fingerprint = (props: any) => <Icon name={props.weight === 'fill' ? 'fingerprint_fill' : 'fingerprint_line'} {...props} />;
@@ -92,6 +94,7 @@ export const DotsThreeVertical = (props: any) => <Icon name={props.weight === 'f
 export const ChatCenteredText = (props: any) => <Icon name={props.weight === 'fill' ? 'chat_1_fill' : 'chat_1_line'} {...props} />;
 export const Rocket = (props: any) => <Icon name={props.weight === 'fill' ? 'rocket_fill' : 'rocket_line'} {...props} />;
 export const CloudArrowUp = (props: any) => <Icon name={props.weight === 'fill' ? 'upload_fill' : 'upload_line'} {...props} />;
+export const Candles = (props: any) => <Icon name={props.weight === 'fill' ? 'candles_fill' : 'candles_line'} {...props} />;
 export const ArrowsLeftRight = (props: any) => <Icon name={props.weight === 'fill' ? 'transfer_fill' : 'transfer_line'} {...props} />;
 export const CaretUp = (props: any) => <Icon name={props.weight === 'fill' ? 'up_fill' : 'up_line'} {...props} />;
 export const CaretDown = (props: any) => <Icon name={props.weight === 'fill' ? 'down_fill' : 'down_line'} {...props} />;
@@ -102,6 +105,7 @@ export const PushPin = (props: any) => <Icon name={props.weight === 'fill' ? 'pi
 export const ArrowSquareOut = (props: any) => <Icon name={props.weight === 'fill' ? 'external_link_fill' : 'external_link_line'} {...props} />;
 export const DownloadSimple = (props: any) => <Icon name={props.weight === 'fill' ? 'download_2_fill' : 'download_2_line'} {...props} />;
 export const ListMagnifyingGlass = (props: any) => <Icon name={props.weight === 'fill' ? 'list_search_fill' : 'list_search_line'} {...props} />;
+export const SearchNoResults = (props: any) => <Icon name={props.weight === 'fill' ? 'search_2_none_fill' : 'search_2_none_line'} {...props} />;
 export const Layout = (props: any) => <Icon name={props.weight === 'fill' ? 'layout_fill' : 'layout_line'} {...props} />;
 export const TextT = (props: any) => <Icon name={props.weight === 'fill' ? 'text_fill' : 'text_line'} {...props} />;
 export const SelectionBackground = (props: any) => <Icon name={props.weight === 'fill' ? 'grid_fill' : 'grid_line'} {...props} />;
@@ -128,7 +132,6 @@ export const Sparkle = (props: any) => <Icon name={props.weight === 'fill' ? 'sp
 export const Gift = (props: any) => <Icon name={props.weight === 'fill' ? 'gift_fill' : 'gift_line'} {...props} />;
 export const Target = (props: any) => <Icon name={props.weight === 'fill' ? 'target_fill' : 'target_line'} {...props} />;
 export const Tag = (props: any) => <Icon name={props.weight === 'fill' ? 'tag_fill' : 'tag_line'} {...props} />;
-export const UsersThree = (props: any) => <Icon name={props.weight === 'fill' ? 'group_fill' : 'group_line'} {...props} />;
 export const LightningSlash = (props: any) => <Icon name={props.weight === 'fill' ? 'flash_line' : 'flash_line'} {...props} />;
 export const RadioButton = (props: any) => <Icon name={props.weight === 'fill' ? 'round_fill' : 'round_line'} {...props} />;
 export const Graph = (props: any) => <Icon name={props.weight === 'fill' ? 'mind_map_fill' : 'mind_map_line'} {...props} />;
@@ -178,6 +181,7 @@ export const Link = (props: any) => <Icon name={props.weight === 'fill' ? 'link_
 export const MoreVertical = DotsThreeVertical;
 export const ShareIcon = ShareNetwork;
 export const Camera = (props: any) => <Icon name={props.weight === 'fill' ? 'camera_fill' : 'camera_line'} {...props} />;
+export const PhotoAlbum = (props: any) => <Icon name={props.weight === 'fill' ? 'photo_album_fill' : 'photo_album_line'} {...props} />;
 export const UserRemove = (props: any) => <Icon name={props.weight === 'fill' ? 'user_remove_2_fill' : 'user_remove_2_line'} {...props} />;
 export const Trash2 = Trash;
 export const Suitcase = (props: any) => <Icon name={props.weight === 'fill' ? 'suitcase_fill' : 'suitcase_line'} {...props} />;

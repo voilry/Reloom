@@ -1,23 +1,21 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, Alert, KeyboardAvoidingView, Linking } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, StyleSheet, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
-import Animated, { FadeInDown, FadeIn, SlideInDown, Layout } from 'react-native-reanimated';
 import { ContactRepository, Contact } from '../../db/repositories/ContactRepository';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { Avatar } from '../../components/ui/Avatar';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, CaretLeft as ChevronLeft, Trash } from '@/components/ui/Icon';
+import { Phone, EnvelopeSimple, InstagramLogo, FacebookLogo, TiktokLogo, WhatsappLogo, LinkedinLogo, Globe, Trash } from '@/components/ui/Icon';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { DesignSystem } from '../../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { AlertModal } from '../../components/ui/AlertModal';
+import { showToast } from '../../components/ui/Toast';
 
 const PLATFORMS = [
     { id: 'Phone', icon: Phone, placeholder: '+1 234 567 8900', keyboard: 'phone-pad' },
@@ -33,7 +31,6 @@ const PLATFORMS = [
 export default function ContactEditorScreen() {
     const { id, personId } = useLocalSearchParams();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
     const { colors, theme, hapticsEnabled } = useAppTheme();
 
     const isNew = id === 'new';
@@ -43,6 +40,9 @@ export default function ContactEditorScreen() {
     const [value, setValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showDiscardModal, setShowDiscardModal] = useState(false);
+    const [fieldError, setFieldError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [alertConfig, setAlertConfig] = useState<{ visible: boolean, title: string, description: string, type: 'error' | 'success' } | null>(null);
 
     useEffect(() => {
@@ -52,24 +52,37 @@ export default function ContactEditorScreen() {
     const loadData = async () => {
         try {
             if (isNew) {
-                if (personId) {
-                    const p = await PersonRepository.getById(Number(personId));
-                    setPerson(p);
+                if (!personId) {
+                    setLoadError('No person was specified for this contact.');
+                    return;
                 }
+                const p = await PersonRepository.getById(Number(personId));
+                if (!p) {
+                    setLoadError('This person no longer exists.');
+                    return;
+                }
+                setPerson(p);
             } else {
                 const contact = await ContactRepository.getById(Number(id));
-                if (contact) {
-                    setOriginalContact(contact);
-                    setValue(contact.value);
-                    const plat = PLATFORMS.find(p => p.id === contact.platform) || PLATFORMS[0];
-                    setSelectedPlatform(plat);
-
-                    const p = await PersonRepository.getById(contact.personId);
-                    setPerson(p);
+                if (!contact) {
+                    setLoadError('This contact no longer exists.');
+                    return;
                 }
+                setOriginalContact(contact);
+                setValue(contact.value);
+                const plat = PLATFORMS.find(p => p.id === contact.platform) || PLATFORMS[0];
+                setSelectedPlatform(plat);
+
+                const p = await PersonRepository.getById(contact.personId);
+                if (!p) {
+                    setLoadError('The person for this contact no longer exists.');
+                    return;
+                }
+                setPerson(p);
             }
         } catch (error) {
             console.error(error);
+            setLoadError('Could not load this contact.');
         }
     };
 
@@ -78,6 +91,36 @@ export default function ContactEditorScreen() {
         if (!originalContact) return false;
         return selectedPlatform.id !== originalContact.platform || value.trim() !== originalContact.value;
     }, [isNew, value, selectedPlatform, originalContact]);
+
+    const validateContactValue = (platformId: string, rawValue: string): string | null => {
+        const trimmed = rawValue.trim();
+        switch (platformId) {
+            case 'Phone':
+            case 'WhatsApp': {
+                const digits = trimmed.replace(/\D/g, '');
+                if (digits.length < 7) return 'Enter a valid phone number.';
+                return null;
+            }
+            case 'Email':
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Enter a valid email address.';
+                return null;
+            case 'Instagram':
+            case 'TikTok':
+                if (!trimmed.replace(/^@/, '')) return 'Enter a valid handle.';
+                return null;
+            case 'Facebook':
+            case 'LinkedIn':
+            case 'Website': {
+                const lower = trimmed.toLowerCase();
+                if (!lower.startsWith('http://') && !lower.startsWith('https://') && !trimmed.includes('.')) {
+                    return 'Enter a valid URL.';
+                }
+                return null;
+            }
+            default:
+                return null;
+        }
+    };
 
     const handleSave = async () => {
         if (isSaving) return;
@@ -99,6 +142,33 @@ export default function ContactEditorScreen() {
             });
             return;
         }
+        const formatError = validateContactValue(selectedPlatform.id, value);
+        if (formatError) {
+            setFieldError(formatError);
+            return;
+        }
+        try {
+            const existing = await ContactRepository.getContactsForPerson(person.id);
+            const trimmedValue = value.trim().toLowerCase();
+            const duplicate = existing.find(c =>
+                c.platform === selectedPlatform.id &&
+                c.value.trim().toLowerCase() === trimmedValue &&
+                (isNew || c.id !== Number(id))
+            );
+            if (duplicate) {
+                setFieldError('This contact already exists for this person.');
+                return;
+            }
+        } catch (error) {
+            console.error(error);
+            setAlertConfig({
+                visible: true,
+                title: 'Error',
+                description: 'Could not verify existing contacts.',
+                type: 'error'
+            });
+            return;
+        }
         setIsSaving(true);
         try {
             if (isNew) {
@@ -113,7 +183,6 @@ export default function ContactEditorScreen() {
                     value: value.trim()
                 });
             }
-            const { showToast } = require('../../components/ui/Toast');
             showToast(isNew ? 'Contact added' : 'Contact updated');
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             if (router.canGoBack()) router.back(); else router.replace('/');
@@ -138,6 +207,7 @@ export default function ContactEditorScreen() {
             if (router.canGoBack()) router.back(); else router.replace('/');
         } catch (err) {
             setIsSaving(false);
+            setShowDeleteModal(false);
             setAlertConfig({
                 visible: true,
                 title: 'Error',
@@ -147,15 +217,25 @@ export default function ContactEditorScreen() {
         }
     };
 
+    const goBack = () => {
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.back();
+    };
+
+    const handleBack = () => {
+        if (hasChanges) {
+            setShowDiscardModal(true);
+        } else {
+            goBack();
+        }
+    };
+
     return (
         <ThemedView style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
 
             <ScreenHeader
-                onBack={() => {
-                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.back();
-                }}
+                onBack={handleBack}
                 centerContent={
                     <ThemedText type="display" style={{ fontSize: 28, letterSpacing: -1.5 }}>
                         {isNew ? 'New Contact' : 'Edit Contact'}
@@ -170,6 +250,22 @@ export default function ContactEditorScreen() {
             >
                     <ScrollView contentContainerStyle={styles.scrollContent}>
 
+                    {loadError ? (
+                        <View style={styles.errorContainer}>
+                            <ThemedText type="sectionHeader" style={{ textAlign: 'center' }}>
+                                {isNew ? 'Cannot Create Contact' : 'Contact Not Found'}
+                            </ThemedText>
+                            <ThemedText style={{ textAlign: 'center', opacity: 0.6, marginTop: 8 }}>
+                                {loadError}
+                            </ThemedText>
+                            <Button
+                                title="Go Back"
+                                onPress={() => router.back()}
+                                style={{ marginTop: 24, alignSelf: 'center', paddingHorizontal: 28 }}
+                            />
+                        </View>
+                    ) : (
+                    <>
                     {person && (
                         <View 
                             style={[
@@ -213,6 +309,7 @@ export default function ContactEditorScreen() {
                                         onPress={() => {
                                             if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
                                             setSelectedPlatform(platform);
+                                            if (fieldError) setFieldError(null);
                                         }}
                                     >
                                         <Icon size={20} color={isSelected ? (theme === 'dark' ? colors.background : '#FFF') : colors.text} weight={isSelected ? "fill" : "regular"} />
@@ -241,11 +338,15 @@ export default function ContactEditorScreen() {
                     <ThemedText type="sectionHeader" style={{ fontSize: 19, marginTop: isNew ? -32 : 8, marginBottom: 8 }}>Contact Value</ThemedText>
                     <Input
                         value={value}
-                        onChangeText={setValue}
+                        onChangeText={(text) => {
+                            setValue(text);
+                            if (fieldError) setFieldError(null);
+                        }}
                         placeholder={selectedPlatform.placeholder}
                         autoCapitalize="none"
                         autoCorrect={false}
                         keyboardType={selectedPlatform.keyboard as any}
+                        error={fieldError ?? undefined}
                         style={{ marginBottom: 1 }}
                     />
 
@@ -270,6 +371,8 @@ export default function ContactEditorScreen() {
                             </ThemedText>
                         </ScalePressable>
                     )}
+                    </>
+                    )}
 
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -280,6 +383,18 @@ export default function ContactEditorScreen() {
                 description="Are you sure you want to delete this contact info?"
                 onCancel={() => setShowDeleteModal(false)}
                 onDelete={confirmDeleteContact}
+            />
+
+            <DeleteModal
+                visible={showDiscardModal}
+                title="Discard Changes?"
+                description="You have unsaved changes. Are you sure you want to go back?"
+                actionLabel="Discard"
+                onCancel={() => setShowDiscardModal(false)}
+                onDelete={() => {
+                    setShowDiscardModal(false);
+                    goBack();
+                }}
             />
 
             <AlertModal
@@ -307,13 +422,12 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginBottom: 32,
     },
-    personIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+    errorContainer: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 16,
+        paddingVertical: 48,
+        paddingHorizontal: 16,
     },
     sectionHeaderRow: {
         flexDirection: 'row',

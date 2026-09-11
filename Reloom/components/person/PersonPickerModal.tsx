@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, MagnifyingGlass as Search } from '@/components/ui/Icon';
+import { X, MagnifyingGlass as Search, Candles } from '@/components/ui/Icon';
 import { ThemedText } from '../ui/ThemedText';
 import { Avatar } from '../ui/Avatar';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -24,6 +24,12 @@ export function PersonPickerModal({ visible, people, onSelect, onClose, title = 
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const insets = useSafeAreaInsets();
     const [search, setSearch] = useState('');
+
+    // Clear stale filter on close — otherwise reopening shows the old
+    // search and people look missing.
+    useEffect(() => {
+        if (!visible) setSearch('');
+    }, [visible]);
 
     const filtered = people.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -67,7 +73,16 @@ export function PersonPickerModal({ visible, people, onSelect, onClose, title = 
                 <FlatList
                     data={filtered}
                     keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={{ padding: 20 }}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 20 + insets.bottom }}
+                    keyboardShouldPersistTaps="handled"
+                    ListEmptyComponent={
+                        <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                            <Candles size={56} color={colors.tint} weight="fill" />
+                            <ThemedText style={{ color: colors.secondary, marginTop: 10 }}>
+                                {people.length === 0 ? 'No people yet.' : 'No person found.'}
+                            </ThemedText>
+                        </View>
+                    }
                     renderItem={({ item }) => (
                         <ScalePressable
                             onPress={() => handleSelect(item)}

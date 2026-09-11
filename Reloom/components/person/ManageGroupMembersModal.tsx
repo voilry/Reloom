@@ -13,7 +13,7 @@ import { ScalePressable } from '../ui/ScalePressable';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, Layout, useAnimatedStyle, useAnimatedScrollHandler, useSharedValue, interpolate, Extrapolate } from 'react-native-reanimated';
 import { Button } from '../ui/Button';
-import { UsersThree } from '@/components/ui/Icon';
+import { Users } from '@/components/ui/Icon';
 
 interface ManageGroupMembersModalProps {
     visible: boolean;
@@ -244,7 +244,7 @@ export const ManageGroupMembersModal = ({
                             ) : (
                                 members.length === 0 ? (
                                     <View style={[styles.emptyState, { marginTop: 40 }]}>
-                                        <UsersThree size={48} color={colors.tint} weight="fill" />
+                                        <Users size={48} color={colors.tint} weight="fill" />
                                         <ThemedText style={{ color: colors.secondary, textAlign: 'center', marginTop: 12, fontSize: 16, fontFamily: Typography.fontFamily.bold }}>
                                             Group is currently empty.
                                         </ThemedText>

@@ -11,7 +11,7 @@ import { JournalRepository } from '../../db/repositories/JournalRepository';
 import { RelationshipRepository } from '../../db/repositories/RelationshipRepository';
 
 import { DesignSystem } from '../../constants/DesignSystem';
-import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, AddressBook } from '@/components/ui/Icon';
+import { Trash, CaretLeft as ChevronLeft, DotsThree as MoreHorizontal, Info, ChatCenteredText as MessageSquare, BookOpen, Folder, PencilSimple as Edit, Star, Users, Briefcase, Heart, Lightning as Zap, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, Smiley as Smile, ContactsFour } from '@/components/ui/Icon';
 import { GroupRepository, Group } from '../../db/repositories/GroupRepository';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -276,7 +276,7 @@ export default function PersonDetailScreen() {
             case 'info': return Info;
             case 'notes': return MessageSquare;
             case 'journals': return BookOpen;
-            case 'contacts': return AddressBook;
+            case 'contacts': return ContactsFour;
             default: return Info;
         }
     };
