@@ -4,6 +4,7 @@ import { ThemedText } from '../ui/ThemedText';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Typography } from '../../constants/Typography';
 import { ScalePressable } from '../ui/ScalePressable';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CaretRight, Users } from '@/components/ui/Icon';
 import { getGroupIcon } from '../../constants/GroupIcons';
 
@@ -30,25 +31,38 @@ export const DashboardGroupCard = memo(({ title, description, iconName, color, i
             style={[
                 styles.container,
                 {
-                    backgroundColor: isAddCard 
-                        ? (colors.theme === 'light' ? colors.surface : 'rgba(255,255,255,0.08)') 
-                        : (isMaster 
-                            ? (colors.theme === 'light' ? colors.tint + '10' : colors.tint + '30') 
-                            : (colors.theme === 'light' ? color + '0F' : color + '35')),
-                    borderColor: isAddCard 
-                        ? (colors.theme === 'light' ? colors.border : colors.text + '20') 
+                    backgroundColor: isAddCard
+                        ? (colors.theme === 'light' ? colors.surface : 'rgba(255,255,255,0.08)')
+                        : colors.card,
+                    borderColor: isAddCard
+                        ? (colors.theme === 'light' ? colors.border : colors.text + '20')
                         : (isMaster ? colors.tint + '20' : color + '20'),
                     borderWidth: isAddCard ? 1.5 : 0,
                     borderStyle: isAddCard ? 'dashed' : 'solid',
                     minHeight: isMaster ? 130 : 120,
                     padding: 18,
-                    ...((colors.theme === 'light') ? DesignSystem.shadows.none : {}),
                 },
                 isAddCard && { justifyContent: 'center', alignItems: 'center' },
                 (!isAddCard && !isMaster) && { justifyContent: 'center', alignItems: 'center' },
             ]}
             innerStyle={{ borderRadius: 24 }}
         >
+            {!isAddCard && (
+                <>
+                    <LinearGradient
+                        colors={[`${color}33`, `${color}00`]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
+                    />
+                    <LinearGradient
+                        colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 0.45 }}
+                        style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
+                    />
+                </>
+            )}
             {isAddCard ? (
                 <>
                     <View style={[styles.iconContainer, { backgroundColor: colors.surface, width: 44, height: 44, borderRadius: 22, borderWidth: 0 }]}>
@@ -64,7 +78,7 @@ export const DashboardGroupCard = memo(({ title, description, iconName, color, i
                                 <IconComponent size={32} color={color} weight="fill" />
                             </View>
                             {count !== undefined && (
-                                <View style={[styles.badge, { backgroundColor: colors.tint + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }]}>
+                                <View style={[styles.badge, { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }]}>
                                     <ThemedText style={{ fontSize: 12, fontWeight: '700', color: color }}>{count}</ThemedText>
                                 </View>
                             )}
