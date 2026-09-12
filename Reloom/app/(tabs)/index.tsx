@@ -109,8 +109,17 @@ export default function PeopleScreen() {
     const scrollY = useSharedValue(0);
     const scrollDirection = useSharedValue<'up' | 'down'>('up');
     const isScrolling = useSharedValue(false);
+    const listContentHeight = useSharedValue(0);
+    const listLayoutHeight = useSharedValue(0);
+    // JS-thread mirrors for computing exact jump offsets (shared values above
+    // feed the arrow visibility checks on the UI thread).
+    const contentHeightRef = useRef(0);
+    const layoutHeightRef = useRef(0);
     const hideTimeout = useRef<any>(null);
     const flatListRef = useRef<FlatList>(null);
+    // Set while a jump-to-bottom is in flight; cleared on user takeover or timeout.
+    const pendingEndScroll = useRef(false);
+    const endScrollTimeout = useRef<any>(null);
 
     const startHideTimer = useCallback(() => {
         if (hideTimeout.current) clearTimeout(hideTimeout.current);
@@ -135,7 +144,12 @@ export default function PeopleScreen() {
 
             if (Math.abs(diff) > 5) {
                 scrollDirection.value = diff > 0 ? 'down' : 'up';
-                isScrolling.value = currentY > 400;
+            }
+            // Show past the threshold no matter how slow the scroll; hiding is
+            // left to the stop-timer so both arrows stay visible through the end
+            // of the gesture in either direction.
+            if (currentY > 200) {
+                isScrolling.value = true;
             }
             scrollY.value = currentY;
 
@@ -143,11 +157,32 @@ export default function PeopleScreen() {
         },
     });
 
-    const handleQuickScroll = () => {
-        if (scrollDirection.value === 'up') {
-            flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    // Jump to the absolute end of the list, including the intentional bottom
+    // breathing room below the last card (scrollToEnd stops at the last row).
+    const scrollToTrueEnd = () => {
+        const ch = contentHeightRef.current;
+        const lh = layoutHeightRef.current;
+        if (ch > 0 && lh > 0) {
+            flatListRef.current?.scrollToOffset({ offset: Math.max(0, ch - lh), animated: true });
         } else {
             flatListRef.current?.scrollToEnd({ animated: true });
+        }
+    };
+
+    const handleQuickScroll = () => {
+        if (endScrollTimeout.current) clearTimeout(endScrollTimeout.current);
+        if (scrollDirection.value === 'up') {
+            pendingEndScroll.current = false;
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        } else {
+            // Rows past the render window have no measured size yet, so one jump
+            // can land short; follow-ups chain via onContentSizeChange until the
+            // content is fully measured and the true end is reached.
+            pendingEndScroll.current = true;
+            endScrollTimeout.current = setTimeout(() => {
+                pendingEndScroll.current = false;
+            }, 3000);
+            scrollToTrueEnd();
         }
     };
 
@@ -537,6 +572,15 @@ export default function PeopleScreen() {
 
     const isGallery = settings.peopleListStyle === 'gallery';
 
+    // The list remounts when gallery/dashboard mode flips (see key on the
+    // FlatList below); reset the scroll trackers so the first scroll after the
+    // switch doesn't compute against a stale offset and flash the wrong arrow.
+    useEffect(() => {
+        scrollY.value = 0;
+        scrollDirection.value = 'up';
+        isScrolling.value = false;
+    }, [isGallery, isDashboardActive]);
+
     const renderItem = useCallback(({ item, index }: { item: Person, index: number }) => {
         if (isGallery) {
             return (
@@ -607,6 +651,20 @@ export default function PeopleScreen() {
                 scrollEventThrottle={16}
                 onScrollBeginDrag={() => {
                     if (showSortMenu) setShowSortMenu(false);
+                    // User took over; stop chaining jump-to-bottom follow-ups.
+                    pendingEndScroll.current = false;
+                    if (endScrollTimeout.current) clearTimeout(endScrollTimeout.current);
+                }}
+                onLayout={(e) => {
+                    layoutHeightRef.current = e.nativeEvent.layout.height;
+                    listLayoutHeight.value = e.nativeEvent.layout.height;
+                }}
+                onContentSizeChange={(_w, h) => {
+                    contentHeightRef.current = h;
+                    listContentHeight.value = h;
+                    if (pendingEndScroll.current) {
+                        scrollToTrueEnd();
+                    }
                 }}
                 data={isDashboardActive ? [] : filteredPeople}
                 key={isGallery && !isDashboardActive ? 'gallery-view' : 'list-view'}
@@ -1254,6 +1312,9 @@ export default function PeopleScreen() {
             <QuickScrollButton
                 isScrolling={isScrolling}
                 direction={scrollDirection}
+                scrollY={scrollY}
+                contentHeight={listContentHeight}
+                layoutHeight={listLayoutHeight}
                 onPress={handleQuickScroll}
             />
             <UpdateModal

@@ -25,6 +25,8 @@ interface ScalePressableProps {
     scale?: boolean;
     hapticStyle?: Haptics.ImpactFeedbackStyle;
     springConfig?: WithSpringConfig;
+    accessibilityLabel?: string;
+    accessibilityRole?: 'button' | 'link' | 'none';
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -43,6 +45,8 @@ export function ScalePressable({
     scale = true,
     hapticStyle = Haptics.ImpactFeedbackStyle.Light,
     springConfig,
+    accessibilityLabel,
+    accessibilityRole,
 }: ScalePressableProps) {
     const { hapticsEnabled, theme } = useAppTheme();
     const scaleValue = useSharedValue(1);
@@ -128,6 +132,8 @@ export function ScalePressable({
             onPressOut={handlePressOut}
             disabled={disabled}
             hitSlop={hitSlop}
+            accessibilityLabel={accessibilityLabel}
+            accessibilityRole={accessibilityRole}
             style={[styles.container, style, containerAnimatedStyle]}
         >
             {children}

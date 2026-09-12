@@ -1,29 +1,37 @@
 import React, { memo } from 'react';
-import { StyleSheet, Platform } from 'react-native';
-import Animated, { 
-    useAnimatedStyle, 
-    withSpring, 
+import { StyleSheet } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    withSpring,
     withTiming,
     SharedValue
 } from 'react-native-reanimated';
 import { CaretUp, CaretDown } from '@/components/ui/Icon';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { ScalePressable } from './ScalePressable';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const NEAR_TOP_PX = 200;
+const NEAR_BOTTOM_PX = 200;
 
 interface QuickScrollButtonProps {
     isScrolling: SharedValue<boolean>;
     direction: SharedValue<'up' | 'down'>;
+    // Optional: when provided, arrows also hide near the list edges.
+    scrollY?: SharedValue<number>;
+    contentHeight?: SharedValue<number>;
+    layoutHeight?: SharedValue<number>;
     onPress: () => void;
 }
 
-export const QuickScrollButton = memo(({ isScrolling, direction, onPress }: QuickScrollButtonProps) => {
+export const QuickScrollButton = memo(({ isScrolling, direction, scrollY, contentHeight, layoutHeight, onPress }: QuickScrollButtonProps) => {
     const { colors, theme } = useAppTheme();
     const insets = useSafeAreaInsets();
 
     const upButtonStyle = useAnimatedStyle(() => {
-        const active = isScrolling.value && direction.value === 'up';
+        // Hide when near the top: no point offering "go to top" at the top.
+        const farFromTop = scrollY ? scrollY.value > NEAR_TOP_PX : true;
+        const active = isScrolling.value && direction.value === 'up' && farFromTop;
         return {
             opacity: withTiming(active ? 1 : 0, { duration: 250 }),
             transform: [
@@ -35,7 +43,13 @@ export const QuickScrollButton = memo(({ isScrolling, direction, onPress }: Quic
     });
 
     const downButtonStyle = useAnimatedStyle(() => {
-        const active = isScrolling.value && direction.value === 'down';
+        // Hide when near the bottom: no point offering "go to bottom" at the bottom.
+        // Without metrics (or until both heights are measured), assume far from the end.
+        const y = scrollY ? scrollY.value : 0;
+        const ch = contentHeight ? contentHeight.value : 0;
+        const lh = layoutHeight ? layoutHeight.value : 0;
+        const distToBottom = ch > 0 && lh > 0 ? ch - (y + lh) : Number.MAX_SAFE_INTEGER;
+        const active = isScrolling.value && direction.value === 'down' && distToBottom > NEAR_BOTTOM_PX;
         return {
             opacity: withTiming(active ? 1 : 0, { duration: 250 }),
             transform: [
@@ -46,8 +60,9 @@ export const QuickScrollButton = memo(({ isScrolling, direction, onPress }: Quic
         };
     });
 
+    // Haptics intentionally left to ScalePressable, which already honors the
+    // user's haptics setting (a manual buzz here would bypass that toggle).
     const handlePress = () => {
-        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress();
     };
 
@@ -71,6 +86,9 @@ export const QuickScrollButton = memo(({ isScrolling, direction, onPress }: Quic
                     style={[styles.button, { backgroundColor: colors.tint }]}
                     innerStyle={{ borderRadius: 18 }}
                     scaleTo={0.9}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Scroll to top"
                 >
                     <CaretUp size={16} color={colors.tintContrast} weight={theme === 'dark' ? 'bold' : 'regular'} />
                 </ScalePressable>
@@ -94,6 +112,9 @@ export const QuickScrollButton = memo(({ isScrolling, direction, onPress }: Quic
                     style={[styles.button, { backgroundColor: colors.tint }]}
                     innerStyle={{ borderRadius: 18 }}
                     scaleTo={0.9}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Scroll to bottom"
                 >
                     <CaretDown size={16} color={colors.tintContrast} weight={theme === 'dark' ? 'bold' : 'regular'} />
                 </ScalePressable>
