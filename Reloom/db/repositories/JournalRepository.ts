@@ -1,6 +1,6 @@
 import { db } from '../index';
 import { journals, journalTags, people } from '../schema';
-import { eq, desc, and, inArray, sql } from 'drizzle-orm';
+import { eq, desc, and, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 export type Journal = InferSelectModel<typeof journals>;
@@ -109,9 +109,11 @@ export class JournalRepository {
         await db.delete(journals).where(eq(journals.id, id));
     }
     static async getHighlights(limit = 3) {
-        // Return random recent journals for Memory Lane
+        // Random throwbacks for Memory Lane.
+        // Skip rows with neither title nor content so no blank card renders.
         return await db.select()
             .from(journals)
+            .where(or(isNotNull(journals.title), isNotNull(journals.content)))
             .orderBy(sql`RANDOM()`)
             .limit(limit);
     }

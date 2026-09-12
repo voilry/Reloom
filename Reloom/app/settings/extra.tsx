@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import * as Haptics from 'expo-haptics';
 import { Toggle } from '../../components/ui/Toggle';
+import { ExpBadge } from '../../components/ui/ExpBadge';
 import { Typography } from '../../constants/Typography';
 import { View } from 'react-native';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -62,6 +63,7 @@ export default function ExtraSettingsScreen() {
                             icon={<Layout size={20} color={colors.tint} weight="duotone" />}
                             colors={colors}
                             style={[styles.paddingBox, { paddingVertical: 18 }]}
+                            badge={<ExpBadge />}
                         >
                             <Toggle
                                 value={settings.showQuickArray}
@@ -95,13 +97,14 @@ export default function ExtraSettingsScreen() {
     );
 }
 
-function SettingRow({ label, description, icon, children, colors, style }: any) {
+function SettingRow({ label, description, icon, children, colors, style, badge }: any) {
     return (
         <View style={[styles.settingRow, style]}>
             <View style={styles.settingInfo}>
                 <View style={styles.settingTitleGroup}>
                     {icon}
                     <ThemedText style={styles.settingLabel}>{label}</ThemedText>
+                    {badge}
                 </View>
                 {description && <ThemedText style={[styles.settingDesc, { color: colors.secondary }]}>{description}</ThemedText>}
             </View>

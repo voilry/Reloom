@@ -1,5 +1,5 @@
 import { db } from '../index';
-import { people, entries, journalTags, reminders, relationships, personGroups, contacts } from '../schema';
+import { people, entries, journals, journalTags, reminders, relationships, personGroups, contacts } from '../schema';
 import { eq, desc, isNotNull, asc, sql, or } from 'drizzle-orm';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import * as Notifications from 'expo-notifications';
@@ -111,17 +111,31 @@ export class PersonRepository {
 
     static async getReconnectSuggestions(limit = 4) {
         const allPeople = await db.select().from(people);
-        if (allPeople.length < 3) return [];
+        if (allPeople.length === 0) return [];
 
-        const entryCounts = await db.select({
-            personId: entries.personId,
-            count: sql<number>`count(*)`
-        }).from(entries).groupBy(entries.personId);
+        const [entryCounts, journalCounts, lastEntryActivity, lastJournalActivity] = await Promise.all([
+            db.select({
+                personId: entries.personId,
+                count: sql<number>`count(*)`
+            }).from(entries).groupBy(entries.personId),
 
-        const journalCounts = await db.select({
-            personId: journalTags.personId,
-            count: sql<number>`count(*)`
-        }).from(journalTags).groupBy(journalTags.personId);
+            db.select({
+                personId: journalTags.personId,
+                count: sql<number>`count(*)`
+            }).from(journalTags).groupBy(journalTags.personId),
+
+            // Last real interaction per person (latest note or tagged journal),
+            // so recency reflects activity instead of profile edits.
+            db.select({
+                personId: entries.personId,
+                last: sql<number>`max(${entries.createdAt})`
+            }).from(entries).groupBy(entries.personId),
+
+            db.select({
+                personId: journalTags.personId,
+                last: sql<number>`max(${journals.createdAt})`
+            }).from(journalTags).innerJoin(journals, eq(journalTags.journalId, journals.id)).groupBy(journalTags.personId),
+        ]);
 
         const activityMap = new Map<number, number>();
         entryCounts.forEach(e => activityMap.set(e.personId, e.count));
@@ -129,55 +143,66 @@ export class PersonRepository {
             activityMap.set(j.personId, (activityMap.get(j.personId) || 0) + j.count);
         });
 
-        const totalActivityGlobally = Array.from(activityMap.values()).reduce((a, b) => a + b, 0);
-        if (totalActivityGlobally < 5) return [];
+        const lastActivityMap = new Map<number, number>();
+        lastEntryActivity.forEach(e => {
+            const t = Number(e.last);
+            if (!isNaN(t)) lastActivityMap.set(e.personId, t);
+        });
+        lastJournalActivity.forEach(j => {
+            const t = Number(j.last);
+            if (!isNaN(t)) lastActivityMap.set(j.personId, Math.max(t, lastActivityMap.get(j.personId) || 0));
+        });
 
         let suggestions: any[] = [];
         const now = Date.now();
 
         allPeople.forEach(p => {
             const totalActivity = activityMap.get(p.id) || 0;
-            const updatedTime = p.updatedAt ? new Date(p.updatedAt).getTime() : now;
             const createdTime = p.createdAt ? new Date(p.createdAt).getTime() : now;
-            const daysSinceUpdate = isNaN(updatedTime) ? 0 : (now - updatedTime) / (1000 * 60 * 60 * 24);
             const daysSinceCreated = isNaN(createdTime) ? 0 : (now - createdTime) / (1000 * 60 * 60 * 24);
+            const lastActivity = lastActivityMap.get(p.id);
+            const daysSinceActivity = lastActivity ? (now - lastActivity) / (1000 * 60 * 60 * 24) : Number.POSITIVE_INFINITY;
 
             let missingFields = 0;
             if (!p.elevatorPitch) missingFields++;
             if (!p.birthdate) missingFields++;
             if (!p.gender) missingFields++;
             if (!p.firstMet) missingFields++;
-            if (!p.locationHome && !p.locationWork) missingFields++;
+            if (!p.locationHome && !p.locationWork && !p.locationOther && !p.city) missingFields++;
 
-            if (totalActivity > 0 && missingFields >= 3) {
-                suggestions.push({ person: p, reason: 'Missing details', type: 'missing-info', score: missingFields });
-            } else if (totalActivity >= 3 && daysSinceUpdate > 10) {
-                suggestions.push({ person: p, reason: 'Cooling off', type: 'cool-off', score: daysSinceUpdate });
-            } else if (totalActivity >= 3 && daysSinceUpdate <= 10) {
-                suggestions.push({ person: p, reason: 'Active', type: 'frequent', score: totalActivity });
-            } else if (totalActivity === 0 && daysSinceCreated > 7) {
+            if (totalActivity === 0 && daysSinceCreated > 7) {
                 suggestions.push({ person: p, reason: 'Needs attention', type: 'needs-attention', score: daysSinceCreated });
+            } else if (totalActivity > 0 && daysSinceActivity > 21) {
+                suggestions.push({ person: p, reason: 'Cooling off', type: 'cool-off', score: daysSinceActivity });
+            } else if (totalActivity > 0 && missingFields >= 3) {
+                suggestions.push({ person: p, reason: 'Missing details', type: 'missing-info', score: missingFields });
+            } else if (totalActivity > 0) {
+                suggestions.push({ person: p, reason: 'Active', type: 'frequent', score: totalActivity });
             }
         });
 
         if (suggestions.length === 0) return [];
 
-        const missingInfos = suggestions.filter(s => s.type === 'missing-info').sort((a, b) => b.score - a.score);
         const frequents = suggestions.filter(s => s.type === 'frequent').sort((a, b) => b.score - a.score);
-        const coolOffs = suggestions.filter(s => s.type === 'cool-off').sort((a, b) => b.score - a.score);
         const needsAttention = suggestions.filter(s => s.type === 'needs-attention').sort((a, b) => b.score - a.score);
+        const coolOffs = suggestions.filter(s => s.type === 'cool-off').sort((a, b) => b.score - a.score);
+        const missingInfos = suggestions.filter(s => s.type === 'missing-info').sort((a, b) => b.score - a.score);
 
+        // Round-robin across categories so no single type can starve the others.
+        const pools = [frequents, needsAttention, coolOffs, missingInfos];
         const finalSelection: any[] = [];
-        if (missingInfos.length > 0) finalSelection.push(missingInfos[0]);
-        if (coolOffs.length > 0) finalSelection.push(coolOffs[0]);
-        if (frequents.length > 0) finalSelection.push(frequents[0]);
-        if (missingInfos.length > 1) finalSelection.push(missingInfos[1]);
-        if (coolOffs.length > 1) finalSelection.push(coolOffs[1]);
-        if (needsAttention.length > 0) finalSelection.push(needsAttention[0]);
+        for (let i = 0; finalSelection.length < limit; i++) {
+            let progressed = false;
+            for (const pool of pools) {
+                if (i < pool.length && finalSelection.length < limit) {
+                    finalSelection.push(pool[i]);
+                    progressed = true;
+                }
+            }
+            if (!progressed) break;
+        }
 
-        const validSelection = finalSelection.filter(Boolean);
-        const uniqueSelection = Array.from(new Set(validSelection)).slice(0, limit);
-        return uniqueSelection;
+        return finalSelection.slice(0, limit);
     }
 
     static async getPeopleSortedByActivity() {

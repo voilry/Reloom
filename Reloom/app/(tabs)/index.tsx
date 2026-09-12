@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
 import { GroupRepository, Group } from '../../db/repositories/GroupRepository';
 import { JournalRepository } from '../../db/repositories/JournalRepository';
+import { SettingsRepository } from '../../db/repositories/SettingsRepository';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Button } from '../../components/ui/Button';
@@ -43,6 +44,13 @@ import { ContactRepository } from '../../db/repositories/ContactRepository';
 import { AddressBook } from '@/components/ui/Icon';
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
 import { UpdateModal } from '../../components/ui/UpdateModal';
+
+const sameGlanceIds = (a: any[], b: any[], getId: (x: any) => any = (x) => x.id) =>
+    a.length === b.length && a.every((x, i) => getId(x) === getId(b[i]));
+
+// People digest moves in days/weeks, so refetching more often than this
+// is just battery for nothing.
+const GLANCE_CACHE_MS = 5 * 60 * 1000;
 
 const formatLocalDateShort = (dateStr: string) => {
     if (!dateStr) return '';
@@ -203,9 +211,9 @@ export default function PeopleScreen() {
     const [selectedPersonForGroup, setSelectedPersonForGroup] = useState<Person | null>(null);
     const [selectedPersonGroups, setSelectedPersonGroups] = useState<number[]>([]);
     const [reconnects, setReconnects] = useState<any[]>([]);
-    const [upcoming, setUpcoming] = useState<Person[]>([]);
     const [highlights, setHighlights] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isGroupSwitching, setIsGroupSwitching] = useState(false);
     const [shouldAnimate, setShouldAnimate] = useState(true);
 
     const [isDashboardActive, setIsDashboardActive] = useState(false);
@@ -253,6 +261,8 @@ export default function PeopleScreen() {
     const [showPersonManageModal, setShowPersonManageModal] = useState(false);
 
     const groupSelectorRef = useRef<GroupSelectorHandle>(null);
+    const glanceFetchedAt = useRef<number>(0);
+    const dailyHighlights = useRef<{ day: string; data: any[] }>({ day: '', data: [] });
 
     const [pickerMode, setPickerMode] = useState<'note' | 'contact' | null>(null);
     const [activitySortedPeople, setActivitySortedPeople] = useState<Person[]>([]);
@@ -366,37 +376,80 @@ export default function PeopleScreen() {
 
     const loadData = async (isSilent = false) => {
         // Only show loading if we have absolutely no data yet and not a silent update
-        if (!isSilent && people.length === 0 && reconnects.length === 0 && upcoming.length === 0) {
+        if (!isSilent && people.length === 0 && reconnects.length === 0 && highlights.length === 0) {
             setIsLoading(true);
         }
-        // Load Groups
-        const allGroups = await GroupRepository.getAll();
-        setGroups(allGroups);
+        try {
+            // Load Groups
+            const allGroups = await GroupRepository.getAll();
+            setGroups(allGroups);
 
-        // Load People based on selection
-        let data;
-        if (selectedGroupId === null) {
-            data = await PersonRepository.getAll(settings.defaultSort);
+            // Load People based on selection. Paint the list first so it never
+            // waits behind the glance queries below.
+            let data;
+            if (selectedGroupId === null) {
+                data = await PersonRepository.getAll(settings.defaultSort);
+                setPeople(data);
 
-            // Load Dashboard Data only on main view
-            const [r, u, h] = await Promise.all([
-                PersonRepository.getReconnectSuggestions(),
-                PersonRepository.getUpcomingBirthdays(),
-                JournalRepository.getHighlights(3)
-            ]);
-            setReconnects(r);
-            setUpcoming(u);
-            setHighlights(h);
-        } else {
-            data = await GroupRepository.getPeopleInGroup(selectedGroupId, settings.defaultSort);
+                // Load Quick Glance data only on main view and only when the panel is
+                // enabled — group-hopping back and forth must not refetch or
+                // remount the section.
+                if (settings.showQuickArray) {
+                    // People digest: rule-based, refetched at most every 5 minutes.
+                    if (Date.now() - glanceFetchedAt.current > GLANCE_CACHE_MS) {
+                        const r = await PersonRepository.getReconnectSuggestions();
+                        glanceFetchedAt.current = Date.now();
+                        // Preserve array identity when nothing changed so cards keep
+                        // state and the list keeps scroll position.
+                        setReconnects(prev => sameGlanceIds(prev, r, (s) => `${s.person.id}:${s.type}`) ? prev : r);
+                    }
+                    // Memory Lane: one random throwback set per calendar day,
+                    // persisted so restarts keep the same 3 rows.
+                    const nowDate = new Date();
+                    const todayKey = `${nowDate.getFullYear()}-${nowDate.getMonth() + 1}-${nowDate.getDate()}`;
+                    if (settings.showJournalTab) {
+                        if (dailyHighlights.current.day !== todayKey) {
+                            let h: any[] = [];
+                            try {
+                                const storedDay = await SettingsRepository.get('dailyHighlightDay');
+                                if (storedDay === todayKey) {
+                                    const raw = await SettingsRepository.get('dailyHighlightIds');
+                                    const ids: number[] = raw ? JSON.parse(raw).filter((n: any) => typeof n === 'number') : [];
+                                    const resolved = await Promise.all(ids.map(id => JournalRepository.getById(id)));
+                                    h = resolved.filter(j => j && (j.title || j.content));
+                                }
+                            } catch {
+                                h = [];
+                            }
+                            if (h.length === 0) {
+                                h = await JournalRepository.getHighlights(3);
+                                try {
+                                    await SettingsRepository.set('dailyHighlightDay', todayKey);
+                                    await SettingsRepository.set('dailyHighlightIds', JSON.stringify(h.map(j => j.id)));
+                                } catch {
+                                    // Persistence is best-effort; the in-memory set still applies.
+                                }
+                            }
+                            dailyHighlights.current = { day: todayKey, data: h };
+                            setHighlights(prev => sameGlanceIds(prev, h) ? prev : h);
+                        }
+                    } else {
+                        dailyHighlights.current = { day: todayKey, data: [] };
+                        setHighlights(prev => (prev.length === 0 ? prev : []));
+                    }
+                }
+            } else {
+                data = await GroupRepository.getPeopleInGroup(selectedGroupId, settings.defaultSort);
+                setPeople(data);
+            }
+
+            // Always keep a full list for group assignment, sorted by preference
+            const allData = await PersonRepository.getAll(settings.defaultSort);
+            setAllPeople(allData);
+        } finally {
+            setIsLoading(false);
+            setIsGroupSwitching(false);
         }
-        setPeople(data);
-
-        // Always keep a full list for group assignment, sorted by preference
-        const allData = await PersonRepository.getAll(settings.defaultSort);
-        setAllPeople(allData);
-
-        setIsLoading(false);
     };
 
     const loadPeople = async () => {
@@ -439,7 +492,9 @@ export default function PeopleScreen() {
             setTimeout(() => setShouldAnimate(false), 800);
 
             if (groupChanged) {
-                setIsLoading(true);
+                // Clear only the people list so its switch animation replays.
+                // Quick Glance runs on its own cache and stays mounted.
+                setIsGroupSwitching(true);
                 setPeople([]);
                 setSelectedGroupId(id);
             }
@@ -777,8 +832,8 @@ export default function PeopleScreen() {
                             hidden={settings.peopleTabMode === 'discovery'}
                         />
 
-                        {(!isDashboardActive && !search && !selectedGroupId && settings.showQuickArray) && (
-                            <View style={styles.dashboardContainer}>
+                        {(!isDashboardActive && !search && !selectedGroupId && settings.showQuickArray && (isLoading || reconnects.length > 0 || (highlights.length > 0 && settings.showJournalTab))) && (
+                            <View style={[styles.dashboardContainer, !isLoading && { marginTop: 12 }]}>
                                 {isLoading ? (
                                     <View>
                                         <View style={styles.section}>
@@ -792,70 +847,9 @@ export default function PeopleScreen() {
                                 ) : (
                                     <>
 
-
-                                        {/* Upcoming Birthdays - Festive & Clean */}
-                                        {upcoming.length > 0 && settings.showCalendarTab && (
-                                            <View style={styles.section}>
-                                                <ThemedText type="sectionHeader" style={styles.sectionTitle}>Upcoming Birthdays</ThemedText>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-                                                    {upcoming.map((p, idx) => (
-                                                        <ScalePressable
-                                                            key={`birthday-${p.id}-${idx}`}
-                                                            style={[styles.upcomingCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
-                                                            onPress={() => router.push(`/person/${p.id}`)}
-                                                        >
-                                                            <View style={styles.upcomingAvatarContainer}>
-                                                                <Avatar name={p.name} uri={p.avatarUri} size={44} />
-                                                                <View style={[styles.birthdayBadge, { backgroundColor: colors.background, borderColor: theme === 'light' ? colors.card : colors.border }]}>
-                                                                    <ThemedText style={{ fontSize: 12 }}>🎂</ThemedText>
-                                                                </View>
-                                                            </View>
-                                                            <View style={{ marginTop: 8, alignItems: 'center' }}>
-                                                                <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 13, maxWidth: 80 }}>{p.name}</ThemedText>
-                                                                <ThemedText type="tiny" style={{ color: colors.tint, marginTop: 2, fontWeight: '700' }}>
-                                                                    {formatLocalDateShort(p.birthdate!)}
-                                                                </ThemedText>
-                                                            </View>
-                                                        </ScalePressable>
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
-                                        )}
-
-                                        {/* Reconnect Suggestions - Action Oriented */}
-                                        {reconnects.length > 0 && (
-                                            <View style={styles.section}>
-                                                <ThemedText type="sectionHeader" style={styles.sectionTitle}>Time to Reconnect</ThemedText>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-                                                    {reconnects.map((s, idx) => (
-                                                        <ScalePressable
-                                                            key={`reconnect-${s.person.id}-${idx}`}
-                                                            style={[styles.reconnectCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
-                                                            onPress={() => router.push(`/person/${s.person.id}`)}
-                                                        >
-                                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                                                                <Avatar name={s.person.name} uri={s.person.avatarUri} size={42} />
-                                                                <View style={{ flex: 1 }}>
-                                                                    <ThemedText type="defaultSemiBold" style={{ fontSize: 14 }}>{s.person.name}</ThemedText>
-                                                                    <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '600' }}>{s.reason}</ThemedText>
-                                                                </View>
-                                                            </View>
-                                                            <TouchableOpacity
-                                                                style={[styles.reconnectButton, { backgroundColor: colors.tint + '15' }]}
-                                                                onPress={() => router.push(`/person/${s.person.id}`)}
-                                                            >
-                                                                <ThemedText style={{ color: colors.tint, fontSize: 12, fontWeight: '600' }}>View Profile →</ThemedText>
-                                                            </TouchableOpacity>
-                                                        </ScalePressable>
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
-                                        )}
-
-                                        {/* Memory Lane - Emotional Value */}
+                                        {/* Memory Lane */}
                                         {highlights.length > 0 && settings.showJournalTab && (
-                                            <View style={styles.section}>
-                                                <ThemedText type="sectionHeader" style={styles.sectionTitle}>Memory Lane</ThemedText>
+                                            <View style={[styles.section, { marginBottom: 10 }]}>
                                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                                                     {highlights.map((h, idx) => (
                                                         <ScalePressable
@@ -882,15 +876,38 @@ export default function PeopleScreen() {
                                                 </ScrollView>
                                             </View>
                                         )}
+
+                                        {/* Reconnect Suggestions */}
+                                        {reconnects.length > 0 && (
+                                            <View style={styles.section}>
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+                                                    {reconnects.map((s, idx) => (
+                                                        <ScalePressable
+                                                            key={`reconnect-${s.person.id}-${idx}`}
+                                                            style={[styles.reconnectCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
+                                                            onPress={() => router.push(`/person/${s.person.id}`)}
+                                                        >
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                                                <Avatar name={s.person.name} uri={s.person.avatarUri} size={44} />
+                                                                <View style={{ flex: 1 }}>
+                                                                    <ThemedText type="defaultSemiBold" style={{ fontSize: 14 }}>{s.person.name}</ThemedText>
+                                                                    <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '600' }}>{s.reason}</ThemedText>
+                                                                </View>
+                                                            </View>
+                                                        </ScalePressable>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
                                     </>
                                 )}
                             </View>
                         )}
-                        <View style={{ height: 16 }} />
+                        <View style={{ height: 4 }} />
                     </View>
                 }
                 ListEmptyComponent={
-                    (isLoading || isDashboardActive) ? null : (
+                    (isLoading || isGroupSwitching || isDashboardActive) ? null : (
                         <View style={styles.emptyContainer}>
                             {search ? <SearchNoResults size={64} color={colors.icon} weight="fill" /> : <UserIcon size={48} color={colors.tint} weight="fill" />}
                             <ThemedText style={[styles.emptyTitle, { fontFamily: Typography.fontFamily.bold }]}>
@@ -1534,14 +1551,6 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 16,
     },
-    sectionTitle: {
-        fontSize: 17,
-        letterSpacing: 0.8,
-        opacity: 0.9,
-        marginTop: 3,
-        marginBottom: 5,
-        paddingHorizontal: 0, // Aligned with list items
-    },
     horizontalScroll: {
         gap: 12,
         paddingRight: 16,
@@ -1551,7 +1560,6 @@ const styles = StyleSheet.create({
         height: 120,
         borderRadius: 20,
         padding: 16,
-        marginRight: 12,
         ...DesignSystem.shadows.sm,
     },
     highlightHeader: {
@@ -1578,42 +1586,11 @@ const styles = StyleSheet.create({
     highlightFooter: {
         alignItems: 'flex-end',
     },
-    upcomingCard: {
-        width: 110,
-        borderRadius: 20,
-        padding: 12,
-        marginRight: 12,
-        alignItems: 'center',
-        paddingVertical: 16,
-        ...DesignSystem.shadows.sm,
-    },
-    upcomingAvatarContainer: {
-        position: 'relative',
-    },
-    birthdayBadge: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-    },
     reconnectCard: {
-        width: 220,
+        width: 200,
         borderRadius: 20,
-        padding: 12,
-        marginRight: 12,
+        padding: 14,
         ...DesignSystem.shadows.sm,
-    },
-    reconnectButton: {
-        marginTop: 12,
-        paddingVertical: 8,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     listHeader: {
         flexDirection: 'row',

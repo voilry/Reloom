@@ -23,6 +23,7 @@ import * as Sharing from 'expo-sharing';
 import { DeleteModal } from '../components/ui/DeleteModal';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { Toggle } from '../components/ui/Toggle';
+import { ExpBadge } from '../components/ui/ExpBadge';
 import { AlertModal } from '../components/ui/AlertModal';
 import { ScalePressable } from '../components/ui/ScalePressable';
 import { APP_VERSION } from '../constants/Version';
@@ -441,6 +442,7 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 rightIcon={<CaretRight size={16} color={colors.icon} />}
                                 noBackground
+                                badge={<ExpBadge />}
                             />
                         </Card>
                     </ScalePressable>
@@ -629,7 +631,7 @@ function SettingRow({ label, description, icon, children, colors, style }: any) 
     );
 }
 
-function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground, borderRadius, scale = true }: any) {
+function MenuOption({ label, description, icon, onPress, colors, isDestructive, rightIcon, noBackground, borderRadius, scale = true, badge }: any) {
     const content = (
         <View style={[styles.optionRow, !description && { paddingVertical: 12 }]}>
             <View style={styles.optionLabelGroup}>
@@ -643,7 +645,10 @@ function MenuOption({ label, description, icon, onPress, colors, isDestructive, 
                     </View>
                 )}
                 <View style={{ marginLeft: icon ? (noBackground ? 8 : 16) : 0 }}>
-                    <ThemedText style={[styles.optionLabel, isDestructive && { color: colors.error }]}>{label}</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <ThemedText style={[styles.optionLabel, isDestructive && { color: colors.error }]}>{label}</ThemedText>
+                        {badge}
+                    </View>
                     {description ? <ThemedText type="tiny" style={{ color: colors.secondary, marginTop: 2 }}>{description}</ThemedText> : null}
                 </View>
             </View>

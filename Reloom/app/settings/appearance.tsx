@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import * as Haptics from 'expo-haptics';
 import { Toggle } from '../../components/ui/Toggle';
+import { ExpBadge } from '../../components/ui/ExpBadge';
 import { Typography } from '../../constants/Typography';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 
@@ -240,6 +241,7 @@ export default function AppearanceSettingsScreen() {
                             icon={<MagicWand size={20} color={colors.tint} />}
                             colors={colors}
                             style={styles.paddingBox}
+                            badge={<ExpBadge />}
                         >
                             <Toggle
                                 value={settings.profileBlurBackground}
@@ -335,13 +337,14 @@ function Section({ title, children }: { title?: string, children: React.ReactNod
 }
 
 
-function SettingRow({ label, description, icon, children, colors, style }: any) {
+function SettingRow({ label, description, icon, children, colors, style, badge }: any) {
     return (
         <View style={[styles.settingRow, style]}>
             <View style={styles.settingInfo}>
                 <View style={[styles.settingTitleGroup, { marginBottom: description ? 4 : 0 }]}>
                     {icon}
                     <ThemedText style={styles.settingLabel}>{label}</ThemedText>
+                    {badge}
                 </View>
                 {description && <ThemedText style={[styles.settingDesc, { color: colors.secondary }]}>{description}</ThemedText>}
             </View>
