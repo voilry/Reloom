@@ -415,19 +415,7 @@ export default function CalendarScreen() {
         return events.sort((a, b) => a.date.getTime() - b.date.getTime());
     }, [people, reminders]);
 
-    const groupedUpcoming = useMemo(() => {
-        const groups = new Map<string, { key: string; date: Date; items: any[] }>();
-        upcomingEvents.forEach(event => {
-            const d = event.date;
-            const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-            if (!groups.has(key)) groups.set(key, { key, date: d, items: [] });
-            groups.get(key)!.items.push(event);
-        });
-        return Array.from(groups.values());
-    }, [upcomingEvents]);
 
-    const formatGroupDate = (d: Date) =>
-        d.toLocaleDateString('default', { day: 'numeric', month: 'long', year: 'numeric' });
 
     const renderDay = (item: { day: number | null, date: Date | null }, index: number) => {
         const markers = hasEvents(item.date);
@@ -527,52 +515,46 @@ export default function CalendarScreen() {
                     </View>
 
                     {upcomingEvents.length === 0 ? (
-                        <View style={[styles.upcomingSheet, styles.emptySheet, { backgroundColor: colors.card }]}>
-                            <ThemedText style={{ opacity: 0.5 }}>No events this month</ThemedText>
+                        <View style={[styles.upcomingSheet, styles.upcomingPlaceholderSheet, { backgroundColor: colors.card }]}>
+                            <ThemedText style={{ opacity: 0.5, textAlign: 'center' }}>No events this month</ThemedText>
                         </View>
                     ) : (
                         <View style={[styles.upcomingSheet, { backgroundColor: colors.card }]}>
-                            {groupedUpcoming.map((group, gi) => (
-                                <View key={group.key}>
-                                    <ThemedText style={[styles.upcomingDateHeader, gi > 0 && { paddingTop: 16 }]}>
-                                        {formatGroupDate(group.date)}
-                                    </ThemedText>
-                                    {group.items.map((event, idx) => {
-                                        const isLast = gi === groupedUpcoming.length - 1 && idx === group.items.length - 1;
-                                        return (
-                                            <View key={`${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}>
-                                                <ScalePressable
-                                                    onPress={() => {
-                                                        if (event.type === 'birthday' && event.person) {
-                                                            router.push(`/person/${event.person.id}`);
-                                                        } else if (event.reminder) {
-                                                            setSelectedReminder(event.reminder);
-                                                        }
-                                                    }}
-                                                    style={styles.upcomingRow}
-                                                    scaleTo={0.98}
-                                                    innerStyle={{ borderRadius: 16 }}
-                                                >
-                                                    <View style={[styles.upcomingIcon, { backgroundColor: event.type === 'birthday' ? '#FF6B6B18' : colors.tint + '18' }]}>
-                                                        {event.type === 'birthday' ? <Cake size={20} color="#FF6B6B" weight="fill" /> : <TimeDuration size={18} color={colors.tint} weight="fill" />}
-                                                    </View>
-                                                    <View style={{ flex: 1, marginLeft: 12, justifyContent: 'center' }}>
-                                                        <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }} numberOfLines={1}>{event.title}</ThemedText>
-                                                        <ThemedText style={{ fontSize: 12, color: colors.secondary, marginTop: -2, fontFamily: Typography.fontFamily.medium }}>
-                                                            {event.reminder?.time ? `${formatTime(event.reminder.time)} • ` : ''}
-                                                            {`${event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`}`}
-                                                        </ThemedText>
-                                                    </View>
-                                                    {event.person && (
-                                                        <Avatar name={event.person.name} uri={event.person.avatarUri} size={36} />
-                                                    )}
-                                                </ScalePressable>
-                                                {!isLast && <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />}
+                            {upcomingEvents.map((event, idx) => {
+                                const isLast = idx === upcomingEvents.length - 1;
+                                return (
+                                    <View key={`${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}>
+                                        <ScalePressable
+                                            onPress={() => {
+                                                if (event.type === 'birthday' && event.person) {
+                                                    router.push(`/person/${event.person.id}`);
+                                                } else if (event.reminder) {
+                                                    setSelectedReminder(event.reminder);
+                                                }
+                                            }}
+                                            style={styles.upcomingRow}
+                                            scaleTo={0.98}
+                                            innerStyle={{ borderRadius: 16 }}
+                                        >
+                                            <View style={[styles.upcomingIcon, { backgroundColor: event.type === 'birthday' ? '#FF6B6B18' : colors.tint + '18' }]}>
+                                                {event.type === 'birthday' ? <Cake size={20} color="#FF6B6B" weight="fill" /> : <TimeDuration size={18} color={colors.tint} weight="fill" />}
                                             </View>
-                                        );
-                                    })}
-                                </View>
-                            ))}
+                                            <View style={{ flex: 1, marginLeft: 12, justifyContent: 'center' }}>
+                                                <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }} numberOfLines={1}>{event.title}</ThemedText>
+                                                <ThemedText style={{ fontSize: 12, color: colors.secondary, marginTop: -2, fontFamily: Typography.fontFamily.medium }}>
+                                                    {event.date.toLocaleDateString('default', { month: 'short', day: 'numeric' })}
+                                                    {event.reminder?.time ? ` • ${formatTime(event.reminder.time)}` : ''}
+                                                    {` • ${event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`}`}
+                                                </ThemedText>
+                                            </View>
+                                            {event.person && (
+                                                <Avatar name={event.person.name} uri={event.person.avatarUri} size={36} />
+                                            )}
+                                        </ScalePressable>
+                                        {!isLast && <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />}
+                                    </View>
+                                );
+                            })}
                         </View>
                     )}
                 </View>
@@ -948,19 +930,17 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         ...DesignSystem.shadows.sm,
     },
-    upcomingDateHeader: {
-        fontSize: 13,
-        fontFamily: Typography.fontFamily.regular,
-        letterSpacing: 0.6,
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 4,
-    },
+
     upcomingRow: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 12,
         paddingHorizontal: 16,
+    },
+    upcomingPlaceholderSheet: {
+        height: 84,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     rowDivider: {
         height: 1,
@@ -974,11 +954,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    emptySheet: {
-        padding: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+
     modalOverlay: {
         flex: 1,
     },
