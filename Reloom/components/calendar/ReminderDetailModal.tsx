@@ -113,20 +113,19 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
 
                             <View style={[styles.metaGrid, { borderColor: colors.border + '40' }]}>
                                 <View style={styles.metaItem}>
-                                    <View style={styles.metaIconWrapper}>
+                                    <View style={[styles.metaIconWrapper, { backgroundColor: colors.surface }]}>
                                         <Calendar size={20} color={colors.icon} weight="duotone" />
                                     </View>
                                     <View style={styles.metaText}>
-                                        <ThemedText type="tiny" style={styles.metaLabel}>Date</ThemedText>
                                         <ThemedText style={styles.metaValue}>{formattedDate}</ThemedText>
                                     </View>
                                 </View>
+                                <View style={[styles.metaDivider, { backgroundColor: colors.border }]} />
                                 <View style={styles.metaItem}>
-                                    <View style={styles.metaIconWrapper}>
+                                    <View style={[styles.metaIconWrapper, { backgroundColor: colors.surface }]}>
                                         <Clock size={20} color={colors.icon} weight="duotone" />
                                     </View>
                                     <View style={styles.metaText}>
-                                        <ThemedText type="tiny" style={styles.metaLabel}>Time</ThemedText>
                                         <ThemedText style={styles.metaValue}>{formatTime(reminder.time)}</ThemedText>
                                     </View>
                                 </View>
@@ -250,7 +249,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     contentScroll: {
-        marginBottom: 32,
+        marginBottom: 16,
     },
     title: {
         fontSize: 26,
@@ -265,23 +264,33 @@ const styles = StyleSheet.create({
     },
     metaGrid: {
         flexDirection: 'row',
-        gap: 20,
-        paddingTop: 20,
-        borderTopWidth: 1,
-        marginBottom: 24,
-    },
-    metaItem: {
-        flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        marginBottom: 16,
+    },
+    metaItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
     metaIconWrapper: {
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    metaDivider: {
+        width: 1,
+        height: 32,
+        opacity: 0.12,
+        alignSelf: 'center',
+    },
     metaText: {
+        flex: 1,
         justifyContent: 'center',
     },
     metaLabel: {
@@ -289,7 +298,8 @@ const styles = StyleSheet.create({
         opacity: 0.4,
         letterSpacing: 0.5,
         fontSize: 10,
-        marginBottom: 0,
+        lineHeight: 12,
+        marginBottom: 2,
     },
     metaValue: {
         fontSize: 14,
