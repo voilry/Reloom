@@ -1,23 +1,59 @@
-import { View, StyleSheet, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, FlatList } from 'react-native';
+import { View, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '../ui/ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ReminderRepository, Reminder } from '../../db/repositories/ReminderRepository';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
-import { Bell, Calendar, Clock, X, User, MagnifyingGlass, Check, CaretRight } from '@/components/ui/Icon';
-import { DesignSystem } from '../../constants/DesignSystem';
+import {
+    Bell, Calendar, Clock, Cake, Gift, Heart, Briefcase, Coffee, Star, Target,
+    Sliders, X, MagnifyingGlass, Check, CaretRight,
+} from '@/components/ui/Icon';
 import { DatePicker } from '../ui/DatePicker';
 import { TimePicker } from '../ui/TimePicker';
 import { ScalePressable } from '../ui/ScalePressable';
+import { NotificationSlider, SLIDER_COLUMN_HEIGHT } from '../ui/NotificationSlider';
 import { Avatar } from '../ui/Avatar';
 import * as Notifications from 'expo-notifications';
 import { Typography } from '../../constants/Typography';
+
+/** The notification ladder, weakest to strongest. Order drives the slider positions. */
+const NUDGE_STEPS = [
+    { value: 'off', label: 'None', helper: 'No notifications will be sent.' },
+    { value: 'on_time', label: 'On Time', helper: '1 ping exactly at the selected time.' },
+    { value: 'nudge', label: 'Light', helper: '2 pings: 30m before and at event time.' },
+    { value: 'deep', label: 'Medium', helper: '3 pings: 2h and 30m before, and at event time.' },
+    { value: 'extreme', label: 'Heavy', helper: '5 pings: 1d, 2h, 30m, 10m before, and at event time.' },
+];
+const NUDGE_LABELS = NUDGE_STEPS.map((s) => s.label);
+const DEFAULT_NUDGE = 'on_time';
+
+// The Custom button and the stepper stand beside the slider COLUMN, not just
+// its track: the track plus the None/On Time label strip is the taller block
+// they sit against. Matching only the track left them reading as small pills,
+// so these match the whole column and stay a touch slimmer than the track is wide.
+const CONTROL_HEIGHT = 45;
+
+const REMINDER_ICONS: Record<string, React.ComponentType<any>> = {
+    Bell, Calendar, Clock, Cake, Gift, Heart, Briefcase, Coffee, Star, Target,
+};
+const REMINDER_ICON_KEYS = Object.keys(REMINDER_ICONS);
+
+// All swatches stay dark enough for a white glyph on top of them (WCAG AA).
+const REMINDER_COLORS = [
+    { name: 'Amber', value: '#B45309' },
+    { name: 'Red', value: '#DC2626' },
+    { name: 'Pink', value: '#DB2777' },
+    { name: 'Violet', value: '#7C3AED' },
+    { name: 'Blue', value: '#2563EB' },
+    { name: 'Teal', value: '#0F766E' },
+    { name: 'Lime', value: '#4D7C0F' },
+    { name: 'Slate', value: '#475569' },
+];
 
 interface AddReminderModalProps {
     visible: boolean;
@@ -28,7 +64,7 @@ interface AddReminderModalProps {
 }
 
 export function AddReminderModal({ visible, onClose, date, onSuccess, editingReminder }: AddReminderModalProps) {
-    const { colors, theme, hapticsEnabled } = useAppTheme();
+    const { colors, hapticsEnabled } = useAppTheme();
     const insets = useSafeAreaInsets();
 
     const [title, setTitle] = useState('');
@@ -41,27 +77,43 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const [loading, setLoading] = useState(false);
     const [nudgeType, setNudgeType] = useState('on_time');
     const [customCount, setCustomCount] = useState(0);
+    // Prototype only: icon and colour have no columns in the reminders table
+    // yet, so they stay local to this modal and reset on close.
+    const [styleIcon, setStyleIcon] = useState<string>('Bell');
+    const [styleColor, setStyleColor] = useState<string>(colors.tint);
+    const lastPresetRef = useRef(DEFAULT_NUDGE);
     const searchInputRef = useRef<TextInput>(null);
     const scrollViewRef = useRef<ScrollView>(null);
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
 
     // Initial State logic
     useEffect(() => {
         if (visible) {
+            setStyleColor(colors.tint);
             if (editingReminder) {
                 setTitle(editingReminder.title);
                 setDescription(editingReminder.description || '');
                 setTime(editingReminder.time || '09:00');
                 setSelectedDate(editingReminder.date);
                 setPersonId(editingReminder.personId || null);
-                setNudgeType(editingReminder.nudgeType || 'on_time');
+                setNudgeType(editingReminder.nudgeType || DEFAULT_NUDGE);
                 setCustomCount(editingReminder.customNudgesCount || 0);
+                lastPresetRef.current = NUDGE_STEPS.some((s) => s.value === editingReminder.nudgeType)
+                    ? editingReminder.nudgeType!
+                    : DEFAULT_NUDGE;
             } else {
                 setTitle('');
                 setDescription('');
                 setTime('09:00');
                 setPersonId(null);
-                setNudgeType('on_time');
+                setNudgeType(DEFAULT_NUDGE);
                 setCustomCount(0);
+                lastPresetRef.current = DEFAULT_NUDGE;
 
                 const d = date || new Date();
                 const y = d.getFullYear();
@@ -76,14 +128,24 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
             setDescription('');
             setPersonId(null);
             setSearchQuery('');
-            setNudgeType('on_time');
+            setNudgeType(DEFAULT_NUDGE);
             setCustomCount(0);
+            setStyleIcon('Bell');
+            lastPresetRef.current = DEFAULT_NUDGE;
         }
-    }, [visible, editingReminder, date]);
+    // colors.tint is read inside for the style swatch default, so a theme switch
+    // has to re-run this or the palette keeps the previous theme's tint.
+}, [visible, editingReminder, date, colors.tint]);
 
     const loadPeople = async () => {
-        const data = await PersonRepository.getPeopleSortedByActivity();
-        setPeople(data);
+        // Guarded: an unguarded rejection here becomes an unhandled promise
+        // rejection, and resolving after unmount sets state on a dead component.
+        try {
+            const data = await PersonRepository.getPeopleSortedByActivity();
+            if (mountedRef.current) setPeople(data);
+        } catch (error) {
+            console.error('Failed to load people:', error);
+        }
     };
 
     const filteredPeople = useMemo(() => {
@@ -96,6 +158,44 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const selectedPerson = useMemo(() =>
         people.find(p => p.id === personId),
         [people, personId]);
+
+    const isCustomNudge = nudgeType === 'custom';
+
+    // 'custom' is not a slider position, so it falls back to the default rung.
+    const nudgeStepIndex = useMemo(() => {
+        const i = NUDGE_STEPS.findIndex(s => s.value === nudgeType);
+        return i === -1 ? 1 : i;
+    }, [nudgeType]);
+
+    const nudgeHelper = isCustomNudge
+        ? `Spaced out ${customCount} alerts leading up to the event.`
+        : NUDGE_STEPS[nudgeStepIndex].helper;
+
+    const handleNudgeStep = (i: number) => {
+        const next = NUDGE_STEPS[i];
+        if (!next || next.value === nudgeType) return;
+        lastPresetRef.current = next.value;
+        setNudgeType(next.value);
+        if (customCount !== 0) setCustomCount(0);
+    };
+
+    // Leaving Custom returns to whatever rung was last picked, so the slider
+    // never silently rewinds to On Time.
+    const handleToggleCustom = () => {
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+        if (isCustomNudge) {
+            setNudgeType(lastPresetRef.current);
+            return;
+        }
+        lastPresetRef.current = nudgeType;
+        setNudgeType('custom');
+        if (customCount < 1) setCustomCount(2);
+    };
+
+    const handleCustomCount = (delta: number) => {
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+        setCustomCount(prev => Math.max(1, Math.min(10, prev + delta)));
+    };
 
     const isDirty = useMemo(() => {
         if (!editingReminder) return false;
@@ -226,102 +326,168 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                             </View>
                         </View>
 
-                        <View style={[styles.timeSection, { marginTop: 24 }]}>
+                        <View style={[styles.timeSection, { marginTop: 18 }]}>
                             <View style={styles.pickersRow}>
-                                <View style={{ flex: 1 }}>
+                                {/* Both pickers ship their own marginBottom: 16, which
+                                    stacked on this modal's spacing into a 44px hole. Cancel
+                                    it here and let marginTop own the gap instead. */}
+                                <View style={styles.pickerSlot}>
                                     <TimePicker value={time} onChange={setTime} />
                                 </View>
-                                <View style={{ flex: 1 }}>
+                                <View style={styles.pickerSlot}>
                                     <DatePicker value={selectedDate} onChange={setSelectedDate} minDate={new Date()} />
                                 </View>
                             </View>
                         </View>
 
+                        <View style={styles.styleSection}>
+                            <ThemedText style={[styles.inputLabel, { marginBottom: 10 }]}>Style</ThemedText>
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.iconStrip}
+                            >
+                                {REMINDER_ICON_KEYS.map((key) => {
+                                    const Glyph = REMINDER_ICONS[key];
+                                    const active = key === styleIcon;
+                                    return (
+                                        <ScalePressable
+                                            key={key}
+                                            onPress={() => {
+                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+                                                setStyleIcon(key);
+                                            }}
+                                            style={[styles.iconTile, { backgroundColor: active ? styleColor : colors.surface }]}
+                                            innerStyle={{ borderRadius: 20 }}
+                                            scaleTo={0.9}
+                                            hitSlop={{ top: 8, bottom: 8, left: 5, right: 5 }}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`${key} icon`}
+                                        >
+                                            <Glyph size={19} color={active ? '#fff' : colors.icon} />
+                                        </ScalePressable>
+                                    );
+                                })}
+                            </ScrollView>
+
+                            <View style={styles.colorStrip}>
+                                {REMINDER_COLORS.map(({ name, value }) => {
+                                    const active = value === styleColor;
+                                    return (
+                                        <ScalePressable
+                                            key={value}
+                                            onPress={() => {
+                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+                                                setStyleColor(value);
+                                            }}
+                                            style={[
+                                                styles.colorDot,
+                                                { backgroundColor: value },
+                                                active && { borderWidth: 2.5, borderColor: colors.text },
+                                            ]}
+                                            innerStyle={{ borderRadius: 16 }}
+                                            scale={false}
+                                            overlayColor="transparent"
+                                            hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`${name} colour`}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        </View>
+
                         <View style={styles.nudgeSection}>
                             <ThemedText style={[styles.inputLabel, { marginBottom: 10 }]}>Notifications</ThemedText>
-                            <View style={styles.chipsContainer}>
-                                {[
-                                    { label: 'None', value: 'off' },
-                                    { label: 'On Time', value: 'on_time' },
-                                    { label: 'Light', value: 'nudge' },
-                                    { label: 'Medium', value: 'deep' },
-                                    { label: 'Heavy', value: 'extreme' },
-                                    { label: 'Custom', value: 'custom' },
-                                ].map((n) => (
-                                    <ScalePressable
-                                        key={n.value}
-                                        onPress={() => {
-                                            setNudgeType(n.value);
-                                            if (n.value !== 'custom') {
-                                                setCustomCount(0);
-                                            } else {
-                                                setCustomCount(2); // default to 2 pings
-                                            }
-                                        }}
-                                        style={[
-                                            styles.chip,
-                                            { backgroundColor: nudgeType === n.value ? colors.tint : colors.surface, marginBottom: 4 }
-                                        ]}
-                                        innerStyle={{ borderRadius: 20 }}
-                                        scaleTo={0.93}
+
+                            <View style={styles.nudgeRow}>
+                                {/* Persistent stage. It must outlive both children: when the
+                                    branch that owns the animation is itself unmounted, the exit
+                                    never plays, which is why activating animated but
+                                    deactivating did not. Fixed height means no resize on swap. */}
+                                <Animated.View style={[styles.nudgeStage, { height: SLIDER_COLUMN_HEIGHT }]}>
+                                    {isCustomNudge ? (
+                                    <Animated.View
+                                        key="stepper"
+                                        entering={FadeIn.delay(80).duration(180)}
+                                        exiting={FadeOut.duration(160)}
+                                        style={[styles.stepper, { backgroundColor: colors.surface }]}
                                     >
-                                        <ThemedText style={[
-                                            styles.chipText,
-                                            { color: nudgeType === n.value ? (theme === 'light' ? '#fff' : '#000') : colors.secondary }
-                                        ]}>
-                                            {n.label}
-                                        </ThemedText>
-                                    </ScalePressable>
-                                ))}
+                                        <ScalePressable
+                                            onPress={() => handleCustomCount(-1)}
+                                            disabled={customCount <= 1}
+                                            style={styles.stepperControlBtn}
+                                            innerStyle={{ borderRadius: 16 }}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Fewer alerts"
+                                        >
+                                            <ThemedText style={[styles.stepGlyph, { color: customCount > 1 ? colors.text : colors.textTertiary }]}>-</ThemedText>
+                                        </ScalePressable>
+
+                                        <View style={styles.stepperValueBox} accessible accessibilityLabel={`${customCount} alerts`}>
+                                            <ThemedText style={styles.stepperValue}>{customCount}</ThemedText>
+                                        </View>
+
+                                        <ScalePressable
+                                            onPress={() => handleCustomCount(1)}
+                                            disabled={customCount >= 10}
+                                            style={styles.stepperControlBtn}
+                                            innerStyle={{ borderRadius: 16 }}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="More alerts"
+                                        >
+                                            <ThemedText style={[styles.stepGlyph, { color: customCount < 10 ? colors.text : colors.textTertiary }]}>+</ThemedText>
+                                        </ScalePressable>
+                                    </Animated.View>
+                                    ) : (
+                                    <Animated.View
+                                        key="slider"
+                                        entering={FadeIn.delay(80).duration(180)}
+                                        exiting={FadeOut.duration(160)}
+                                        style={styles.sliderSlot}
+                                    >
+                                        <NotificationSlider
+                                            labels={NUDGE_LABELS}
+                                            index={nudgeStepIndex}
+                                            onChange={handleNudgeStep}
+                                        />
+                                    </Animated.View>
+                                    )}
+                                </Animated.View>
+
+                                <ScalePressable
+                                    onPress={handleToggleCustom}
+                                    style={[
+                                        styles.customToggle,
+                                        !isCustomNudge && styles.customToggleAlign,
+                                        { backgroundColor: isCustomNudge ? colors.tint : colors.surface },
+                                    ]}
+                                    innerStyle={{ borderRadius: CONTROL_HEIGHT / 2 }}
+                                    scaleTo={0.94}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Custom alert count"
+                                >
+                                    <Sliders size={13} color={isCustomNudge ? colors.tintContrast : colors.secondary} />
+                                    <ThemedText style={[styles.customToggleText, { color: isCustomNudge ? colors.tintContrast : colors.secondary }]}>
+                                        Custom
+                                    </ThemedText>
+                                </ScalePressable>
                             </View>
 
-                            {nudgeType === 'custom' && (
-                                <Animated.View entering={FadeInDown} style={[styles.customNudgeCard, { backgroundColor: colors.surface }]}>
-                                    <View style={{ flex: 1, paddingRight: 16, justifyContent: 'center' }}>
-                                        <ThemedText style={{ fontFamily: Typography.fontFamily.bold, fontSize: 16 }}>Custom Alerts</ThemedText>
-                                    </View>
-                                    <View style={[styles.stepperContainer, { backgroundColor: colors.background }]}>
-                                        <ScalePressable
-                                            onPress={() => {
-                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                                setCustomCount(Math.max(1, customCount - 1));
-                                            }}
-                                            style={styles.stepperControlBtn}
-                                            scaleTo={0.85}
-                                        >
-                                            <ThemedText style={{ fontSize: 20, color: colors.text, opacity: 0.8 }}>-</ThemedText>
-                                        </ScalePressable>
-                                        
-                                        <View style={{ minWidth: 24, alignItems: 'center' }}>
-                                            <ThemedText style={[styles.stepperValue, { color: colors.text }]}>{customCount}</ThemedText>
-                                        </View>
-                                        
-                                        <ScalePressable
-                                            onPress={() => {
-                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                                setCustomCount(Math.min(10, customCount + 1));
-                                            }}
-                                            style={styles.stepperControlBtn}
-                                            scaleTo={0.85}
-                                        >
-                                            <ThemedText style={{ fontSize: 20, color: colors.text, opacity: 0.8 }}>+</ThemedText>
-                                        </ScalePressable>
-                                    </View>
-                                </Animated.View>
-                            )}
-
-                            <ThemedText 
-                                type="tiny" 
-                                style={{ color: colors.secondary, marginTop: 12, fontStyle: 'italic', fontSize: 12, opacity: 0.5 }}
+                            <ThemedText
+                                type="tiny"
+                                style={{
+                                    color: colors.secondary,
+                                    marginTop: 8,
+                                    fontStyle: 'italic',
+                                    fontSize: 12,
+                                    opacity: 0.8,
+                                }}
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
                             >
-                                {nudgeType === 'off' && "No notifications will be sent."}
-                                {nudgeType === 'on_time' && "1 ping exactly at the selected time."}
-                                {nudgeType === 'nudge' && "2 pings: 30m before and at event time."}
-                                {nudgeType === 'deep' && "3 pings: 2h and 30m before, and at event time."}
-                                {nudgeType === 'extreme' && "5 pings: 1d, 2h, 30m, 10m before, and at event time."}
-                                {nudgeType === 'custom' && `Spaced out ${customCount} alerts leading up to the event.`}
+                                {nudgeHelper}
                             </ThemedText>
                         </View>
 
@@ -442,36 +608,52 @@ const styles = StyleSheet.create({
     divider: {
         height: 1,
         backgroundColor: 'rgba(128,128,128,0.1)',
-        marginVertical: 12,
+        marginVertical: 10,
     },
     timeSection: { marginBottom: 0 },
     pickersRow: {
         flexDirection: 'row',
         gap: 10,
-        marginBottom: 12,
+        alignItems: 'flex-start',
     },
-    chipsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+    pickerSlot: {
+        flex: 1,
+        marginBottom: -16,
+    },
+    styleSection: {
+        marginTop: 20,
+        marginBottom: 20,
+    },
+    iconStrip: {
         gap: 8,
+        paddingRight: 8,
     },
-    chip: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+    iconTile: {
+        width: 40,
+        height: 40,
         borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    chipText: {
-        fontSize: 13,
-        fontWeight: '700',
+    colorStrip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 14,
     },
-    mentionSection: { marginBottom: 12 },
+    colorDot: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+    },
+    mentionSection: { marginBottom: 0 },
     searchBox: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         height: 52,
         borderRadius: 16,
-        marginBottom: 16,
+        marginBottom: 12,
     },
     searchInput: {
         flex: 1,
@@ -479,9 +661,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Typography.fontFamily.medium,
     },
+    // Empty-state floor only: it never clips, it just keeps the page from
+    // collapsing when there is nobody to list yet.
     peopleList: {
         gap: 8,
-        minHeight: 340,
+        minHeight: 264,
     },
     personItem: {
         flexDirection: 'row',
@@ -522,31 +706,86 @@ const styles = StyleSheet.create({
     nudgeSection: {
         marginBottom: 0,
     },
-    customNudgeCard: {
+    // flex-start pins the top of both side controls to the top of the track, so
+    // they sit level with it. Centering them against the whole slider column
+    // (track + label strip) dropped them below the track by the label height.
+    // In the active state both children are CONTROL_HEIGHT tall, so top and
+    // center alignment are identical there and the swap stays aligned.
+    nudgeRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
+    // Custom and the stepper both stand in for the track, so all three read
+    // from one height constant instead of three hardcoded 34s.
+    // Fixed width so the pill keeps the same footprint when it flips between
+    // the muted and active states. Sizing it from its own content made the
+    // active yellow pill read noticeably wider than everything beside it.
+    customToggle: {
+        width: 88,
+        height: CONTROL_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        borderRadius: 24,
-        marginTop: 12,
+        justifyContent: 'center',
+        gap: 6,
+        borderRadius: CONTROL_HEIGHT / 2,
     },
-    stepperContainer: {
+    // Optical alignment, not layout: nudged up a point only to sit level with
+    // the track when the slider is showing. Against the stepper it would
+    // leave the button hanging a point high, so the active state drops it back.
+    customToggleAlign: {
+        marginTop: -1,
+    },
+    customToggleText: {
+        fontSize: 13,
+        fontFamily: Typography.fontFamily.bold,
+    },
+    sliderSlot: {
+        flex: 1,
+    },
+    // Outlives the swap so both children can run their own enter/exit.
+    nudgeStage: {
+        flex: 1,
+        justifyContent: 'flex-start',
+    },
+    // alignSelf stretch (not flex: 1) fills the stage WIDTH while height stays
+    // authoritative. As a column child, flex: 1 set flexBasis 0 and stretched the
+    // pill to the full 61px stage, so CONTROL_HEIGHT only ever moved the corner
+    // radius and the height changes were invisible.
+    stepper: {
+        alignSelf: 'stretch',
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: 20,
-        padding: 4,
-        gap: 4,
+        height: CONTROL_HEIGHT,
+        // Independent optical nudge. The stage reserves a fixed height, so this
+        // moves only the pill and cannot drag the helper text or anything below.
+        marginTop: 2,
+        paddingHorizontal: 14,
+        // Deliberately under half the height, which reads as a rounded square
+        // rather than the pill the Custom button and track use.
+        borderRadius: 16,
     },
+    // Fat enough to read as a real target next to the pill, while still
+    // clearing the track edge inside it.
     stepperControlBtn: {
         width: 32,
         height: 32,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(128,128,128,0.1)',
+        backgroundColor: 'rgba(128,128,128,0.16)',
+    },
+    stepperValueBox: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    stepGlyph: {
+        fontSize: 18,
+        lineHeight: 21,
+        fontFamily: Typography.fontFamily.bold,
     },
     stepperValue: {
-        fontSize: 16,
+        fontSize: 17,
         fontFamily: Typography.fontFamily.bold,
         textAlign: 'center',
     }
