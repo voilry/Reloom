@@ -75,6 +75,8 @@ export const reminders = sqliteTable('reminders', {
     completed: integer('completed', { mode: 'boolean' }).default(false),
     nudgeType: text('nudge_type').default('on_time'),
     customNudgesCount: integer('custom_nudges_count').default(0),
+    icon: text('icon'),   // icon key, e.g. 'Bell'
+    color: text('color'), // hex, e.g. '#B45309'
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 

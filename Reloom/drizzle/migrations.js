@@ -11,6 +11,7 @@ import m0006 from './0006_nice_nick_fury.sql';
 import m0007 from './0007_jittery_phantom_reporter.sql';
 import m0008 from './0008_add_location_fields.sql';
 import m0009 from './0009_organic_malcolm_colcord.sql';
+import m0010 from './0010_flowery_bruce_banner.sql';
 
   export default {
     journal,
@@ -24,7 +25,8 @@ m0005,
 m0006,
 m0007,
 m0008,
-m0009
+m0009,
+m0010
     }
   }
   

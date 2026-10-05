@@ -193,3 +193,13 @@ export const Quotes = (props: any) => <Icon name={props.weight === 'fill' ? 'blo
 export const Code = (props: any) => <Icon name={props.weight === 'fill' ? 'code_fill' : 'code_line'} {...props} />;
 export const Minus = (props: any) => <Icon name={props.weight === 'fill' ? 'minimize_fill' : 'minimize_line'} {...props} />;
 export const Mosaic = (props: any) => <Icon name={props.weight === 'fill' ? 'mosaic_fill' : 'mosaic_line'} {...props} />;
+export const Basket = (props: any) => <Icon name={props.weight === 'fill' ? 'basket_fill' : 'basket_line'} {...props} />;
+export const BasketFill = (props: any) => <Icon name="basket_fill" {...props} />;
+export const Wallet = (props: any) => <Icon name={props.weight === 'fill' ? 'wallet_2_fill' : 'wallet_2_line'} {...props} />;
+export const Wallet2Fill = (props: any) => <Icon name="wallet_2_fill" {...props} />;
+export const Celebrate = (props: any) => <Icon name={props.weight === 'fill' ? 'celebrate_fill' : 'celebrate_line'} {...props} />;
+export const CelebrateFill = (props: any) => <Icon name="celebrate_fill" {...props} />;
+export const Comment = (props: any) => <Icon name={props.weight === 'fill' ? 'comment_2_fill' : 'comment_2_line'} {...props} />;
+export const Comment2Fill = (props: any) => <Icon name="comment_2_fill" {...props} />;
+export const Leaf = (props: any) => <Icon name={props.weight === 'fill' ? 'leaf_3_fill' : 'leaf_3_line'} {...props} />;
+export const Leaf3Fill = (props: any) => <Icon name="leaf_3_fill" {...props} />;

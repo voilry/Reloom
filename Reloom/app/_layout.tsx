@@ -82,7 +82,9 @@ function RootLayoutContent() {
            msg.includes('duplicate column') || 
            msg.includes('already exists') || 
            msg.includes('nudge_type') || 
-           msg.includes('custom_nudges_count');
+           msg.includes('custom_nudges_count') ||
+           msg.includes('icon') ||
+           msg.includes('color');
   }, [migrationError]);
 
   const hasMigrationFinished = migrationSuccess || isIgnorableMigrationError;

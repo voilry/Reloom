@@ -20,6 +20,8 @@ export class ReminderRepository {
             completed: reminders.completed,
             nudgeType: reminders.nudgeType,
             customNudgesCount: reminders.customNudgesCount,
+            icon: reminders.icon,
+            color: reminders.color,
             createdAt: reminders.createdAt,
             person: {
                 id: people.id,
@@ -44,6 +46,8 @@ export class ReminderRepository {
             completed: reminders.completed,
             nudgeType: reminders.nudgeType,
             customNudgesCount: reminders.customNudgesCount,
+            icon: reminders.icon,
+            color: reminders.color,
             createdAt: reminders.createdAt,
             person: {
                 id: people.id,

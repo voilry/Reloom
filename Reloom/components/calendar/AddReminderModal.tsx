@@ -1,4 +1,4 @@
-import { View, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, DeviceEventEmitter } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { NotificationSlider, SLIDER_COLUMN_HEIGHT } from '../ui/NotificationSlid
 import { Avatar } from '../ui/Avatar';
 import * as Notifications from 'expo-notifications';
 import { Typography } from '../../constants/Typography';
+import { REMINDER_ICONS, REMINDER_ICON_KEYS, REMINDER_COLORS } from '../../constants/ReminderIcons';
 
 /** The notification ladder, weakest to strongest. Order drives the slider positions. */
 const NUDGE_STEPS = [
@@ -37,23 +38,6 @@ const DEFAULT_NUDGE = 'on_time';
 // they sit against. Matching only the track left them reading as small pills,
 // so these match the whole column and stay a touch slimmer than the track is wide.
 const CONTROL_HEIGHT = 45;
-
-const REMINDER_ICONS: Record<string, React.ComponentType<any>> = {
-    Bell, Calendar, Clock, Cake, Gift, Heart, Briefcase, Coffee, Star, Target,
-};
-const REMINDER_ICON_KEYS = Object.keys(REMINDER_ICONS);
-
-// All swatches stay dark enough for a white glyph on top of them (WCAG AA).
-const REMINDER_COLORS = [
-    { name: 'Amber', value: '#B45309' },
-    { name: 'Red', value: '#DC2626' },
-    { name: 'Pink', value: '#DB2777' },
-    { name: 'Violet', value: '#7C3AED' },
-    { name: 'Blue', value: '#2563EB' },
-    { name: 'Teal', value: '#0F766E' },
-    { name: 'Lime', value: '#4D7C0F' },
-    { name: 'Slate', value: '#475569' },
-];
 
 interface AddReminderModalProps {
     visible: boolean;
@@ -77,10 +61,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const [loading, setLoading] = useState(false);
     const [nudgeType, setNudgeType] = useState('on_time');
     const [customCount, setCustomCount] = useState(0);
-    // Prototype only: icon and colour have no columns in the reminders table
-    // yet, so they stay local to this modal and reset on close.
     const [styleIcon, setStyleIcon] = useState<string>('Bell');
-    const [styleColor, setStyleColor] = useState<string>(colors.tint);
+    const [styleColor, setStyleColor] = useState<string>(REMINDER_COLORS[0].value);
     const lastPresetRef = useRef(DEFAULT_NUDGE);
     const searchInputRef = useRef<TextInput>(null);
     const scrollViewRef = useRef<ScrollView>(null);
@@ -94,7 +76,6 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     // Initial State logic
     useEffect(() => {
         if (visible) {
-            setStyleColor(colors.tint);
             if (editingReminder) {
                 setTitle(editingReminder.title);
                 setDescription(editingReminder.description || '');
@@ -103,6 +84,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                 setPersonId(editingReminder.personId || null);
                 setNudgeType(editingReminder.nudgeType || DEFAULT_NUDGE);
                 setCustomCount(editingReminder.customNudgesCount || 0);
+                setStyleIcon(editingReminder.icon || 'Bell');
+                setStyleColor(editingReminder.color || REMINDER_COLORS[0].value);
                 lastPresetRef.current = NUDGE_STEPS.some((s) => s.value === editingReminder.nudgeType)
                     ? editingReminder.nudgeType!
                     : DEFAULT_NUDGE;
@@ -113,6 +96,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                 setPersonId(null);
                 setNudgeType(DEFAULT_NUDGE);
                 setCustomCount(0);
+                setStyleIcon('Bell');
+                setStyleColor(REMINDER_COLORS[0].value);
                 lastPresetRef.current = DEFAULT_NUDGE;
 
                 const d = date || new Date();
@@ -131,11 +116,11 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
             setNudgeType(DEFAULT_NUDGE);
             setCustomCount(0);
             setStyleIcon('Bell');
+            setStyleColor(REMINDER_COLORS[0].value);
             lastPresetRef.current = DEFAULT_NUDGE;
         }
-    // colors.tint is read inside for the style swatch default, so a theme switch
-    // has to re-run this or the palette keeps the previous theme's tint.
-}, [visible, editingReminder, date, colors.tint]);
+    // REMINDER_COLORS[0].value is read inside for the style swatch default
+}, [visible, editingReminder, date]);
 
     const loadPeople = async () => {
         // Guarded: an unguarded rejection here becomes an unhandled promise
@@ -182,18 +167,16 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     // Leaving Custom returns to whatever rung was last picked, so the slider
     // never silently rewinds to On Time.
     const handleToggleCustom = () => {
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
         if (isCustomNudge) {
             setNudgeType(lastPresetRef.current);
             return;
         }
-        lastPresetRef.current = nudgeType;
+        lastPresetRef.current = nudgeType !== 'custom' ? nudgeType : DEFAULT_NUDGE;
         setNudgeType('custom');
         if (customCount < 1) setCustomCount(2);
     };
 
     const handleCustomCount = (delta: number) => {
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
         setCustomCount(prev => Math.max(1, Math.min(10, prev + delta)));
     };
 
@@ -206,9 +189,11 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
             selectedDate !== (editingReminder.date || '') ||
             personId !== (editingReminder.personId || null) ||
             nudgeType !== (editingReminder.nudgeType || 'on_time') ||
-            customCount !== (editingReminder.customNudgesCount || 0)
+            customCount !== (editingReminder.customNudgesCount || 0) ||
+            styleIcon !== (editingReminder.icon || 'Bell') ||
+            styleColor !== (editingReminder.color || REMINDER_COLORS[0].value)
         );
-    }, [editingReminder, title, description, time, selectedDate, personId, nudgeType, customCount]);
+    }, [editingReminder, title, description, time, selectedDate, personId, nudgeType, customCount, styleIcon, styleColor]);
 
     const handleSave = async () => {
         if (!title.trim()) return;
@@ -231,6 +216,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     personId: personId,
                     nudgeType: nudgeType,
                     customNudgesCount: customCount,
+                    icon: styleIcon,
+                    color: styleColor,
                 });
             } else {
                 await ReminderRepository.create({
@@ -242,9 +229,12 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     completed: false,
                     nudgeType: nudgeType,
                     customNudgesCount: customCount,
+                    icon: styleIcon,
+                    color: styleColor,
                 });
             }
 
+            DeviceEventEmitter.emit('refreshCalendar');
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             onSuccess();
             onClose();
@@ -259,8 +249,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
         <Modal
             visible={visible}
             animationType="slide"
-            transparent={false}
-            presentationStyle="fullScreen"
+            transparent={true}
             statusBarTranslucent={true}
             onRequestClose={onClose}
         >
@@ -350,22 +339,26 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                             >
                                 {REMINDER_ICON_KEYS.map((key) => {
                                     const Glyph = REMINDER_ICONS[key];
-                                    const active = key === styleIcon;
+                                    const active = key.toLowerCase() === (styleIcon || 'Bell').toLowerCase() ||
+                                        key.toLowerCase().replace(/_fill$/, '') === (styleIcon || 'Bell').toLowerCase().replace(/_fill$/, '');
                                     return (
                                         <ScalePressable
                                             key={key}
                                             onPress={() => {
-                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
                                                 setStyleIcon(key);
                                             }}
-                                            style={[styles.iconTile, { backgroundColor: active ? styleColor : colors.surface }]}
+                                            style={[
+                                                styles.iconTile,
+                                                { backgroundColor: colors.surface },
+                                                active && { borderColor: styleColor }
+                                            ]}
                                             innerStyle={{ borderRadius: 20 }}
                                             scaleTo={0.9}
                                             hitSlop={{ top: 8, bottom: 8, left: 5, right: 5 }}
                                             accessibilityRole="button"
                                             accessibilityLabel={`${key} icon`}
                                         >
-                                            <Glyph size={19} color={active ? '#fff' : colors.icon} />
+                                            <Glyph size={20} weight="fill" color={active ? styleColor : colors.icon} />
                                         </ScalePressable>
                                     );
                                 })}
@@ -373,12 +366,11 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
 
                             <View style={styles.colorStrip}>
                                 {REMINDER_COLORS.map(({ name, value }) => {
-                                    const active = value === styleColor;
+                                    const active = value.toLowerCase() === (styleColor || '').toLowerCase();
                                     return (
                                         <ScalePressable
                                             key={value}
                                             onPress={() => {
-                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
                                                 setStyleColor(value);
                                             }}
                                             style={[
@@ -419,6 +411,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                             disabled={customCount <= 1}
                                             style={styles.stepperControlBtn}
                                             innerStyle={{ borderRadius: 16 }}
+                                            hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
                                             accessibilityRole="button"
                                             accessibilityLabel="Fewer alerts"
                                         >
@@ -434,6 +427,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                             disabled={customCount >= 10}
                                             style={styles.stepperControlBtn}
                                             innerStyle={{ borderRadius: 16 }}
+                                            hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
                                             accessibilityRole="button"
                                             accessibilityLabel="More alerts"
                                         >
@@ -465,6 +459,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                     ]}
                                     innerStyle={{ borderRadius: CONTROL_HEIGHT / 2 }}
                                     scaleTo={0.94}
+                                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
                                     accessibilityRole="button"
                                     accessibilityLabel="Custom alert count"
                                 >
@@ -634,6 +629,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'transparent',
     },
     colorStrip: {
         flexDirection: 'row',

@@ -216,7 +216,14 @@ export function NotificationSlider({ labels, index, onChange }: NotificationSlid
             <View
                 ref={areaRef}
                 style={styles.trackArea}
-                onLayout={measure}
+                onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    if (w > 0) {
+                        widthRef.current = w;
+                        width.value = w;
+                    }
+                    measure();
+                }}
                 {...responder.panHandlers}
                 accessible
                 accessibilityRole="adjustable"

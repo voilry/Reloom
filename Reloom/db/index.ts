@@ -14,4 +14,16 @@ expoDb.execSync(`
   );
 `);
 
+try {
+  expoDb.execSync(`ALTER TABLE reminders ADD COLUMN icon TEXT;`);
+} catch (e) {
+  // column already exists
+}
+
+try {
+  expoDb.execSync(`ALTER TABLE reminders ADD COLUMN color TEXT;`);
+} catch (e) {
+  // column already exists
+}
+
 export const db = drizzle(expoDb, { schema });

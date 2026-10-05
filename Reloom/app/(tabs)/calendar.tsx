@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { CaretLeft, CaretRight, Calendar, Cake, ClockCounterClockwise as History, Book, Plus, Target, X, BellDot, TimeDuration, CheckCircle, RadioButton } from '@/components/ui/Icon';
 import { AddReminderModal } from '../../components/calendar/AddReminderModal';
 import { ReminderDetailModal } from '../../components/calendar/ReminderDetailModal';
+import { getReminderIcon } from '../../constants/ReminderIcons';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSettings } from '../../store/SettingsContext';
@@ -125,6 +126,7 @@ export default function CalendarScreen() {
         const { showToast } = require('../../components/ui/Toast');
         showToast(editingReminder ? 'Reminder updated' : 'Reminder set');
         setEditingReminder(null);
+        loadData();
     };
 
     const handleEditReminder = (reminder: Reminder) => {
@@ -164,27 +166,43 @@ export default function CalendarScreen() {
         return grid;
     }, [currentDate]);
 
+    const normalizeDateStr = (dateStr?: string | null) => {
+        if (!dateStr) return '';
+        const clean = dateStr.split('T')[0].split(' ')[0].trim();
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+        return clean;
+    };
+
     const eventMap = useMemo(() => {
-        const map: Record<string, { birthday: boolean; met: boolean; journal: boolean; reminder: boolean }> = {};
+        const map: Record<string, { birthday: boolean; met: boolean; journal: boolean; reminder: boolean; reminderColor?: string | null }> = {};
 
         people.forEach(p => {
             if (p.firstMet) {
-                if (!map[p.firstMet]) map[p.firstMet] = { birthday: false, met: false, journal: false, reminder: false };
-                map[p.firstMet].met = true;
+                const norm = normalizeDateStr(p.firstMet);
+                if (!map[norm]) map[norm] = { birthday: false, met: false, journal: false, reminder: false };
+                map[norm].met = true;
             }
         });
 
         journals.forEach(j => {
             if (j.date && (j.content?.trim() || j.title?.trim())) {
-                if (!map[j.date]) map[j.date] = { birthday: false, met: false, journal: false, reminder: false };
-                map[j.date].journal = true;
+                const norm = normalizeDateStr(j.date);
+                if (!map[norm]) map[norm] = { birthday: false, met: false, journal: false, reminder: false };
+                map[norm].journal = true;
             }
         });
 
         reminders.forEach(r => {
             if (r.date && !r.completed) {
-                if (!map[r.date]) map[r.date] = { birthday: false, met: false, journal: false, reminder: false };
-                map[r.date].reminder = true;
+                const norm = normalizeDateStr(r.date);
+                if (!map[norm]) map[norm] = { birthday: false, met: false, journal: false, reminder: false };
+                map[norm].reminder = true;
+                if (!map[norm].reminderColor && r.color) {
+                    map[norm].reminderColor = r.color;
+                }
             }
         });
 
@@ -212,19 +230,19 @@ export default function CalendarScreen() {
                     events.push({ type: 'birthday', id: p.id, title: `${p.name}'s Birthday`, person: p });
                 }
             }
-            if (p.firstMet === dateStr) {
+            if (p.firstMet && normalizeDateStr(p.firstMet) === dateStr) {
                 events.push({ type: 'met', id: p.id, title: `Met ${p.name}`, person: p });
             }
         });
 
         journals.forEach(j => {
-            if (j.date === dateStr && (j.content?.trim() || j.title?.trim())) {
+            if (j.date && normalizeDateStr(j.date) === dateStr && (j.content?.trim() || j.title?.trim())) {
                 events.push({ type: 'journal', id: j.id, title: j.title || 'Journal Entry', subtitle: j.content?.substring(0, 50), journal: j });
             }
         });
 
         reminders.forEach(r => {
-            if (r.date === dateStr) {
+            if (r.date && normalizeDateStr(r.date) === dateStr) {
                 events.push({ 
                     type: 'reminder', 
                     id: r.id, 
@@ -241,7 +259,7 @@ export default function CalendarScreen() {
     };
 
     const hasEvents = (date: Date | null) => {
-        if (!date) return { birthday: false, met: false, journal: false, reminder: false };
+        if (!date) return { birthday: false, met: false, journal: false, reminder: false, reminderColor: undefined };
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
@@ -250,7 +268,7 @@ export default function CalendarScreen() {
         const isCurrentLeap = isLeapYear(y);
         const isFeb28NonLeap = !isCurrentLeap && m === '02' && d === '28';
 
-        const base = eventMap[dateStr] || { birthday: false, met: false, journal: false, reminder: false };
+        const base = eventMap[dateStr] || { birthday: false, met: false, journal: false, reminder: false, reminderColor: undefined };
         const birthday = people.some(p => p.birthdate && (p.birthdate.endsWith(monthDay) || (isFeb28NonLeap && p.birthdate.endsWith('-02-29'))));
 
         return {
@@ -451,7 +469,7 @@ export default function CalendarScreen() {
                             {markers.birthday && <View style={[styles.marker, { backgroundColor: '#FF6B6B' }]} />}
                             {markers.met && <View style={[styles.marker, { backgroundColor: '#4DABF7' }]} />}
                             {markers.journal && settings.showJournalTab && <View style={[styles.marker, { backgroundColor: '#51CF66' }]} />}
-                            {markers.reminder && <View style={[styles.marker, { backgroundColor: colors.tint }]} />}
+                            {markers.reminder && <View style={[styles.marker, { backgroundColor: markers.reminderColor || colors.tint }]} />}
                         </View>
                     </View>
                 )}
@@ -536,8 +554,17 @@ export default function CalendarScreen() {
                                             scaleTo={0.98}
                                             innerStyle={{ borderRadius: 16 }}
                                         >
-                                            <View style={[styles.upcomingIcon, { backgroundColor: event.type === 'birthday' ? '#FF6B6B18' : colors.tint + '18' }]}>
-                                                {event.type === 'birthday' ? <Cake size={20} color="#FF6B6B" weight="fill" /> : <TimeDuration size={18} color={colors.tint} weight="fill" />}
+                                            <View style={[styles.upcomingIcon, { backgroundColor: 'transparent' }]}>
+                                                {event.type === 'birthday' ? (
+                                                    <Cake size={24} color="#FF6B6B" weight="fill" />
+                                                ) : event.reminder ? (
+                                                    (() => {
+                                                        const ReminderIcon = getReminderIcon(event.reminder.icon);
+                                                        return <ReminderIcon size={24} color={event.reminder.color || colors.tint} weight="fill" />;
+                                                    })()
+                                                ) : (
+                                                    <TimeDuration size={22} color={colors.tint} weight="fill" />
+                                                )}
                                             </View>
                                             <View style={{ flex: 1, marginLeft: 12, justifyContent: 'center' }}>
                                                 <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }} numberOfLines={1}>{event.title}</ThemedText>
@@ -659,22 +686,20 @@ export default function CalendarScreen() {
                                                 }}
                                             >
                                                 <Card style={[styles.eventCard, event.type === 'reminder' && event.completed && { opacity: 0.5 }]}>
-                                                    <View style={[styles.eventIcon, {
-                                                        backgroundColor: (event.type === 'reminder' && event.person) ? 'transparent' : 
-                                                            (event.type === 'birthday' ? '#FF6B6B20' :
-                                                             event.type === 'met' ? '#4DABF720' :
-                                                             event.type === 'journal' ? '#51CF6620' : colors.tint + '20')
-                                                    }]}>
-                                                        {event.type === 'birthday' && <Cake size={22} color="#FF6B6B" weight="fill" />}
-                                                        {event.type === 'met' && <History size={22} color="#4DABF7" weight="fill" />}
-                                                        {event.type === 'journal' && <Book size={22} color="#51CF66" weight="fill" />}
+                                                    <View style={[styles.eventIcon, { backgroundColor: 'transparent' }]}>
+                                                        {event.type === 'birthday' && <Cake size={24} color="#FF6B6B" weight="fill" />}
+                                                        {event.type === 'met' && <History size={24} color="#4DABF7" weight="fill" />}
+                                                        {event.type === 'journal' && <Book size={24} color="#51CF66" weight="fill" />}
                                                         {event.type === 'reminder' && (
                                                             event.person ? (
                                                                 <View style={{ borderRadius: 21, overflow: 'hidden' }}>
                                                                     <Avatar name={event.person.name} uri={event.person.avatarUri} size={42} />
                                                                 </View>
                                                             ) : (
-                                                                <TimeDuration size={22} color={colors.tint} weight="fill" />
+                                                                (() => {
+                                                                    const ReminderIcon = getReminderIcon(event.reminder?.icon);
+                                                                    return <ReminderIcon size={24} color={event.reminder?.color || colors.tint} weight="fill" />;
+                                                                })()
                                                             )
                                                         )}
                                                     </View>
