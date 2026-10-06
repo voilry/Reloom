@@ -353,6 +353,8 @@ export default function ContactEditorScreen() {
                     <Button
                         title="Save Contact"
                         onPress={handleSave}
+                        textStyle={{ fontSize: 17 }}
+                        style={styles.saveButton}
                         disabled={!hasChanges || isSaving || !person}
                     />
 
@@ -466,6 +468,11 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    saveButton: {
+        height: 65,
+        paddingHorizontal: 20,
+        borderRadius: 21,
     },
     deleteButton: {
         flexDirection: 'row',

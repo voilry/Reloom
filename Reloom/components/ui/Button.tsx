@@ -115,6 +115,19 @@ export function Button({
     const vStyles = getVariantStyles();
     const sStyles = getSizeStyles();
 
+    // Resolve the press-overlay radius from the FINAL merged style so a
+    // caller-supplied `borderRadius` isn't overruled by the size token.
+    // Style is applied last above, so the container already renders with
+    // this radius — the overlay must match it or its corners poke out.
+    const mergedStyle = StyleSheet.flatten([
+        styles.container,
+        sStyles.container,
+        vStyles.container,
+        (disabled || loading) && { opacity: 0.5 },
+        style,
+    ]) as ViewStyle | undefined;
+    const overlayRadius = mergedStyle?.borderRadius ?? sStyles.container.borderRadius ?? DesignSystem.radius.md;
+
     return (
         <ScalePressable
             onPress={onPress}
@@ -126,7 +139,7 @@ export function Button({
                 (disabled || loading) && { opacity: 0.5 },
                 style
             ]}
-            innerStyle={{ borderRadius: (sStyles.container.borderRadius || DesignSystem.radius.md) }}
+            innerStyle={{ borderRadius: overlayRadius }}
         >
             {loading ? (
                 <ActivityIndicator color={vStyles.text.color as string} size="small" />
