@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { useSettings } from '../../store/SettingsContext';
 import { useState, useEffect } from 'react';
-import Animated, { FadeIn, FadeOut, FadeInUp, FadeOutDown, SlideInDown, SlideOutDown, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInUp, FadeInDown, FadeInLeft, FadeOutDown, SlideInDown, SlideOutDown, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withSpring, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -25,9 +25,12 @@ const ICONS: Record<string, any> = {
     journal: BookOpen,
 };
 
-function MenuOption({ icon, title, onPress }: any) {
+function MenuOption({ icon, title, onPress, index = 0 }: any) {
     return (
-        <View style={{ paddingVertical: 6 }}>
+        <Animated.View
+            entering={FadeInLeft.delay(70 + index * 22).duration(280).springify().damping(22).stiffness(210).mass(0.8)}
+            style={{ paddingVertical: 6 }}
+        >
             <ScalePressable
                 style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14 }}
                 onPress={onPress}
@@ -41,7 +44,54 @@ function MenuOption({ icon, title, onPress }: any) {
                     <ThemedText style={{ fontSize: 16, fontFamily: Typography.fontFamily.bold, opacity: 0.9 }}>{title}</ThemedText>
                 </View>
             </ScalePressable>
-        </View>
+        </Animated.View>
+    );
+}
+
+function TabButton({ route, isFocused, Icon, activeColor, inactiveColor, onPress }: any) {
+    const iconScale = useSharedValue(isFocused ? 1.08 : 1);
+    useEffect(() => {
+        iconScale.value = withSpring(isFocused ? 1.08 : 1, { damping: 16, stiffness: 260, mass: 0.7 });
+    }, [isFocused]);
+
+    const iconAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: iconScale.value }]
+    }));
+
+    return (
+        <ScalePressable
+            key={route.key}
+            onPress={onPress}
+            scale={true}
+            scaleTo={0.84}
+            haptic={false}
+            overlayColor="transparent"
+            style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: BAR_HEIGHT,
+                zIndex: 1,
+            }}
+            innerStyle={{ borderRadius: 22 }}
+        >
+            <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                overflow: 'hidden',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}>
+                <Animated.View style={iconAnimatedStyle}>
+                    <Icon
+                        size={22}
+                        color={isFocused ? activeColor : inactiveColor}
+                        weight={isFocused ? 'fill' : 'regular'}
+                    />
+                </Animated.View>
+            </View>
+        </ScalePressable>
     );
 }
 
@@ -54,7 +104,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     const rotation = useSharedValue(0);
 
     useEffect(() => {
-        rotation.value = withSpring(showAddMenu ? 1 : 0);
+        rotation.value = withSpring(showAddMenu ? 1 : 0, { damping: 18, stiffness: 220, mass: 0.8 });
     }, [showAddMenu]);
 
     const plusIconStyle = useAnimatedStyle(() => ({
@@ -84,6 +134,24 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         }, 100);
     };
 
+    const activeRouteIndex = visibleRoutes.findIndex((route: any) => state.routes[state.index]?.name === route.name);
+    const itemWidth = visibleRoutes.length > 0 ? currentBarWidth / visibleRoutes.length : 0;
+    const targetIndicatorX = activeRouteIndex >= 0 ? activeRouteIndex * itemWidth + (itemWidth - 44) / 2 : 0;
+
+    const indicatorTranslateX = useSharedValue(targetIndicatorX);
+
+    useEffect(() => {
+        indicatorTranslateX.value = withSpring(targetIndicatorX, {
+            damping: 18,
+            stiffness: 240,
+            mass: 0.8,
+        });
+    }, [targetIndicatorX]);
+
+    const activeIndicatorStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: indicatorTranslateX.value }],
+    }));
+
     return (
         <View style={{
             position: 'absolute',
@@ -97,35 +165,43 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             {/* Global Add Menu Overlay (NO MODAL) */}
             {showAddMenu && (
                 <View style={{ position: 'absolute', bottom: -30, width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 1.2, pointerEvents: 'box-none' }}>
-                    <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={StyleSheet.absoluteFill}>
+                    <Animated.View
+                        entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                        exiting={FadeOut.duration(200).easing(Easing.bezier(0.3, 0.0, 0.8, 0.15))}
+                        style={StyleSheet.absoluteFill}
+                    >
                         <BlurView intensity={theme === 'dark' ? 80 : 50} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.4)' }]} />
                         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowAddMenu(false)} />
                     </Animated.View>
 
                     {/* The sleek menu card */}
-                    <Animated.View entering={FadeInUp.duration(300)} exiting={FadeOutDown.duration(200)} style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}>
+                    <Animated.View
+                        entering={FadeInUp.duration(320).springify().damping(22).stiffness(190).mass(0.9)}
+                        exiting={FadeOutDown.duration(200).easing(Easing.bezier(0.3, 0.0, 0.8, 0.15))}
+                        style={{ position: 'absolute', bottom: 100, left: 20, right: 20, alignItems: 'center', pointerEvents: 'box-none' }}
+                    >
                         <View style={{ width: '100%', maxWidth: 300, backgroundColor: colors.card, borderRadius: 28, padding: 8, borderColor: colors.border, borderWidth: 0, ...DesignSystem.shadows.xl }}>
 
-                            <MenuOption icon={<UserIcon size={22} color={colors.tint} weight="fill" />} title="New Person" onPress={() => handleAction('newPerson')} />
+                            <MenuOption icon={<UserIcon size={22} color={colors.tint} weight="fill" />} title="New Person" onPress={() => handleAction('newPerson')} index={0} />
                             <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
-                            <MenuOption icon={<PenLine size={22} color="#6366f1" weight="fill" />} title="Quick Note" onPress={() => handleAction('quickNote')} />
+                            <MenuOption icon={<PenLine size={22} color="#6366f1" weight="fill" />} title="Quick Note" onPress={() => handleAction('quickNote')} index={1} />
                             <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
 
-                            <MenuOption icon={<AddressBook size={22} color="#f59e0b" weight="fill" />} title="Quick Contact" onPress={() => handleAction('quickContact')} />
+                            <MenuOption icon={<AddressBook size={22} color="#f59e0b" weight="fill" />} title="Quick Contact" onPress={() => handleAction('quickContact')} index={2} />
 
                             {settings.showCalendarTab && (
                                 <>
                                     <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />
-                                    <MenuOption icon={<Bell size={22} color="#ef4444" weight="fill" />} title="Set Reminder" onPress={() => handleAction('setReminder')} />
+                                    <MenuOption icon={<Bell size={22} color="#ef4444" weight="fill" />} title="Set Reminder" onPress={() => handleAction('setReminder')} index={3} />
                                 </>
                             )}
 
                             {settings.showJournalTab && (
                                 <>
                                     <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, opacity: theme === 'dark' ? 0.6 : 1.0 }} />
-                                    <MenuOption icon={<Book size={22} color="#10b981" weight="fill" />} title="Quick Journal" onPress={() => handleAction('quickJournal')} />
+                                    <MenuOption icon={<Book size={22} color="#10b981" weight="fill" />} title="Quick Journal" onPress={() => handleAction('quickJournal')} index={4} />
                                 </>
                             )}
 
@@ -145,7 +221,27 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                     borderWidth: theme === 'dark' ? 0 : 1,
                     borderColor: colors.border,
                     alignItems: 'center',
+                    position: 'relative',
                 }}>
+                    {/* Material 3 Expressive Sliding Active Tab Indicator */}
+                    {activeRouteIndex >= 0 && (
+                        <Animated.View
+                            style={[
+                                {
+                                    position: 'absolute',
+                                    top: (BAR_HEIGHT - 44) / 2,
+                                    left: 0,
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: colors.tint + '25',
+                                },
+                                activeIndicatorStyle
+                            ]}
+                            pointerEvents="none"
+                        />
+                    )}
+
                     {visibleRoutes.map((route: any) => {
                         const isFocused = state.routes[state.index]?.name === route.name;
                         const Icon = ICONS[route.name];
@@ -168,43 +264,15 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                         };
 
                         return (
-                            <ScalePressable
+                            <TabButton
                                 key={route.key}
+                                route={route}
+                                isFocused={isFocused}
+                                Icon={Icon}
+                                activeColor={activeColor}
+                                inactiveColor={inactiveColor}
                                 onPress={onPress}
-                                scale={true}
-                                scaleTo={0.82}
-                                haptic={false}
-                                overlayColor="transparent"
-                                style={{
-                                    flex: 1,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    height: BAR_HEIGHT,
-                                }}
-                                innerStyle={{ borderRadius: 22 }}
-                            >
-                                {/* Outer clips the shape — inner fills color. Splitting these is the fix for Android borderRadius re-render bug */}
-                                <View style={{
-                                    width: 44,
-                                    height: 44,
-                                    borderRadius: 22,
-                                    overflow: 'hidden',
-                                    // SVG dynamic key to handle Android caching bugs
-                                }}>
-                                    <View style={{
-                                        flex: 1,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: isFocused ? colors.tint + '25' : 'transparent',
-                                    }}>
-                                        <Icon
-                                            size={22}
-                                            color={isFocused ? activeColor : inactiveColor}
-                                            weight={isFocused ? 'fill' : 'regular'}
-                                        />
-                                    </View>
-                                </View>
-                            </ScalePressable>
+                            />
                         );
                     })}
                 </View>

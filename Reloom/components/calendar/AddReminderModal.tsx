@@ -1,6 +1,6 @@
 import { View, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, DeviceEventEmitter } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInDown, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '../ui/ThemedText';
@@ -402,8 +402,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                     {isCustomNudge ? (
                                     <Animated.View
                                         key="stepper"
-                                        entering={FadeIn.delay(80).duration(180)}
-                                        exiting={FadeOut.duration(160)}
+                                        entering={FadeIn.delay(60).duration(200).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                                        exiting={FadeOut.duration(150).easing(Easing.bezier(0.3, 0.0, 0.8, 0.15))}
                                         style={[styles.stepper, { backgroundColor: colors.surface }]}
                                     >
                                         <ScalePressable
@@ -437,8 +437,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                     ) : (
                                     <Animated.View
                                         key="slider"
-                                        entering={FadeIn.delay(80).duration(180)}
-                                        exiting={FadeOut.duration(160)}
+                                        entering={FadeIn.delay(60).duration(200).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                                        exiting={FadeOut.duration(150).easing(Easing.bezier(0.3, 0.0, 0.8, 0.15))}
                                         style={styles.sliderSlot}
                                     >
                                         <NotificationSlider

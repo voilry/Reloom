@@ -8,7 +8,7 @@ import { Typography } from '../constants/Typography';
 import { Plus, Folder, Star, Users, Briefcase, Heart, X, Check, Rocket, Coffee, House as Home, Globe, Airplane as Plane, MusicNote as Music, BookOpen as Book, Smiley as Smile, Trash } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import Animated, { FadeIn, Layout, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, Layout, ZoomIn, Easing } from 'react-native-reanimated';
 import { GroupRepository, Group } from '../db/repositories/GroupRepository';
 import { Input } from './ui/Input';
 
@@ -131,7 +131,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             onPress={() => {
                                 onSelectGroup(null);
                             }}
-                            scale={false}
+                            scaleTo={0.92}
                             style={[
                                 styles.tab,
                                 {
@@ -155,13 +155,17 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             const groupColor = group.color || colors.tint;
                             const isSelected = selectedGroupId === group.id;
                             return (
-                                <Animated.View key={group.id} entering={FadeIn.delay(Math.min(index, 5) * 50).duration(400)}>
+                                <Animated.View
+                                    key={group.id}
+                                    entering={FadeIn.delay(Math.min(index, 5) * 30).duration(260)}
+                                    layout={Layout.springify().damping(22).stiffness(240).mass(0.8)}
+                                >
                                     <ScalePressable
                                         onPress={() => {
                                             onSelectGroup(group.id);
                                         }}
                                         onLongPress={() => openEditModal(group)}
-                                        scale={false}
+                                        scaleTo={0.92}
                                         style={[
                                             styles.tab,
                                             {
@@ -205,199 +209,225 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
             <Modal
                 transparent={true}
                 visible={showCreateModal}
-                animationType="fade"
+                animationType="none"
                 onRequestClose={() => setShowCreateModal(false)}
                 statusBarTranslucent
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <View style={styles.modalHeader}>
-                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>New Group</ThemedText>
-                        </View>
-
-                        <View style={styles.modalContent}>
-                                <Input
-                                    label="Group Name"
-                                    placeholder="e.g. Hiking Buddies"
-                                    value={newGroupName}
-                                    onChangeText={setNewGroupName}
-                                    autoFocus
-                                    maxLength={25}
-                                />
-
-                            <ThemedText style={styles.label}>Select color</ThemedText>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-                                {COLORS.map(c => (
-                                    <ScalePressable
-                                        key={c}
-                                        onPress={() => setSelectedColor(c)}
-                                        style={[
-                                            styles.colorOption,
-                                            { backgroundColor: c },
-                                            selectedColor === c && { borderWidth: 2.5, borderColor: colors.text }
-                                        ]}
-                                        innerStyle={{ borderRadius: 15 }}
-                                        scale={false}
-                                        overlayColor="transparent"
-                                    />
-                                ))}
-                            </ScrollView>
-
-                            <ThemedText style={styles.label}>Select icon</ThemedText>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-                                {ICONS.map(icon => (
-                                    <ScalePressable
-                                        key={icon}
-                                        onPress={() => setSelectedIcon(icon)}
-                                        style={[
-                                            styles.iconOption,
-                                            selectedIcon === icon && { backgroundColor: selectedColor, borderColor: selectedColor }
-                                        ]}
-                                        innerStyle={{ borderRadius: 18 }}
-                                        scale={false}
-                                        overlayColor="transparent"
-                                    >
-                                        {getIcon(icon, selectedIcon === icon ? '#fff' : colors.text, 18)}
-                                    </ScalePressable>
-                                ))}
-                            </ScrollView>
-
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-                                <ScalePressable
-                                    onPress={() => setShowCreateModal(false)}
-                                    style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1 }]}
-                                    innerStyle={{ borderRadius: 12 }}
-                                >
-                                    <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
-                                </ScalePressable>
-                                <ScalePressable
-                                    onPress={handleCreate}
-                                    disabled={!newGroupName.trim()}
-                                    style={[
-                                        styles.actionBtn,
-                                        { backgroundColor: newGroupName.trim() ? selectedColor : colors.border, flex: 2 }
-                                    ]}
-                                    innerStyle={{ borderRadius: 12 }}
-                                >
-                                    <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Create Group</ThemedText>
-                                </ScalePressable>
+                    <Animated.View
+                        entering={FadeIn.duration(240).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]}
+                    />
+                    <Pressable
+                        style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}
+                        onPress={() => setShowCreateModal(false)}
+                    >
+                        <Animated.View
+                            entering={ZoomIn.duration(280).springify().damping(22).stiffness(240).mass(0.85)}
+                            style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                            onStartShouldSetResponder={() => true}
+                        >
+                            <View style={styles.modalHeader}>
+                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>New Group</ThemedText>
                             </View>
-                        </View>
-                    </View>
-                </View>
-            </Modal >
 
-            {/* Edit Group Modal */}
-            <Modal
-                transparent={true}
-                visible={!!selectedGroupToEdit}
-                animationType="fade"
-                onRequestClose={() => setSelectedGroupToEdit(null)}
-                statusBarTranslucent
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Edit Group</ThemedText>
-                                <ThemedText type="small" style={{ opacity: 0.6, marginTop: -2, fontSize: 12 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
-                            </View>
-                            {onManageMembers && (
-                                <ScalePressable
-                                    onPress={() => {
-                                        if (selectedGroupToEdit) {
-                                            onManageMembers(selectedGroupToEdit);
-                                            setSelectedGroupToEdit(null);
-                                        }
-                                    }}
-                                    style={{ padding: 8 }}
-                                    innerStyle={{ borderRadius: 8 }}
-                                    scaleTo={0.92}
-                                    overlayColor="transparent"
-                                >
-                                    <ThemedText type="defaultSemiBold" style={{ color: colors.tint, fontSize: 13 }}>Manage Group →</ThemedText>
-                                </ScalePressable>
-                            )}
-                        </View>
-
-                        <View style={styles.modalContent}>
-                                <Input
-                                    label="Group Name"
-                                    placeholder="..."
-                                    value={editName}
-                                    onChangeText={setEditName}
-                                    maxLength={25}
-                                />
-
-                            <ThemedText style={styles.label}>Update color</ThemedText>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-                                {COLORS.map(c => (
-                                    <ScalePressable
-                                        key={c}
-                                        onPress={() => setEditColor(c)}
-                                        style={[
-                                            styles.colorOption,
-                                            { backgroundColor: c },
-                                            editColor === c && { borderWidth: 2.5, borderColor: colors.text }
-                                        ]}
-                                        innerStyle={{ borderRadius: 15 }}
-                                        scale={false}
-                                        overlayColor="transparent"
+                            <View style={styles.modalContent}>
+                                    <Input
+                                        label="Group Name"
+                                        placeholder="e.g. Hiking Buddies"
+                                        value={newGroupName}
+                                        onChangeText={setNewGroupName}
+                                        autoFocus
+                                        maxLength={25}
                                     />
-                                ))}
-                            </ScrollView>
 
-                            <ThemedText style={styles.label}>Update icon</ThemedText>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
-                                {ICONS.map(icon => (
-                                    <ScalePressable
-                                        key={icon}
-                                        onPress={() => setEditIcon(icon)}
-                                        style={[
-                                            styles.iconOption,
-                                            editIcon === icon && { backgroundColor: editColor, borderColor: editColor }
-                                        ]}
-                                        innerStyle={{ borderRadius: 18 }}
-                                        scale={false}
-                                        overlayColor="transparent"
-                                    >
-                                        {getIcon(icon, editIcon === icon ? '#fff' : colors.text, 18)}
-                                    </ScalePressable>
-                                ))}
-                            </ScrollView>
+                                <ThemedText style={styles.label}>Select color</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
+                                    {COLORS.map(c => (
+                                        <ScalePressable
+                                            key={c}
+                                            onPress={() => setSelectedColor(c)}
+                                            style={[
+                                                styles.colorOption,
+                                                { backgroundColor: c },
+                                                selectedColor === c && { borderWidth: 2.5, borderColor: colors.text }
+                                            ]}
+                                            innerStyle={{ borderRadius: 15 }}
+                                            scale={false}
+                                            overlayColor="transparent"
+                                        />
+                                    ))}
+                                </ScrollView>
 
-                            <View style={{ gap: 12, marginTop: 16 }}>
-                                <View style={{ flexDirection: 'row', gap: 10 }}>
+                                <ThemedText style={styles.label}>Select icon</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
+                                    {ICONS.map(icon => (
+                                        <ScalePressable
+                                            key={icon}
+                                            onPress={() => setSelectedIcon(icon)}
+                                            style={[
+                                                styles.iconOption,
+                                                selectedIcon === icon && { backgroundColor: selectedColor, borderColor: selectedColor }
+                                            ]}
+                                            innerStyle={{ borderRadius: 18 }}
+                                            scale={false}
+                                            overlayColor="transparent"
+                                        >
+                                            {getIcon(icon, selectedIcon === icon ? '#fff' : colors.text, 18)}
+                                        </ScalePressable>
+                                    ))}
+                                </ScrollView>
+
+                                <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                                     <ScalePressable
-                                        onPress={() => setSelectedGroupToEdit(null)}
+                                        onPress={() => setShowCreateModal(false)}
                                         style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1 }]}
                                         innerStyle={{ borderRadius: 12 }}
                                     >
                                         <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
                                     </ScalePressable>
-
                                     <ScalePressable
-                                        onPress={handleUpdate}
-                                        disabled={!editName.trim()}
-                                        style={[styles.actionBtn, { backgroundColor: editColor, flex: 2 }]}
+                                        onPress={handleCreate}
+                                        disabled={!newGroupName.trim()}
+                                        style={[
+                                            styles.actionBtn,
+                                            { backgroundColor: newGroupName.trim() ? selectedColor : colors.border, flex: 2 }
+                                        ]}
                                         innerStyle={{ borderRadius: 12 }}
                                     >
-                                        <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Save Changes</ThemedText>
+                                        <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Create Group</ThemedText>
                                     </ScalePressable>
                                 </View>
-
-                                <ScalePressable
-                                    onPress={handleDelete}
-                                    style={[styles.actionBtn, { backgroundColor: colors.error + '25', marginTop: 4 }]}
-                                    innerStyle={{ borderRadius: 12 }}
-                                    scaleTo={0.95}
-                                >
-                                    <Trash size={18} color={colors.error} weight="bold" />
-                                    <ThemedText style={{ color: colors.error, fontWeight: '800', fontSize: 14 }}>Delete Group</ThemedText>
-                                </ScalePressable>
                             </View>
-                        </View>
-                    </View>
+                        </Animated.View>
+                    </Pressable>
+                </View>
+            </Modal>
+
+            {/* Edit Group Modal */}
+            <Modal
+                transparent={true}
+                visible={!!selectedGroupToEdit}
+                animationType="none"
+                onRequestClose={() => setSelectedGroupToEdit(null)}
+                statusBarTranslucent
+            >
+                <View style={styles.modalOverlay}>
+                    <Animated.View
+                        entering={FadeIn.duration(240).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]}
+                    />
+                    <Pressable
+                        style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}
+                        onPress={() => setSelectedGroupToEdit(null)}
+                    >
+                        <Animated.View
+                            entering={ZoomIn.duration(280).springify().damping(22).stiffness(240).mass(0.85)}
+                            style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                            onStartShouldSetResponder={() => true}
+                        >
+                            <View style={styles.modalHeader}>
+                                <View>
+                                    <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Edit Group</ThemedText>
+                                    <ThemedText type="small" style={{ opacity: 0.6, marginTop: -2, fontSize: 12 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
+                                </View>
+                                {onManageMembers && (
+                                    <ScalePressable
+                                        onPress={() => {
+                                            if (selectedGroupToEdit) {
+                                                onManageMembers(selectedGroupToEdit);
+                                                setSelectedGroupToEdit(null);
+                                            }
+                                        }}
+                                        style={{ padding: 8 }}
+                                        innerStyle={{ borderRadius: 8 }}
+                                        scaleTo={0.92}
+                                        overlayColor="transparent"
+                                    >
+                                        <ThemedText type="defaultSemiBold" style={{ color: colors.tint, fontSize: 13 }}>Manage Group →</ThemedText>
+                                    </ScalePressable>
+                                )}
+                            </View>
+
+                            <View style={styles.modalContent}>
+                                    <Input
+                                        label="Group Name"
+                                        placeholder="..."
+                                        value={editName}
+                                        onChangeText={setEditName}
+                                        maxLength={25}
+                                    />
+
+                                <ThemedText style={styles.label}>Update color</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
+                                    {COLORS.map(c => (
+                                        <ScalePressable
+                                            key={c}
+                                            onPress={() => setEditColor(c)}
+                                            style={[
+                                                styles.colorOption,
+                                                { backgroundColor: c },
+                                                editColor === c && { borderWidth: 2.5, borderColor: colors.text }
+                                            ]}
+                                            innerStyle={{ borderRadius: 15 }}
+                                            scale={false}
+                                            overlayColor="transparent"
+                                        />
+                                    ))}
+                                </ScrollView>
+
+                                <ThemedText style={styles.label}>Update icon</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
+                                    {ICONS.map(icon => (
+                                        <ScalePressable
+                                            key={icon}
+                                            onPress={() => setEditIcon(icon)}
+                                            style={[
+                                                styles.iconOption,
+                                                editIcon === icon && { backgroundColor: editColor, borderColor: editColor }
+                                            ]}
+                                            innerStyle={{ borderRadius: 18 }}
+                                            scale={false}
+                                            overlayColor="transparent"
+                                        >
+                                            {getIcon(icon, editIcon === icon ? '#fff' : colors.text, 18)}
+                                        </ScalePressable>
+                                    ))}
+                                </ScrollView>
+
+                                <View style={{ gap: 12, marginTop: 16 }}>
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <ScalePressable
+                                            onPress={() => setSelectedGroupToEdit(null)}
+                                            style={[styles.actionBtn, { backgroundColor: colors.surface, flex: 1 }]}
+                                            innerStyle={{ borderRadius: 12 }}
+                                        >
+                                            <ThemedText style={{ color: colors.text, fontWeight: '600' }}>Cancel</ThemedText>
+                                        </ScalePressable>
+
+                                        <ScalePressable
+                                            onPress={handleUpdate}
+                                            disabled={!editName.trim()}
+                                            style={[styles.actionBtn, { backgroundColor: editColor, flex: 2 }]}
+                                            innerStyle={{ borderRadius: 12 }}
+                                        >
+                                            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Save Changes</ThemedText>
+                                        </ScalePressable>
+                                    </View>
+
+                                    <ScalePressable
+                                        onPress={handleDelete}
+                                        style={[styles.actionBtn, { backgroundColor: colors.error + '25', marginTop: 4 }]}
+                                        innerStyle={{ borderRadius: 12 }}
+                                        scaleTo={0.95}
+                                    >
+                                        <Trash size={18} color={colors.error} weight="bold" />
+                                        <ThemedText style={{ color: colors.error, fontWeight: '800', fontSize: 14 }}>Delete Group</ThemedText>
+                                    </ScalePressable>
+                                </View>
+                            </View>
+                        </Animated.View>
+                    </Pressable>
                 </View>
             </Modal>
         </>
@@ -426,7 +456,7 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'transparent',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,

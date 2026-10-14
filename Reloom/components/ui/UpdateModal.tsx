@@ -5,7 +5,7 @@ import { Button } from './Button';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { X } from '@/components/ui/Icon';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, ZoomIn, Easing } from 'react-native-reanimated';
 
 interface UpdateModalProps {
     visible: boolean;
@@ -27,12 +27,12 @@ export function UpdateModal({ visible, version, onClose }: UpdateModalProps) {
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
             <View style={styles.overlay}>
                 <Animated.View
-                    entering={FadeIn.duration(200)}
+                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.73)' }]}
                 />
 
                 <Animated.View
-                    entering={ZoomIn.duration(300).springify()}
+                    entering={ZoomIn.duration(320).springify().damping(22).stiffness(240).mass(0.9)}
                     style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 0 }]}
                 >
                     <View style={styles.iconContainer}>

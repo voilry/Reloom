@@ -130,7 +130,10 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
 
     return (
         <View style={styles.entriesSection}>
-            <View style={styles.searchRow}>
+            <Animated.View
+                entering={FadeInDown.duration(260).springify().damping(26).stiffness(280).mass(0.7)}
+                style={styles.searchRow}
+            >
                 <View style={[styles.searchContainer, { backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, borderColor: isAcrylic ? 'transparent' : colors.border, overflow: 'hidden' }]}>
                     {isAcrylic && (
                         <BlurView
@@ -165,10 +168,13 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                 >
                     <Plus size={22} color={theme === 'light' ? '#FFFFFF' : '#000000'} weight="fill" />
                 </ScalePressable>
-            </View>
+            </Animated.View>
 
             {filteredEntries.length === 0 ? (
-                <View style={styles.emptyState}>
+                <Animated.View
+                    entering={FadeInDown.duration(260).springify().damping(26).stiffness(280).mass(0.7)}
+                    style={styles.emptyState}
+                >
                     <FileText size={48} color={colors.tint} weight="fill" />
                     <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
                         {search ? 'No notes found' : 'No notes yet'}
@@ -176,17 +182,17 @@ export function EntriesTab({ entries, onAdd, onDelete, theme, isAcrylic }: Entri
                     <ThemedText style={{ color: colors.secondary, marginTop: 4, fontSize: 13, textAlign: 'center' }}>
                         {search ? 'Try a different search term.' : 'Keep track of specific details here.'}
                     </ThemedText>
-                </View>
+                </Animated.View>
             ) : (
                 filteredEntries.map((entry, index) => {
                     const { title, body } = getNoteTitleAndBody(entry.content || '');
                     return (
                         <Animated.View
                             key={entry.id}
-                            layout={Layout.springify()}
+                            layout={Layout.springify().damping(26).stiffness(280)}
                         >
                             <Animated.View
-                                entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(350)}
+                                entering={FadeInDown.delay(Math.min(index, 5) * 20).duration(260).springify().damping(26).stiffness(280).mass(0.7)}
                             >
                                 <Swipeable
                                     renderRightActions={(_progress, dragX) => renderRightActions(entry.id, dragX)}

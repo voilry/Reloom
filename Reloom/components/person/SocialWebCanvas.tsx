@@ -5,7 +5,7 @@ import {
 import Svg, { Line, Path } from 'react-native-svg';
 import Animated, {
     useSharedValue, useAnimatedStyle, withTiming,
-    FadeIn, SlideInDown, SlideOutDown
+    FadeIn, SlideInDown, SlideOutDown, Easing
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -146,14 +146,15 @@ export function SocialWebCanvas({
         .onEnd(() => {
             'worklet';
             if (scale.value !== 1 || translateX.value !== 0 || translateY.value !== 0) {
-                scale.value = withTiming(1, { duration: 250 });
+                const canvasEasing = Easing.bezier(0.05, 0.7, 0.1, 1.0);
+                scale.value = withTiming(1, { duration: 250, easing: canvasEasing });
                 savedScale.value = 1;
-                translateX.value = withTiming(0, { duration: 250 });
+                translateX.value = withTiming(0, { duration: 250, easing: canvasEasing });
                 savedTranslateX.value = 0;
-                translateY.value = withTiming(0, { duration: 250 });
+                translateY.value = withTiming(0, { duration: 250, easing: canvasEasing });
                 savedTranslateY.value = 0;
             } else {
-                scale.value = withTiming(1.6, { duration: 250 });
+                scale.value = withTiming(1.6, { duration: 250, easing: Easing.bezier(0.05, 0.7, 0.1, 1.0) });
                 savedScale.value = 1.6;
             }
         });
@@ -172,24 +173,25 @@ export function SocialWebCanvas({
     const handleZoomIn = () => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const next = Math.min(scale.value * 1.25, 2.5);
-        scale.value = withTiming(next, { duration: 200 });
+        scale.value = withTiming(next, { duration: 220, easing: Easing.bezier(0.05, 0.7, 0.1, 1.0) });
         savedScale.value = next;
     };
 
     const handleZoomOut = () => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const next = Math.max(scale.value * 0.8, 0.4);
-        scale.value = withTiming(next, { duration: 200 });
+        scale.value = withTiming(next, { duration: 220, easing: Easing.bezier(0.05, 0.7, 0.1, 1.0) });
         savedScale.value = next;
     };
 
     const handleRecenter = () => {
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        scale.value = withTiming(1, { duration: 250 });
+        const canvasEasing = Easing.bezier(0.05, 0.7, 0.1, 1.0);
+        scale.value = withTiming(1, { duration: 250, easing: canvasEasing });
         savedScale.value = 1;
-        translateX.value = withTiming(0, { duration: 250 });
+        translateX.value = withTiming(0, { duration: 250, easing: canvasEasing });
         savedTranslateX.value = 0;
-        translateY.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(0, { duration: 250, easing: canvasEasing });
         savedTranslateY.value = 0;
     };
 

@@ -4,7 +4,7 @@ import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
 import { CheckCircle, XCircle, Info, WarningCircle } from '@/components/ui/Icon';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,12 +36,12 @@ export function AlertModal({ visible, title, description, type = 'info', onClose
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(200)}
+                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                 />
                 <Pressable style={styles.modalBackdrop} onPress={onClose}>
                     <Animated.View
-                        entering={SlideInDown.duration(300).springify()}
+                        entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                         style={[styles.modalContent, { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 32 }]}
                         onStartShouldSetResponder={() => true}
                     >

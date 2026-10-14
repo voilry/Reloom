@@ -441,7 +441,7 @@ function SegmentedSelection({ options, selectedValue, onValueChange, colors, the
         return {
             width: itemWidth,
             transform: [
-                { translateX: withSpring(selectedIndex * itemWidth, { damping: 50, stiffness: 800, mass: 0.5 }) }
+                { translateX: withSpring(selectedIndex * itemWidth, { damping: 20, stiffness: 240, mass: 0.8 }) }
             ],
             opacity: 1
         };

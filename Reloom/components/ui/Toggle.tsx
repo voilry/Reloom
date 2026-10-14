@@ -12,11 +12,11 @@ export function Toggle({ value, onValueChange }: ToggleProps) {
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const progress = useSharedValue(value ? 1 : 0);
 
-    // Spring configuration for 'buttery' smoothness
+    // Spring configuration for Material 3 Expressive smooth motion
     const springConfig = {
-        damping: 15,
-        stiffness: 150,
-        mass: 0.6,
+        damping: 17,
+        stiffness: 240,
+        mass: 0.7,
     };
 
     const handlePress = () => {

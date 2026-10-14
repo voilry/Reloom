@@ -70,34 +70,69 @@ export const DesignSystem = {
             fast: 150,
             normal: 300,
             slow: 500,
+            enter: 300,
+            exit: 200,
         },
         easing: {
             spring: {
                 damping: 20,
-                stiffness: 90,
-            }
+                stiffness: 180,
+            },
+            // Material 3 Expressive and Standard Bezier curves
+            emphasized: {
+                default: [0.2, 0.0, 0, 1.0] as const,
+                decelerate: [0.05, 0.7, 0.1, 1.0] as const, // Incoming / Entrance
+                accelerate: [0.3, 0.0, 0.8, 0.15] as const, // Outgoing / Exit
+            },
+            standard: {
+                default: [0.2, 0.0, 0, 1.0] as const,
+                decelerate: [0.0, 0.0, 0.2, 1.0] as const,
+                accelerate: [0.4, 0.0, 1.0, 1.0] as const,
+            },
         },
         springs: {
             heavy: {
                 damping: 25,
-                mass: 1.6,
+                mass: 1.2,
                 stiffness: 180,
             },
             bouncy: {
-                damping: 15,
-                mass: 1.0,
-                stiffness: 200,
+                damping: 16,
+                mass: 0.8,
+                stiffness: 220,
             },
             light: {
                 damping: 20,
                 mass: 0.5,
-                stiffness: 150,
+                stiffness: 180,
             },
             fast: {
-                damping: 15,
+                damping: 18,
                 mass: 0.6,
                 stiffness: 350,
-            }
+            },
+            // Material 3 Expressive physics tokens
+            expressive: {
+                damping: 18,
+                mass: 0.8,
+                stiffness: 220,
+            },
+            snappy: {
+                damping: 20,
+                mass: 0.7,
+                stiffness: 280,
+            },
+            container: {
+                damping: 24,
+                mass: 0.9,
+                stiffness: 240,
+            },
+            press: {
+                damping: 14,
+                mass: 0.6,
+                stiffness: 300,
+                overshootClamping: false,
+            },
         }
     },
     glass: {

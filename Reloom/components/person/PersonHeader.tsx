@@ -9,7 +9,7 @@ import { PencilSimple as Edit, Clock } from '@/components/ui/Icon';
 import type { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
-import Animated, { interpolate, useAnimatedStyle, Extrapolation, SharedValue } from 'react-native-reanimated';
+import Animated, { interpolate, useAnimatedStyle, Extrapolation, SharedValue, ZoomIn, FadeInDown } from 'react-native-reanimated';
 import { ScalePressable } from '../ui/ScalePressable';
 
 interface PersonHeaderProps {
@@ -42,39 +42,46 @@ export function PersonHeader({ person, onEdit, scrollY }: PersonHeaderProps) {
 
     return (
         <View style={styles.header}>
-            <Animated.View style={[styles.avatarWrapper, avatarStyle]}>
-                <Avatar
-                    name={person.name}
-                    uri={person.avatarUri}
-                    size={120}
-                />
+            <Animated.View entering={ZoomIn.duration(260).springify().damping(22).stiffness(280).mass(0.7)}>
+                <Animated.View style={[styles.avatarWrapper, avatarStyle]}>
+                    <Avatar
+                        name={person.name}
+                        uri={person.avatarUri}
+                        size={120}
+                    />
+                </Animated.View>
             </Animated.View>
 
-            <ThemedText type="display" style={styles.name}>{person.name}</ThemedText>
-            {
-                person.elevatorPitch ? (
-                    <ThemedText style={[styles.pitch, { fontSize: 16, color: colors.secondary }]}>
-                        {person.elevatorPitch}
-                    </ThemedText>
-                ) : (
-                    <ScalePressable
-                        onPress={onEdit}
-                        scale={false}
-                        style={{ paddingVertical: 4 }}
-                    >
-                        <ThemedText style={{ color: colors.tint, fontSize: 16, fontWeight: '600' }}>+ Add headline</ThemedText>
-                    </ScalePressable>
-                )
-            }
+            <Animated.View entering={FadeInDown.delay(20).duration(260).springify().damping(24).stiffness(280).mass(0.7)} style={{ alignItems: 'center' }}>
+                <ThemedText type="display" style={styles.name}>{person.name}</ThemedText>
+            </Animated.View>
 
-            <View style={styles.headerMeta}>
+            <Animated.View entering={FadeInDown.delay(35).duration(260).springify().damping(24).stiffness(280).mass(0.7)} style={{ alignItems: 'center' }}>
+                {
+                    person.elevatorPitch ? (
+                        <ThemedText style={[styles.pitch, { fontSize: 16, color: colors.secondary }]}>
+                            {person.elevatorPitch}
+                        </ThemedText>
+                    ) : (
+                        <ScalePressable
+                            onPress={onEdit}
+                            scale={false}
+                            style={{ paddingVertical: 4 }}
+                        >
+                            <ThemedText style={{ color: colors.tint, fontSize: 16, fontWeight: '600' }}>+ Add headline</ThemedText>
+                        </ScalePressable>
+                    )
+                }
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(50).duration(260).springify().damping(24).stiffness(280).mass(0.7)} style={styles.headerMeta}>
                 <View style={[styles.metaItem, { backgroundColor: colors.surface + '80', marginTop: -11 }]}>
                     <Clock size={12} color={colors.secondary} />
                     <ThemedText type="tiny" style={{ color: colors.secondary, marginLeft: 6, fontWeight: '600' }}>
                         Joined {new Date(person.createdAt).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                     </ThemedText>
                 </View>
-            </View>
+            </Animated.View>
         </View >
     );
 }

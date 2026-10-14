@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, DeviceEventEmitter, Platform } from 'react-native';
-import Animated, { FadeInUp, FadeOutUp, Layout } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeOutUp, Layout, Easing } from 'react-native-reanimated';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
@@ -40,8 +40,8 @@ export function Toast() {
     return (
         <View style={[styles.container, { top: insets.top + 24 }]}>
             <Animated.View
-                entering={FadeInUp.springify().mass(0.8).damping(12)}
-                exiting={FadeOutUp.duration(200)}
+                entering={FadeInUp.springify().damping(18).stiffness(240).mass(0.8)}
+                exiting={FadeOutUp.duration(180).easing(Easing.bezier(0.3, 0.0, 0.8, 0.15))}
                 style={[
                     styles.pill,
                     {

@@ -4,6 +4,7 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
+    Easing,
     SharedValue
 } from 'react-native-reanimated';
 import { CaretUp, CaretDown } from '@/components/ui/Icon';
@@ -28,15 +29,27 @@ export const QuickScrollButton = memo(({ isScrolling, direction, scrollY, conten
     const { colors, theme } = useAppTheme();
     const insets = useSafeAreaInsets();
 
+    const enterEasing = Easing.bezier(0.05, 0.7, 0.1, 1.0);
+    const exitEasing = Easing.bezier(0.3, 0.0, 0.8, 0.15);
+
     const upButtonStyle = useAnimatedStyle(() => {
         // Hide when near the top: no point offering "go to top" at the top.
         const farFromTop = scrollY ? scrollY.value > NEAR_TOP_PX : true;
         const active = isScrolling.value && direction.value === 'up' && farFromTop;
         return {
-            opacity: withTiming(active ? 1 : 0, { duration: 250 }),
+            opacity: withTiming(active ? 1 : 0, {
+                duration: active ? 250 : 180,
+                easing: active ? enterEasing : exitEasing,
+            }),
             transform: [
-                { scale: withTiming(active ? 1 : 0.9, { duration: 250 }) },
-                { translateY: withTiming(active ? 0 : -10, { duration: 250 }) }
+                { scale: withTiming(active ? 1 : 0.88, {
+                    duration: active ? 280 : 180,
+                    easing: active ? enterEasing : exitEasing,
+                }) },
+                { translateY: withTiming(active ? 0 : -8, {
+                    duration: active ? 280 : 180,
+                    easing: active ? enterEasing : exitEasing,
+                }) }
             ],
             pointerEvents: active ? 'auto' : 'none',
         };
@@ -51,10 +64,19 @@ export const QuickScrollButton = memo(({ isScrolling, direction, scrollY, conten
         const distToBottom = ch > 0 && lh > 0 ? ch - (y + lh) : Number.MAX_SAFE_INTEGER;
         const active = isScrolling.value && direction.value === 'down' && distToBottom > NEAR_BOTTOM_PX;
         return {
-            opacity: withTiming(active ? 1 : 0, { duration: 250 }),
+            opacity: withTiming(active ? 1 : 0, {
+                duration: active ? 250 : 180,
+                easing: active ? enterEasing : exitEasing,
+            }),
             transform: [
-                { scale: withTiming(active ? 1 : 0.9, { duration: 250 }) },
-                { translateY: withTiming(active ? 0 : 10, { duration: 250 }) }
+                { scale: withTiming(active ? 1 : 0.88, {
+                    duration: active ? 280 : 180,
+                    easing: active ? enterEasing : exitEasing,
+                }) },
+                { translateY: withTiming(active ? 0 : 8, {
+                    duration: active ? 280 : 180,
+                    easing: active ? enterEasing : exitEasing,
+                }) }
             ],
             pointerEvents: active ? 'auto' : 'none',
         };

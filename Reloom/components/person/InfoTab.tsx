@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScalePressable } from '../ui/ScalePressable';
 import { ThemedText } from '../ui/ThemedText';
 import { Card } from '../ui/Card';
@@ -46,150 +47,8 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
 
     return (
         <>
-            <Card style={[styles.infoCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]}>
-                {isAcrylic && (
-                    <BlurView
-                        intensity={40}
-                        tint={theme === 'dark' ? 'dark' : 'light'}
-                        style={StyleSheet.absoluteFill}
-                    />
-                )}
-                <View style={styles.sectionHeader}>
-                    <ThemedText type="sectionHeader" style={styles.sectionTitle}>Details</ThemedText>
-                </View>
-                <InfoItem
-                    label="Gender"
-                    value={person.gender}
-                    icon={<User size={18} color={colors.icon} weight="fill" />}
-                    placeholder={
-                        <ScalePressable onPress={onEditProfile} overlayColor="transparent">
-                            <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Gender</ThemedText>
-                        </ScalePressable>
-                    }
-                />
-                <InfoItem
-                    label="Birthday"
-                    value={person.birthdate}
-                    prefix={age !== null ? `${age}` : ''}
-                    icon={<Calendar size={18} color={colors.icon} weight="fill" />}
-                    placeholder={
-                        <ScalePressable onPress={onEditProfile} overlayColor="transparent">
-                            <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Birthday</ThemedText>
-                        </ScalePressable>
-                    }
-                />
-                <InfoItem
-                    label="First Met"
-                    value={person.firstMet}
-                    icon={<Clock size={18} color={colors.icon} weight="fill" />}
-                    placeholder={
-                        <ScalePressable onPress={onEditProfile} overlayColor="transparent">
-                            <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Set Date</ThemedText>
-                        </ScalePressable>
-                    }
-                />
-
-                <View style={[styles.infoRow, { borderBottomColor: 'transparent' }]}>
-                    <View style={styles.infoIconContainer}>
-                        <MapPin size={18} color={colors.icon} weight="fill" />
-                    </View>
-                    <View style={styles.infoTextContainer}>
-                        <ScalePressable
-                            onPress={() => router.push(`/person/${person.id}/locations`)}
-                            style={{ flexDirection: 'row', alignItems: 'center' }}
-                            overlayColor="transparent"
-                            scaleTo={0.9}
-                        >
-                            <ThemedText style={styles.infoLabel}>Places</ThemedText>
-                            <ChevronRight size={14} color={colors.icon} style={{ marginLeft: 4, opacity: 0.5 }} />
-                        </ScalePressable>
-
-                        <View style={styles.infoValueWrapper}>
-                            {(person.locationHome || person.locationWork || person.locationOther) ? (
-                                <View style={styles.locationTags}>
-                                    {person.locationHome && <MapTag label="Home" value={person.locationHome} icon={<Home size={10} color={colors.tint} weight="bold" />} colors={colors} />}
-                                    {person.locationWork && <MapTag label="Work" value={person.locationWork} icon={<Briefcase size={10} color={colors.tint} weight="bold" />} colors={colors} />}
-                                    {person.locationOther && <MapTag label="Other" value={person.locationOther} icon={<Plane size={10} color={colors.tint} weight="bold" />} colors={colors} />}
-                                </View>
-                            ) : (
-                                <ScalePressable onPress={() => router.push(`/person/${person.id}/locations`)} overlayColor="transparent">
-                                    <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 13 }}>+ Add Location</ThemedText>
-                                </ScalePressable>
-                            )}
-                        </View>
-                    </View>
-                </View>
-            </Card>
-
-            <ScalePressable
-                style={[styles.relationshipCard, { backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, overflow: 'hidden', borderWidth: 0 }]}
-                innerStyle={{ borderRadius: DesignSystem.radius.lg }}
-                scaleTo={0.94}
-                onPress={() => {
-                    router.push(`/person/${person.id}/relations`);
-                }}
-            >
-                {isAcrylic && (
-                    <BlurView
-                        intensity={40}
-                        tint={theme === 'dark' ? 'dark' : 'light'}
-                        style={StyleSheet.absoluteFill}
-                    />
-                )}
-                <View style={styles.relLeft}>
-                    <View style={styles.avatarStack}>
-                        {relationships.slice(0, 3).map((rel, idx) => (
-                            <Avatar
-                                key={idx}
-                                name={getRelationDisplay(rel).name}
-                                uri={getRelationDisplay(rel).avatar}
-                                size={36}
-                                style={[styles.stackedAvatar, { marginLeft: idx > 0 ? -12 : 0, borderColor: colors.card, borderWidth: 2 }]}
-                            />
-                        ))}
-                        {relationships.length === 0 && (
-                            <View style={[styles.emptyRelCircle, { backgroundColor: colors.surface }]}>
-                                <User size={20} color={colors.icon} />
-                            </View>
-                        )}
-                        {relationships.length > 3 && (
-                            <View style={[styles.moreRelCircle, { backgroundColor: colors.surface, marginLeft: -12, borderColor: colors.card, borderWidth: 2 }]}>
-                                <ThemedText type="tiny" style={{ fontWeight: '700' }}>+{relationships.length - 3}</ThemedText>
-                            </View>
-                        )}
-                    </View>
-                    <View style={styles.relText}>
-                        <ThemedText type="sectionHeader" style={{ fontSize: 18 }}>Social Web</ThemedText>
-                        <ThemedText type="small" style={{ color: colors.secondary }}>
-                            {relationships.length} connection{relationships.length !== 1 ? 's' : ''}
-                        </ThemedText>
-                    </View>
-                </View>
-                <ChevronRight size={20} color={colors.icon} />
-            </ScalePressable>
-
-
-            <View style={styles.sectionHeader}>
-                <ThemedText type="sectionHeader" style={styles.sectionTitle}>Biography</ThemedText>
-                <ScalePressable
-                    onPress={() => router.push({
-                        pathname: '/editor',
-                        params: { id: person.id, type: 'description', edit: 'true' }
-                    })}
-                >
-                    <Edit size={16} color={colors.tint} weight="fill" />
-                </ScalePressable>
-            </View>
-
-            <ScalePressable
-                onPress={() => router.push({
-                    pathname: '/editor',
-                    params: { id: person.id, type: 'description' }
-                })}
-                scale={false}
-                innerStyle={{ borderRadius: DesignSystem.radius.md }}
-            >
-                <Card style={[styles.descCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]} padding="lg">
+            <Animated.View entering={FadeInDown.delay(160).duration(480).springify().damping(22).stiffness(110).mass(1.0)}>
+                <Card style={[styles.infoCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]}>
                     {isAcrylic && (
                         <BlurView
                             intensity={40}
@@ -197,18 +56,165 @@ export function InfoTab({ person, age, relationships, allPeople, onEdit, onEditP
                             style={StyleSheet.absoluteFill}
                         />
                     )}
-                    {person.description ? (
-                        <MarkdownText content={person.description} style={styles.descText} />
-                    ) : (
-                        <ThemedText style={{ color: colors.secondary, fontStyle: 'italic', lineHeight: 22 }}>
-                            Write down the story of how you met, their background, and other lasting impressions...
-                        </ThemedText>
-                    )}
-                    <View style={styles.descIcon}>
-                        <Expand size={14} color={colors.icon} weight="fill" />
+                    <View style={styles.sectionHeader}>
+                        <ThemedText type="sectionHeader" style={styles.sectionTitle}>Details</ThemedText>
+                    </View>
+                    <InfoItem
+                        label="Gender"
+                        value={person.gender}
+                        icon={<User size={18} color={colors.icon} weight="fill" />}
+                        placeholder={
+                            <ScalePressable onPress={onEditProfile} overlayColor="transparent">
+                                <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Gender</ThemedText>
+                            </ScalePressable>
+                        }
+                    />
+                    <InfoItem
+                        label="Birthday"
+                        value={person.birthdate}
+                        prefix={age !== null ? `${age}` : ''}
+                        icon={<Calendar size={18} color={colors.icon} weight="fill" />}
+                        placeholder={
+                            <ScalePressable onPress={onEditProfile} overlayColor="transparent">
+                                <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Add Birthday</ThemedText>
+                            </ScalePressable>
+                        }
+                    />
+                    <InfoItem
+                        label="First Met"
+                        value={person.firstMet}
+                        icon={<Clock size={18} color={colors.icon} weight="fill" />}
+                        placeholder={
+                            <ScalePressable onPress={onEditProfile} overlayColor="transparent">
+                                <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Set Date</ThemedText>
+                            </ScalePressable>
+                        }
+                    />
+
+                    <View style={[styles.infoRow, { borderBottomColor: 'transparent' }]}>
+                        <View style={styles.infoIconContainer}>
+                            <MapPin size={18} color={colors.icon} weight="fill" />
+                        </View>
+                        <View style={styles.infoTextContainer}>
+                            <ScalePressable
+                                onPress={() => router.push(`/person/${person.id}/locations`)}
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
+                                overlayColor="transparent"
+                                scaleTo={0.9}
+                            >
+                                <ThemedText style={styles.infoLabel}>Places</ThemedText>
+                                <ChevronRight size={14} color={colors.icon} style={{ marginLeft: 4, opacity: 0.5 }} />
+                            </ScalePressable>
+
+                            <View style={styles.infoValueWrapper}>
+                                {(person.locationHome || person.locationWork || person.locationOther) ? (
+                                    <View style={styles.locationTags}>
+                                        {person.locationHome && <MapTag label="Home" value={person.locationHome} icon={<Home size={10} color={colors.tint} weight="bold" />} colors={colors} />}
+                                        {person.locationWork && <MapTag label="Work" value={person.locationWork} icon={<Briefcase size={10} color={colors.tint} weight="bold" />} colors={colors} />}
+                                        {person.locationOther && <MapTag label="Other" value={person.locationOther} icon={<Plane size={10} color={colors.tint} weight="bold" />} colors={colors} />}
+                                    </View>
+                                ) : (
+                                    <ScalePressable onPress={() => router.push(`/person/${person.id}/locations`)} overlayColor="transparent">
+                                        <ThemedText style={{ color: colors.tint, fontWeight: '600', fontSize: 13 }}>+ Add Location</ThemedText>
+                                    </ScalePressable>
+                                )}
+                            </View>
+                        </View>
                     </View>
                 </Card>
-            </ScalePressable>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(220).duration(480).springify().damping(22).stiffness(110).mass(1.0)}>
+                <ScalePressable
+                    style={[styles.relationshipCard, { backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.card, overflow: 'hidden', borderWidth: 0 }]}
+                    innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                    scaleTo={0.94}
+                    onPress={() => {
+                        router.push(`/person/${person.id}/relations`);
+                    }}
+                >
+                    {isAcrylic && (
+                        <BlurView
+                            intensity={40}
+                            tint={theme === 'dark' ? 'dark' : 'light'}
+                            style={StyleSheet.absoluteFill}
+                        />
+                    )}
+                    <View style={styles.relLeft}>
+                        <View style={styles.avatarStack}>
+                            {relationships.slice(0, 3).map((rel, idx) => (
+                                <Avatar
+                                    key={idx}
+                                    name={getRelationDisplay(rel).name}
+                                    uri={getRelationDisplay(rel).avatar}
+                                    size={36}
+                                    style={[styles.stackedAvatar, { marginLeft: idx > 0 ? -12 : 0, borderColor: colors.card, borderWidth: 2 }]}
+                                />
+                            ))}
+                            {relationships.length === 0 && (
+                                <View style={[styles.emptyRelCircle, { backgroundColor: colors.surface }]}>
+                                    <User size={20} color={colors.icon} />
+                                </View>
+                            )}
+                            {relationships.length > 3 && (
+                                <View style={[styles.moreRelCircle, { backgroundColor: colors.surface, marginLeft: -12, borderColor: colors.card, borderWidth: 2 }]}>
+                                    <ThemedText type="tiny" style={{ fontWeight: '700' }}>+{relationships.length - 3}</ThemedText>
+                                </View>
+                            )}
+                        </View>
+                        <View style={styles.relText}>
+                            <ThemedText type="sectionHeader" style={{ fontSize: 18 }}>Social Web</ThemedText>
+                            <ThemedText type="small" style={{ color: colors.secondary }}>
+                                {relationships.length} connection{relationships.length !== 1 ? 's' : ''}
+                            </ThemedText>
+                        </View>
+                    </View>
+                    <ChevronRight size={20} color={colors.icon} />
+                </ScalePressable>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(280).duration(480).springify().damping(22).stiffness(110).mass(1.0)}>
+                <View style={styles.sectionHeader}>
+                    <ThemedText type="sectionHeader" style={styles.sectionTitle}>Biography</ThemedText>
+                    <ScalePressable
+                        onPress={() => router.push({
+                            pathname: '/editor',
+                            params: { id: person.id, type: 'description', edit: 'true' }
+                        })}
+                    >
+                        <Edit size={16} color={colors.tint} weight="fill" />
+                    </ScalePressable>
+                </View>
+
+                <ScalePressable
+                    onPress={() => router.push({
+                        pathname: '/editor',
+                        params: { id: person.id, type: 'description' }
+                    })}
+                    scale={false}
+                    innerStyle={{ borderRadius: DesignSystem.radius.md }}
+                >
+                    <Card style={[styles.descCard, isAcrylic && { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`, overflow: 'hidden', borderWidth: 0 }]} padding="lg">
+                        {isAcrylic && (
+                            <BlurView
+                                intensity={40}
+                                tint={theme === 'dark' ? 'dark' : 'light'}
+                                style={StyleSheet.absoluteFill}
+                            />
+                        )}
+                        {person.description ? (
+                            <MarkdownText content={person.description} style={styles.descText} />
+                        ) : (
+                            <ThemedText style={{ color: colors.secondary, fontStyle: 'italic', lineHeight: 22 }}>
+                                Write down the story of how you met, their background, and other lasting impressions...
+                            </ThemedText>
+                        )}
+                        <View style={styles.descIcon}>
+                            <Expand size={14} color={colors.icon} weight="fill" />
+                        </View>
+                    </Card>
+                </ScalePressable>
+            </Animated.View>
         </>
     );
 }

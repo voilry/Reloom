@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated as RNAnimated, Platform } from 'react-native';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { ScalePressable } from '../ui/ScalePressable';
 import { Swipeable } from 'react-native-gesture-handler';
 import { ThemedText } from '../ui/ThemedText';
@@ -68,50 +69,58 @@ export function JournalsTab({ journals, personName, onDelete, isAcrylic }: Journ
     return (
         <View style={styles.entriesSection}>
             {journals.length === 0 ? (
-                <View style={styles.emptyState}>
+                <Animated.View
+                    entering={FadeInDown.duration(260).springify().damping(26).stiffness(280).mass(0.7)}
+                    style={styles.emptyState}
+                >
                     <BookOpen size={48} color={colors.tint} weight="fill" />
                     <ThemedText style={{ marginTop: 16, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Mentions</ThemedText>
                     <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
                         Tag {personName.split(' ')[0]} in your daily journal to see them here.
                     </ThemedText>
-                </View>
+                </Animated.View>
             ) : (
-                journals.map((item) => (
-                    <Swipeable
+                journals.map((item, index) => (
+                    <Animated.View
                         key={item.journal.id}
-                        renderRightActions={(_progress, dragX) => renderRightActions(item.journal.id, dragX)}
-                        overshootRight={false}
-                        friction={3}
-                        overshootFriction={8}
-                        rightThreshold={60}
+                        layout={Layout.springify().damping(26).stiffness(280)}
+                        entering={FadeInDown.delay(Math.min(index, 5) * 20).duration(260).springify().damping(26).stiffness(280).mass(0.7)}
                     >
-                        <ScalePressable
-                            onPress={() => router.push(`/journal/${item.journal.id}`)}
-                            style={{ marginBottom: 16 }}
-                            innerStyle={{ borderRadius: 16 }}
+                        <Swipeable
+                            renderRightActions={(_progress, dragX) => renderRightActions(item.journal.id, dragX)}
+                            overshootRight={false}
+                            friction={3}
+                            overshootFriction={8}
+                            rightThreshold={60}
                         >
-                            <Card style={[{ borderRadius: 16, backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, overflow: 'hidden', borderWidth: 0 }]} padding="md">
-                                {isAcrylic && (
-                                    <BlurView
-                                        intensity={40}
-                                        tint={theme === 'dark' ? 'dark' : 'light'}
-                                        style={StyleSheet.absoluteFill}
-                                    />
-                                )}
-                                <View style={styles.entryHeader}>
-                                    <View style={[styles.journalDateBadge, { backgroundColor: colors.tint + '15' }]}>
-                                        <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800' }}>
-                                            {parseLocalDate(item.journal.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </ThemedText>
+                            <ScalePressable
+                                onPress={() => router.push(`/journal/${item.journal.id}`)}
+                                style={{ marginBottom: 16 }}
+                                innerStyle={{ borderRadius: 16 }}
+                            >
+                                <Card style={[{ borderRadius: 16, backgroundColor: isAcrylic ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.background}80`) : colors.surface, overflow: 'hidden', borderWidth: 0 }]} padding="md">
+                                    {isAcrylic && (
+                                        <BlurView
+                                            intensity={40}
+                                            tint={theme === 'dark' ? 'dark' : 'light'}
+                                            style={StyleSheet.absoluteFill}
+                                        />
+                                    )}
+                                    <View style={styles.entryHeader}>
+                                        <View style={[styles.journalDateBadge, { backgroundColor: colors.tint + '15' }]}>
+                                            <ThemedText type="tiny" style={{ color: colors.tint, fontWeight: '800' }}>
+                                                {parseLocalDate(item.journal.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </ThemedText>
+                                        </View>
                                     </View>
-                                </View>
-                                {item.journal.title ? (
-                                    <ThemedText type="sectionHeader" style={styles.journalTitle}>{item.journal.title}</ThemedText>
-                                ) : null}
-                                <ThemedText style={styles.journalContent} numberOfLines={4}>{item.journal.content}</ThemedText>
-                            </Card>
-                        </ScalePressable>
-                    </Swipeable>
+                                    {item.journal.title ? (
+                                        <ThemedText type="sectionHeader" style={styles.journalTitle}>{item.journal.title}</ThemedText>
+                                    ) : null}
+                                    <ThemedText style={styles.journalContent} numberOfLines={4}>{item.journal.content}</ThemedText>
+                                </Card>
+                            </ScalePressable>
+                        </Swipeable>
+                    </Animated.View>
                 ))
             )}
         </View>

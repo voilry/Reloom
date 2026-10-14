@@ -6,7 +6,7 @@ import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Check, Folder } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Group } from '../../db/repositories/GroupRepository';
 import { getGroupIcon } from '../../constants/GroupIcons';
@@ -40,12 +40,12 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
         >
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(250)}
+                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}
                 />
                 <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={onClose}>
                     <Animated.View
-                        entering={SlideInDown.duration(400).springify()}
+                        entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                         onStartShouldSetResponder={() => true}
                         style={[
                             styles.bottomSheet,

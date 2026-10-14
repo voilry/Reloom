@@ -1,5 +1,5 @@
 import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable, BackHandler } from 'react-native';
-import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, useSharedValue, useAnimatedScrollHandler, runOnJS, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -639,7 +639,10 @@ export default function PeopleScreen() {
     const renderItem = useCallback(({ item, index }: { item: Person, index: number }) => {
         if (isGallery) {
             return (
-                <Animated.View entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 60).duration(400) : undefined} style={{ flex: 1, minWidth: '45%', maxWidth: '48%', marginHorizontal: 6, marginBottom: 12 }}>
+                <Animated.View
+                    entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 55).duration(440).springify().damping(22).stiffness(160).mass(0.9) : undefined}
+                    style={{ flex: 1, minWidth: '45%', maxWidth: '48%', marginHorizontal: 6, marginBottom: 12 }}
+                >
                     <GalleryPersonCard
                         person={item}
                         colors={colors}
@@ -650,7 +653,7 @@ export default function PeopleScreen() {
             );
         }
         return (
-            <Animated.View entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 60).duration(400) : undefined}>
+            <Animated.View entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 55).duration(440).springify().damping(22).stiffness(160).mass(0.9) : undefined}>
                 <PersonItem
                     item={item}
                     index={index}
@@ -741,18 +744,24 @@ export default function PeopleScreen() {
                     <View style={{ zIndex: 1000, elevation: 10 }}>
                         {isDashboardActive ? (
                             <View style={{ padding: 20, paddingTop: 10 }}>
-                                <DashboardGroupCard
-                                    title="All People"
-                                    description="Your entire network"
-                                    isMaster
-                                    count={allPeople.length}
-                                    colors={colors}
-                                    color={colors.tint}
-                                    onPress={() => handleGroupSelection(null)}
-                                />
+                                <Animated.View entering={FadeInDown.duration(260).springify().damping(24).stiffness(280).mass(0.7)}>
+                                    <DashboardGroupCard
+                                        title="All People"
+                                        description="Your entire network"
+                                        isMaster
+                                        count={allPeople.length}
+                                        colors={colors}
+                                        color={colors.tint}
+                                        onPress={() => handleGroupSelection(null)}
+                                    />
+                                </Animated.View>
                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
-                                    {groups.map(g => (
-                                        <View key={g.id} style={{ width: '47%' }}>
+                                    {groups.map((g, idx) => (
+                                        <Animated.View
+                                            key={g.id}
+                                            entering={FadeInDown.delay(Math.min(idx, 6) * 40).duration(380).springify().damping(22).stiffness(180).mass(0.85)}
+                                            style={{ width: '47%' }}
+                                        >
                                             <DashboardGroupCard
                                                 title={g.name}
                                                 iconName={g.icon}
@@ -763,10 +772,13 @@ export default function PeopleScreen() {
                                                     groupSelectorRef.current?.openEdit(g);
                                                 }}
                                             />
-                                        </View>
+                                        </Animated.View>
                                     ))}
                                     {groups.length < 8 && (
-                                        <View style={{ width: '47%' }}>
+                                        <Animated.View
+                                            entering={FadeInDown.delay(Math.min(groups.length, 6) * 40).duration(380).springify().damping(22).stiffness(180).mass(0.85)}
+                                            style={{ width: '47%' }}
+                                        >
                                             <DashboardGroupCard
                                                 title="Create Group"
                                                 description="Organize people"
@@ -776,7 +788,7 @@ export default function PeopleScreen() {
                                                 isAddCard
                                                 onPress={() => groupSelectorRef.current?.openCreate()}
                                             />
-                                        </View>
+                                        </Animated.View>
                                     )}
                                 </View>
                             </View>
@@ -1188,7 +1200,7 @@ export default function PeopleScreen() {
             <Modal visible={showGroupAssignModal} transparent animationType="none" onRequestClose={() => setShowGroupAssignModal(false)} statusBarTranslucent>
                 <View style={styles.modalOverlay}>
                     <Animated.View
-                        entering={FadeIn.duration(200)}
+                        entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                         style={StyleSheet.absoluteFill}
                     >
                         <BlurView
@@ -1207,7 +1219,7 @@ export default function PeopleScreen() {
                         }}
                     >
                         <Animated.View
-                            entering={SlideInDown.duration(300)}
+                            entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                             style={[styles.bottomSheet, { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 24 }]}
                         >
                             <View style={styles.sheetHeader}>
@@ -1278,7 +1290,7 @@ export default function PeopleScreen() {
             >
                 <View style={styles.modalOverlay}>
                     <Animated.View
-                        entering={FadeIn.duration(200)}
+                        entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                         style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                     />
                     <Pressable
@@ -1286,7 +1298,7 @@ export default function PeopleScreen() {
                         onPress={() => setShowPersonManageModal(false)}
                     >
                         <Animated.View
-                            entering={SlideInDown.duration(300).springify()}
+                            entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                             style={[
                                 styles.bottomSheet,
                                 {

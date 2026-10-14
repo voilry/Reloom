@@ -205,16 +205,15 @@ function RootLayoutContent() {
             contentStyle: {
               backgroundColor: appColors.background,
             },
-            animation: 'fade',
-            animationDuration: 150,
+            animation: 'fade_from_bottom',
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
-          <Stack.Screen name="index" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="journal/[id]" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="person/[id]" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="person/[id]/locations" options={{ headerShown: false, animation: 'fade' }} />
-          <Stack.Screen name="person/[id]/relations" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]/locations" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]/relations" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false, presentation: 'modal' }} />
           <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false, presentation: 'card' }} />
           <Stack.Screen

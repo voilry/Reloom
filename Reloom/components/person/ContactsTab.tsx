@@ -66,7 +66,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
 
     if (!contacts || contacts.length === 0) {
         return (
-            <Animated.View entering={FadeInDown.duration(400)} style={styles.emptyContainer}>
+            <Animated.View entering={FadeInDown.duration(260).springify().damping(26).stiffness(280).mass(0.7)} style={styles.emptyContainer}>
                 <Phone size={48} color={colors.tint} weight="fill" />
                 <ThemedText style={{ marginTop: 16, opacity: 0.8, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>No Contacts Yet</ThemedText>
                 <ThemedText style={{ color: colors.secondary, marginTop: 2, fontSize: 12, textAlign: 'center' }}>
@@ -152,7 +152,10 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+            <Animated.View
+                entering={FadeInDown.duration(260).springify().damping(26).stiffness(280).mass(0.7)}
+                style={styles.header}
+            >
                 <ThemedText type="sectionHeader" style={{ marginTop: -1, opacity: 0.9 }}>Contact Info</ThemedText>
                 <ScalePressable 
                     onPress={onAdd} 
@@ -161,15 +164,15 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                 >
                     <Plus size={20} color={colors.tint} weight="fill" />
                 </ScalePressable>
-            </View>
+            </Animated.View>
 
             {contacts.map((contact: any, index: number) => (
                 <Animated.View
                     key={contact.id}
-                    layout={Layout.springify()}
+                    layout={Layout.springify().damping(26).stiffness(280)}
                 >
                     <Animated.View
-                        entering={FadeInDown.delay(index * 60).duration(400)}
+                        entering={FadeInDown.delay(Math.min(index, 5) * 20).duration(260).springify().damping(26).stiffness(280).mass(0.7)}
                     >
                         <Swipeable
                         renderRightActions={(_prog, dragX) => renderRightActions(contact.id, dragX)}

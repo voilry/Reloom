@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Modal, Pressable, Platform, Image, InteractionManager } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedScrollHandler, runOnJS, useAnimatedStyle, withSpring, Easing } from 'react-native-reanimated';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -391,43 +391,19 @@ export default function PersonDetailScreen() {
 
 
 
-                {settings.profileBlurBackground && person.avatarUri ? (
-                    <View
-                        style={[styles.tabContainer, { borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`, overflow: 'hidden', backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.surface}BF`, borderWidth: 0 }]}
-                    >
-                        <BlurView
-                            intensity={40}
-                            tint={theme === 'dark' ? 'dark' : 'default'}
-                            style={StyleSheet.absoluteFill}
-                        />
-                        {orderedTabs.map(tab => (
-                            <TabItem
-                                key={tab}
-                                active={activeTab === getTabId(tab)}
-                                icon={getTabIcon(tab)}
-                                onPress={() => handleTabChange(getTabId(tab))}
-                                colors={colors}
-                                theme={theme}
-                                isAcrylic={true}
-                            />
-                        ))}
-                    </View>
-                ) : (
-                    <View style={[styles.tabContainer, { backgroundColor: theme === 'dark' ? colors.surface : colors.card, borderWidth: 0 }]}>
-                        {orderedTabs.map(tab => (
-                            <TabItem
-                                key={tab}
-                                active={activeTab === getTabId(tab)}
-                                icon={getTabIcon(tab)}
-                                onPress={() => handleTabChange(getTabId(tab))}
-                                colors={colors}
-                                theme={theme}
-                            />
-                        ))}
-                    </View>
-                )}
+                <Animated.View entering={FadeInDown.delay(60).duration(260).springify().damping(24).stiffness(280).mass(0.7)}>
+                    <ProfileTabBar
+                        orderedTabs={orderedTabs}
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        getTabIcon={getTabIcon}
+                        colors={colors}
+                        theme={theme}
+                        isAcrylic={settings.profileBlurBackground && !!person.avatarUri}
+                    />
+                </Animated.View>
 
-                <View style={styles.content}>
+                <Animated.View key={activeTab} entering={FadeIn.duration(200).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))} style={styles.content}>
                     {activeTab === 'info' && (
                         <InfoTab
                             person={person}
@@ -470,40 +446,47 @@ export default function PersonDetailScreen() {
                             isAcrylic={settings.profileBlurBackground && !!person.avatarUri}
                         />
                     )}
-                </View>
+                </Animated.View>
 
                 {/* Group Chips (Moved to Bottom) - Only Show in Info Tab */}
                 {activeTab === 'info' && personGroups.length > 0 && (
-                    <View style={{ paddingHorizontal: 20, paddingBottom: 40, marginTop: 20 }}>
+                    <Animated.View
+                        entering={FadeInDown.delay(330).duration(480).springify().damping(22).stiffness(110).mass(1.0)}
+                        style={{ paddingHorizontal: 20, paddingBottom: 40, marginTop: 20 }}
+                    >
                         <ThemedText type="sectionHeader" style={{ fontSize: 16, marginBottom: 12, opacity: 0.7 }}>Groups</ThemedText>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                            {personGroups.map(g => {
+                            {personGroups.map((g, idx) => {
                                 const isAcrylic = settings.profileBlurBackground && !!person.avatarUri;
                                 const groupAcrylicBg = isAcrylic 
                                     ? (theme === 'dark' ? 'rgba(0,0,0,0.65)' : `${colors.tint}33`) 
                                     : (theme === 'light' ? colors.surface : 'rgba(255,255,255,0.08)');
 
                                 return (
-                                    <ScalePressable
+                                    <Animated.View
                                         key={g.id}
-                                        onPress={() => { }} // No action for now but tactile feel
-                                        style={[styles.groupChip, { backgroundColor: groupAcrylicBg, borderColor: 'transparent', paddingVertical: 6, paddingHorizontal: 12, overflow: 'hidden' }]}
-                                        innerStyle={{ borderRadius: 12 }}
+                                        entering={FadeInDown.delay(330 + Math.min(idx, 6) * 16).duration(380).springify().damping(22).stiffness(140).mass(0.85)}
                                     >
-                                        {isAcrylic && (
-                                            <BlurView
-                                                intensity={50}
-                                                tint={theme === 'dark' ? 'dark' : 'light'}
-                                                style={StyleSheet.absoluteFill}
-                                            />
-                                        )}
-                                        {getGroupIcon(g.icon, colors.tint, 14)}
-                                        <ThemedText style={{ fontSize: 13, color: colors.tint, fontWeight: '700', marginLeft: 6 }}>{g.name}</ThemedText>
-                                    </ScalePressable>
+                                        <ScalePressable
+                                            onPress={() => { }} // No action for now but tactile feel
+                                            style={[styles.groupChip, { backgroundColor: groupAcrylicBg, borderColor: 'transparent', paddingVertical: 6, paddingHorizontal: 12, overflow: 'hidden' }]}
+                                            innerStyle={{ borderRadius: 12 }}
+                                        >
+                                            {isAcrylic && (
+                                                <BlurView
+                                                    intensity={50}
+                                                    tint={theme === 'dark' ? 'dark' : 'light'}
+                                                    style={StyleSheet.absoluteFill}
+                                                />
+                                            )}
+                                            {getGroupIcon(g.icon, colors.tint, 14)}
+                                            <ThemedText style={{ fontSize: 13, color: colors.tint, fontWeight: '700', marginLeft: 6 }}>{g.name}</ThemedText>
+                                        </ScalePressable>
+                                    </Animated.View>
                                 );
                             })}
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
             </Animated.ScrollView>
 
@@ -652,32 +635,99 @@ const getGroupIcon = (name: string | null, color: string, size = 16) => {
     }
 };
 
-function TabItem({ active, icon: Icon, onPress, colors, theme, isAcrylic }: any) {
+function ProfileTabBar({
+    orderedTabs,
+    activeTab,
+    onTabChange,
+    getTabIcon,
+    colors,
+    theme,
+    isAcrylic
+}: any) {
+    const [width, setWidth] = useState(0);
+    const activeIndex = orderedTabs.findIndex((t: string) => (t === 'notes' ? 'entries' : t) === activeTab);
     const activeBg = isAcrylic
-        ? (theme === 'dark' ? 'rgba(0,0,0,0.4)' : `${colors.tint}15`)
+        ? (theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.tint}18`)
         : (theme === 'dark' ? colors.card : colors.surface);
 
+    const pillStyle = useAnimatedStyle(() => {
+        if (width === 0 || orderedTabs.length === 0) return { opacity: 0 };
+        const tabWidth = (width - 10) / orderedTabs.length;
+        const validIndex = activeIndex >= 0 ? activeIndex : 0;
+        return {
+            width: tabWidth,
+            transform: [
+                {
+                    translateX: withSpring(5 + validIndex * tabWidth, {
+                        damping: 20,
+                        stiffness: 240,
+                        mass: 0.8,
+                    })
+                }
+            ],
+            opacity: 1,
+        };
+    });
+
     return (
-        <ScalePressable
-            onPress={onPress}
+        <View
             style={[
-                styles.tab,
-                active && {
-                    backgroundColor: activeBg,
-                    borderColor: 'transparent',
+                styles.tabContainer,
+                isAcrylic ? {
+                    borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : `${colors.tint}15`,
+                    overflow: 'hidden',
+                    backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.45)' : `${colors.surface}BF`,
+                    borderWidth: 0,
+                } : {
+                    backgroundColor: theme === 'dark' ? colors.surface : colors.card,
                     borderWidth: 0,
                 }
             ]}
-            innerStyle={{ borderRadius: 10 }}
+            onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         >
-            <View style={styles.tabContent} collapsable={false}>
-                <Icon
-                    color={active ? colors.tint : colors.icon}
-                    size={18}
-                    weight={active ? 'fill' : 'regular'}
+            {isAcrylic && (
+                <BlurView
+                    intensity={40}
+                    tint={theme === 'dark' ? 'dark' : 'default'}
+                    style={StyleSheet.absoluteFill}
                 />
-            </View>
-        </ScalePressable>
+            )}
+
+            {/* Material 3 Expressive Sliding Indicator Pill */}
+            <Animated.View
+                style={[
+                    styles.slidingPill,
+                    { backgroundColor: activeBg },
+                    pillStyle
+                ]}
+                pointerEvents="none"
+            />
+
+            {orderedTabs.map((tab: string) => {
+                const tabId = tab === 'notes' ? 'entries' : tab;
+                const active = activeTab === tabId;
+                const Icon = getTabIcon(tab);
+
+                return (
+                    <ScalePressable
+                        key={tab}
+                        onPress={() => onTabChange(tabId)}
+                        scaleTo={0.92}
+                        style={styles.tab}
+                        innerStyle={{ borderRadius: 10 }}
+                        overlayColor="transparent"
+                    >
+                        <View style={styles.tabContent} collapsable={false}>
+                            <Icon
+                                color={active ? colors.tint : colors.icon}
+                                size={18}
+                                weight={active ? 'fill' : 'regular'}
+                            />
+                        </View>
+                    </ScalePressable>
+                );
+            })}
+        </View>
     );
 }
 
@@ -722,6 +772,14 @@ const styles = StyleSheet.create({
         padding: 5,
         borderRadius: 14,
         borderWidth: 0,
+        position: 'relative',
+    },
+    slidingPill: {
+        position: 'absolute',
+        top: 5,
+        bottom: 5,
+        borderRadius: 10,
+        zIndex: 0,
     },
     tab: {
         flex: 1,
@@ -729,6 +787,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
         borderRadius: 10,
         alignItems: 'center',
+        zIndex: 1,
     },
     tabContent: {
         flexDirection: 'row',

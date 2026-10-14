@@ -6,7 +6,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { Calendar, Clock, X, CheckCircle, CheckCircleDash, RadioButton, Trash, PencilSimple as Pencil } from '@/components/ui/Icon';
 import { Reminder } from '../../db/repositories/ReminderRepository';
 import { DesignSystem } from '../../constants/DesignSystem';
-import Animated, { FadeIn, SlideInDown, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, FadeInDown, Easing } from 'react-native-reanimated';
 import { Avatar } from '../ui/Avatar';
 import { Typography } from '../../constants/Typography';
 import { useRouter } from 'expo-router';
@@ -62,12 +62,12 @@ export function ReminderDetailModal({ visible, reminder, onClose, onToggle, onDe
         >
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(200)}
+                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                 />
                 <Pressable style={styles.modalBackdrop} onPress={onClose}>
                     <Animated.View
-                        entering={SlideInDown.duration(300).springify()}
+                        entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                         style={[
                             styles.modalContent,
                             { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 24 }

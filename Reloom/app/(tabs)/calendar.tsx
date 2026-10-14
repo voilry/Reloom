@@ -19,7 +19,7 @@ import { useSettings } from '../../store/SettingsContext';
 import { Avatar } from '../../components/ui/Avatar';
 import * as Haptics from 'expo-haptics';
 import { Modal, Pressable } from 'react-native';
-import Animated, { FadeIn, FadeInDown, Layout, SlideInDown, useSharedValue, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInRight, FadeInLeft, Layout, SlideInDown, useSharedValue, useAnimatedScrollHandler, runOnJS, Easing } from 'react-native-reanimated';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { Typography } from '../../constants/Typography';
@@ -84,6 +84,7 @@ export default function CalendarScreen() {
     };
 
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [monthDirection, setMonthDirection] = useState<'next' | 'prev'>('next');
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [people, setPeople] = useState<Person[]>([]);
@@ -278,10 +279,14 @@ export default function CalendarScreen() {
     };
 
     const handlePrevMonth = () => {
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setMonthDirection('prev');
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     };
 
     const handleNextMonth = () => {
+        if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setMonthDirection('next');
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     };
 
@@ -440,10 +445,14 @@ export default function CalendarScreen() {
         const selected = isSelected(item.date);
         const today = isToday(item.date);
 
+        if (!item.day) {
+            return <View key={index} style={styles.dayCell} />;
+        }
+
         return (
-            <TouchableOpacity
+            <ScalePressable
                 key={index}
-                activeOpacity={0.7}
+                scaleTo={0.9}
                 onPress={() => {
                     if (item.date) {
                         if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
@@ -453,27 +462,26 @@ export default function CalendarScreen() {
                 }}
                 style={[
                     styles.dayCell,
-                    isSelected(item.date) && { backgroundColor: colors.tint + '15', borderRadius: 16 }
+                    selected && { backgroundColor: colors.tint + '15', borderRadius: 16 }
                 ]}
+                innerStyle={{ borderRadius: 16 }}
             >
-                {item.day && (
-                    <View style={styles.dayContent}>
-                        <ThemedText style={[
-                            styles.dayText,
-                            today && { color: colors.tint, fontWeight: '900' },
-                            selected && { color: colors.tint }
-                        ]}>
-                            {item.day}
-                        </ThemedText>
-                        <View style={styles.markerRow}>
-                            {markers.birthday && <View style={[styles.marker, { backgroundColor: '#FF6B6B' }]} />}
-                            {markers.met && <View style={[styles.marker, { backgroundColor: '#4DABF7' }]} />}
-                            {markers.journal && settings.showJournalTab && <View style={[styles.marker, { backgroundColor: '#51CF66' }]} />}
-                            {markers.reminder && <View style={[styles.marker, { backgroundColor: markers.reminderColor || colors.tint }]} />}
-                        </View>
+                <View style={styles.dayContent}>
+                    <ThemedText style={[
+                        styles.dayText,
+                        today && { color: colors.tint, fontWeight: '900' },
+                        selected && { color: colors.tint }
+                    ]}>
+                        {item.day}
+                    </ThemedText>
+                    <View style={styles.markerRow}>
+                        {markers.birthday && <View style={[styles.marker, { backgroundColor: '#FF6B6B' }]} />}
+                        {markers.met && <View style={[styles.marker, { backgroundColor: '#4DABF7' }]} />}
+                        {markers.journal && settings.showJournalTab && <View style={[styles.marker, { backgroundColor: '#51CF66' }]} />}
+                        {markers.reminder && <View style={[styles.marker, { backgroundColor: markers.reminderColor || colors.tint }]} />}
                     </View>
-                )}
-            </TouchableOpacity>
+                </View>
+            </ScalePressable>
         );
     };
 
@@ -501,15 +509,20 @@ export default function CalendarScreen() {
                         </ScalePressable>
                     </View>
                     <View style={[styles.monthNav, { backgroundColor: colors.surface, borderWidth: 0 }]}>
-                        <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
+                        <ScalePressable onPress={handlePrevMonth} style={styles.navBtn} scaleTo={0.88}>
                             <CaretLeft size={22} color={colors.text} />
-                        </TouchableOpacity>
-                        <ThemedText type="defaultSemiBold" style={styles.monthLabel}>
-                            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                        </ThemedText>
-                        <TouchableOpacity onPress={handleNextMonth} style={styles.navBtn}>
+                        </ScalePressable>
+                        <Animated.View
+                            key={`month-label-${currentDate.getFullYear()}-${currentDate.getMonth()}`}
+                            entering={(monthDirection === 'next' ? FadeInRight : FadeInLeft).duration(220).springify().damping(22).stiffness(260).mass(0.8)}
+                        >
+                            <ThemedText type="defaultSemiBold" style={styles.monthLabel}>
+                                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                            </ThemedText>
+                        </Animated.View>
+                        <ScalePressable onPress={handleNextMonth} style={styles.navBtn} scaleTo={0.88}>
                             <CaretRight size={22} color={colors.text} />
-                        </TouchableOpacity>
+                        </ScalePressable>
                     </View>
                 </View>
 
@@ -521,27 +534,42 @@ export default function CalendarScreen() {
                                     <ThemedText style={styles.weekdayText}>{d}</ThemedText>
                                 </View>
                             ))}
-                            {calendarData.map(renderDay)}
                         </View>
+                        <Animated.View
+                            key={`days-grid-${currentDate.getFullYear()}-${currentDate.getMonth()}`}
+                            entering={(monthDirection === 'next' ? FadeInRight : FadeInLeft).duration(260).springify().damping(22).stiffness(240).mass(0.8)}
+                            style={styles.calendarGrid}
+                        >
+                            {calendarData.map(renderDay)}
+                        </Animated.View>
                     </View>
                 </View>
 
                 <View style={styles.upcomingSection}>
-                    <View style={styles.sectionHeaderRow}>
+                    <Animated.View
+                        entering={FadeInDown.duration(260).springify().damping(24).stiffness(280).mass(0.7)}
+                        style={styles.sectionHeaderRow}
+                    >
                         <ThemedText type="sectionHeader" style={styles.upcomingTitle}>Upcoming</ThemedText>
                         <ThemedText style={{ color: colors.secondary, fontSize: 13 }}>This month</ThemedText>
-                    </View>
+                    </Animated.View>
 
                     {upcomingEvents.length === 0 ? (
-                        <View style={[styles.upcomingSheet, styles.upcomingPlaceholderSheet, { backgroundColor: colors.card }]}>
+                        <Animated.View
+                            entering={FadeInDown.duration(260).springify().damping(24).stiffness(280).mass(0.7)}
+                            style={[styles.upcomingSheet, styles.upcomingPlaceholderSheet, { backgroundColor: colors.card }]}
+                        >
                             <ThemedText style={{ opacity: 0.5, textAlign: 'center' }}>No events this month</ThemedText>
-                        </View>
+                        </Animated.View>
                     ) : (
                         <View style={[styles.upcomingSheet, { backgroundColor: colors.card }]}>
                             {upcomingEvents.map((event, idx) => {
                                 const isLast = idx === upcomingEvents.length - 1;
                                 return (
-                                    <View key={`${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}>
+                                    <Animated.View
+                                        key={`${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}
+                                        entering={FadeInDown.delay(Math.min(idx, 6) * 15).duration(260).springify().damping(24).stiffness(280).mass(0.7)}
+                                    >
                                         <ScalePressable
                                             onPress={() => {
                                                 if (event.type === 'birthday' && event.person) {
@@ -579,7 +607,7 @@ export default function CalendarScreen() {
                                             )}
                                         </ScalePressable>
                                         {!isLast && <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />}
-                                    </View>
+                                    </Animated.View>
                                 );
                             })}
                         </View>
@@ -596,7 +624,7 @@ export default function CalendarScreen() {
             >
                 <View style={styles.modalOverlay}>
                     <Animated.View
-                        entering={FadeIn.duration(200)}
+                        entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
                         style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                     />
                     <Pressable
@@ -604,7 +632,7 @@ export default function CalendarScreen() {
                         onPress={() => setShowDetailModal(false)}
                     >
                         <Animated.View
-                            entering={SlideInDown.duration(300).springify()}
+                            entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                             style={[styles.modalContent, { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 16 }]}
                             onStartShouldSetResponder={() => true}
                         >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ScrollView } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { ThemedText } from '../ui/ThemedText';
 import { ScalePressable } from '../ui/ScalePressable';
@@ -50,7 +50,7 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.modalOverlay}
             >
-                <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
+                <Animated.View entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))} style={StyleSheet.absoluteFill}>
                     <BlurView intensity={theme === 'dark' ? 40 : 20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                     <View style={[StyleSheet.absoluteFill, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)' }]} />
                 </Animated.View>
@@ -58,7 +58,7 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                 <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
 
                 <Animated.View
-                    entering={SlideInDown.duration(300)}
+                    entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                     style={[
                         styles.bottomSheet,
                         { 

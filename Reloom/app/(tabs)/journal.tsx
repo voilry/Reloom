@@ -67,8 +67,8 @@ const renderRightActions = (id: number, dragX: RNAnimated.AnimatedInterpolation<
 
 const JournalItem = memo(({ item, index, colors, router, hapticsEnabled, onDelete, shouldAnimate }: any) => (
     <Animated.View
-        entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 60).duration(400) : undefined}
-
+        entering={shouldAnimate ? FadeInDown.delay(Math.min(index, 5) * 15).duration(260).springify().damping(24).stiffness(280).mass(0.7) : undefined}
+        layout={Layout.springify().damping(26).stiffness(280)}
         style={styles.journalItem}
     >
         <Swipeable

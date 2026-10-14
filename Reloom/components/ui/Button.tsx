@@ -132,6 +132,8 @@ export function Button({
         <ScalePressable
             onPress={onPress}
             disabled={disabled || loading}
+            scaleTo={0.94}
+            springConfig={DesignSystem.animation.springs.press}
             style={[
                 styles.container,
                 sStyles.container,

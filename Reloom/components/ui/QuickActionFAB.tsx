@@ -27,7 +27,7 @@ export function QuickActionFAB({ onNewPerson, onNewNote, onNewReminder }: QuickA
         if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const nextState = !isOpen;
         setIsOpen(nextState);
-        animation.value = withSpring(nextState ? 1 : 0, { damping: 12, stiffness: 100 });
+        animation.value = withSpring(nextState ? 1 : 0, { damping: 18, stiffness: 220, mass: 0.8 });
     };
 
     const mainButtonStyle = useAnimatedStyle(() => {
