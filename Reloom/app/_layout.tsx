@@ -197,6 +197,7 @@ function RootLayoutContent() {
       <ThemeProvider value={isDark ? MyDarkTheme : MyLightTheme}>
         <Stack
           screenOptions={{
+            headerShown: false,
             headerStyle: {
               backgroundColor: appColors.background,
             },
@@ -214,8 +215,8 @@ function RootLayoutContent() {
           <Stack.Screen name="person/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="person/[id]/locations" options={{ headerShown: false }} />
           <Stack.Screen name="person/[id]/relations" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false, presentation: 'modal' }} />
-          <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false, presentation: 'card' }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false }} />
+          <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false }} />
           <Stack.Screen
             name="editor"
             options={{

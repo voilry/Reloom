@@ -123,16 +123,18 @@ export default function JournalScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [shouldAnimate, setShouldAnimate] = useState(true);
     const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+    const [tabFocusKey, setTabFocusKey] = useState(0);
     // Remove inline new journal state since we use the /journal/[id] route
 
     const { colors, theme, hapticsEnabled } = useAppTheme();
 
     useFocusEffect(
         useCallback(() => {
+            setTabFocusKey(k => k + 1);
             setShouldAnimate(true);
             loadData();
             // Disable animations after initial load to prevent scroll-triggered animations
-            const timer = setTimeout(() => setShouldAnimate(false), 1500);
+            const timer = setTimeout(() => setShouldAnimate(false), 1200);
             return () => clearTimeout(timer);
         }, [])
     );
@@ -321,7 +323,8 @@ export default function JournalScreen() {
             <Animated.FlatList
                 ref={journalListRef}
                 data={filteredJournals}
-                keyExtractor={(item, index) => `journal-${item.id}-${index}`}
+                keyExtractor={(item, index) => `journal-${item.id}-${tabFocusKey}`}
+                extraData={tabFocusKey}
                 renderItem={renderJournalItem}
                 ListHeaderComponent={<View style={{ height: headerHeight }} />}
                 contentContainerStyle={[

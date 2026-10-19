@@ -1,5 +1,5 @@
 import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable, BackHandler } from 'react-native';
-import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, useSharedValue, useAnimatedScrollHandler, runOnJS, Easing } from 'react-native-reanimated';
+import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, useSharedValue, useAnimatedScrollHandler, runOnJS, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -1005,67 +1005,74 @@ export default function PeopleScreen() {
                             style={styles.fullScreenContent}
                             contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                         >
-                            <View style={styles.fullScreenAvatarSection}>
+                            <Animated.View 
+                                entering={ZoomIn.duration(440).springify().damping(22).stiffness(140).mass(0.9)}
+                                style={styles.fullScreenAvatarSection}
+                            >
                                 <ScalePressable
                                     onPress={pickImage}
                                     style={styles.fullScreenAvatarWrapper}
                                     overlayColor="transparent"
+                                    scaleTo={0.94}
                                 >
                                     <Avatar name={newName || '?'} uri={newAvatarUri} size={110} />
                                     <View style={[styles.fullScreenCameraBadge, { backgroundColor: colors.tint, borderColor: colors.background }]}>
                                         <Camera size={18} color={theme === 'dark' ? '#000' : '#fff'} />
                                     </View>
                                 </ScalePressable>
-                            </View>
+                            </Animated.View>
 
                             <View style={styles.fullScreenForm}>
-                                <Input
-                                    label="Full Name"
-                                    placeholder="e.g. Jean-Luc Picard"
-                                    value={newName}
-                                    onChangeText={setNewName}
-                                    maxLength={40}
-                                />
-                                <View style={{ height: 16 }} />
+                                <Animated.View entering={FadeInDown.delay(70).duration(460).springify().damping(22).stiffness(120).mass(1.0)}>
+                                    <Input
+                                        label="Full Name"
+                                        placeholder="e.g. Jean-Luc Picard"
+                                        value={newName}
+                                        onChangeText={setNewName}
+                                        maxLength={40}
+                                    />
+                                    <View style={{ height: 16 }} />
 
-                                <Input
-                                    label="Headline / Role"
-                                    placeholder="e.g. Captain"
-                                    value={newPitch}
-                                    onChangeText={setNewPitch}
-                                    multiline
-                                    maxLength={35}
-                                />
-                                <View style={{ height: 16 }} />
+                                    <Input
+                                        label="Headline / Role"
+                                        placeholder="e.g. Captain"
+                                        value={newPitch}
+                                        onChangeText={setNewPitch}
+                                        multiline
+                                        maxLength={35}
+                                    />
+                                </Animated.View>
 
-                                <View style={styles.fullScreenRow}>
-                                    <View style={{ flex: 1, marginRight: 12 }}>
-                                        <Input
-                                            label="Gender"
-                                            placeholder="Optional"
-                                            value={newGender}
-                                            onChangeText={setNewGender}
-                                            maxLength={20}
-                                        />
+                                <Animated.View entering={FadeInDown.delay(140).duration(460).springify().damping(22).stiffness(120).mass(1.0)} style={{ marginTop: 16 }}>
+                                    <View style={styles.fullScreenRow}>
+                                        <View style={{ flex: 1, marginRight: 12 }}>
+                                            <Input
+                                                label="Gender"
+                                                placeholder="Optional"
+                                                value={newGender}
+                                                onChangeText={setNewGender}
+                                                maxLength={20}
+                                            />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <DatePicker
+                                                label="Birthdate"
+                                                value={newBirthdate}
+                                                onChange={setNewBirthdate}
+                                                maxDate={new Date()}
+                                            />
+                                        </View>
                                     </View>
-                                    <View style={{ flex: 1 }}>
+
+                                    <View style={{ marginTop: 16 }}>
                                         <DatePicker
-                                            label="Birthdate"
-                                            value={newBirthdate}
-                                            onChange={setNewBirthdate}
+                                            label="First Met Date"
+                                            value={newFirstMet}
+                                            onChange={setNewFirstMet}
                                             maxDate={new Date()}
                                         />
                                     </View>
-                                </View>
-
-                                <View style={{ marginTop: 16 }}>
-                                    <DatePicker
-                                        label="First Met Date"
-                                        value={newFirstMet}
-                                        onChange={setNewFirstMet}
-                                        maxDate={new Date()}
-                                    />
-                                </View>
+                                </Animated.View>
                             </View>
                         </ScrollView>
                     </KeyboardAvoidingView>

@@ -5,6 +5,7 @@ import { ThemedText } from '../ui/ThemedText';
 import { Avatar } from '../ui/Avatar';
 import { DesignSystem } from '../../constants/DesignSystem';
 import { Colors } from '../../constants/Colors';
+import { Typography } from '../../constants/Typography';
 import { PencilSimple as Edit, Clock } from '@/components/ui/Icon';
 import type { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -77,7 +78,7 @@ export function PersonHeader({ person, onEdit, scrollY }: PersonHeaderProps) {
             <Animated.View entering={FadeInDown.delay(50).duration(260).springify().damping(24).stiffness(280).mass(0.7)} style={styles.headerMeta}>
                 <View style={[styles.metaItem, { backgroundColor: colors.surface + '80', marginTop: -11 }]}>
                     <Clock size={12} color={colors.secondary} />
-                    <ThemedText type="tiny" style={{ color: colors.secondary, marginLeft: 6, fontWeight: '600' }}>
+                    <ThemedText type="tiny" style={{ color: colors.secondary, marginLeft: 6, fontFamily: Typography.fontFamily.semibold }}>
                         Joined {new Date(person.createdAt).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                     </ThemedText>
                 </View>

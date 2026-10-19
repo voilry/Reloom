@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
+import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withSpring, withSequence } from 'react-native-reanimated';
 import { ContactRepository, Contact } from '../../db/repositories/ContactRepository';
 import { PersonRepository, Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -28,6 +29,12 @@ const PLATFORMS = [
     { id: 'Website', icon: Globe, placeholder: 'https://example.com', keyboard: 'url' },
 ];
 
+const PLATFORMS_ROWS = [
+    PLATFORMS.slice(0, 3),
+    PLATFORMS.slice(3, 6),
+    PLATFORMS.slice(6, 8),
+];
+
 export default function ContactEditorScreen() {
     const { id, personId } = useLocalSearchParams();
     const router = useRouter();
@@ -38,6 +45,7 @@ export default function ContactEditorScreen() {
     const [originalContact, setOriginalContact] = useState<Contact | null>(null);
     const [selectedPlatform, setSelectedPlatform] = useState(PLATFORMS[0]);
     const [value, setValue] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
@@ -51,6 +59,7 @@ export default function ContactEditorScreen() {
 
     const loadData = async () => {
         try {
+            setIsLoading(true);
             if (isNew) {
                 if (!personId) {
                     setLoadError('No person was specified for this contact.');
@@ -83,6 +92,8 @@ export default function ContactEditorScreen() {
         } catch (error) {
             console.error(error);
             setLoadError('Could not load this contact.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -91,6 +102,24 @@ export default function ContactEditorScreen() {
         if (!originalContact) return false;
         return selectedPlatform.id !== originalContact.platform || value.trim() !== originalContact.value;
     }, [isNew, value, selectedPlatform, originalContact]);
+
+    const canSave = Boolean(hasChanges && !isSaving && person && value.trim().length > 0);
+    const saveButtonScale = useSharedValue(1);
+    const prevCanSave = useRef(false);
+
+    useEffect(() => {
+        if (canSave && !prevCanSave.current) {
+            saveButtonScale.value = withSequence(
+                withSpring(1.025, { damping: 10, stiffness: 320, mass: 0.5 }),
+                withSpring(1.0, { damping: 14, stiffness: 240, mass: 0.7 })
+            );
+        }
+        prevCanSave.current = canSave;
+    }, [canSave]);
+
+    const saveButtonAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: saveButtonScale.value }],
+    }));
 
     const validateContactValue = (platformId: string, rawValue: string): string | null => {
         const trimmed = rawValue.trim();
@@ -264,25 +293,24 @@ export default function ContactEditorScreen() {
                                 style={{ marginTop: 24, alignSelf: 'center', paddingHorizontal: 28 }}
                             />
                         </View>
-                    ) : (
+                    ) : isLoading || !person ? null : (
                     <>
-                    {person && (
-                        <View 
-                            style={[
-                                styles.personContext, 
-                                { 
-                                    backgroundColor: colors.surface,
-                                    borderWidth: 0
-                                }
-                            ]}
-                        >
-                            <Avatar uri={person.avatarUri} size={44} name={person.name} />
-                            <View style={{ marginLeft: 16 }}>
-                                <ThemedText type="tiny" style={{ opacity: 0.6, marginBottom: -1 }}>{isNew ? 'Adding contact for' : 'Editing contact for'}</ThemedText>
-                                <ThemedText style={{ fontSize: 18, opacity: 0.8 }} >{person.name}</ThemedText>
-                            </View>
+                    <Animated.View 
+                        entering={FadeInDown.duration(320).springify().damping(24).stiffness(180).mass(0.9)}
+                        style={[
+                            styles.personContext, 
+                            { 
+                                backgroundColor: colors.surface,
+                                borderWidth: 0
+                            }
+                        ]}
+                    >
+                        <Avatar uri={person.avatarUri} size={44} name={person.name} />
+                        <View style={{ marginLeft: 16 }}>
+                            <ThemedText type="tiny" style={{ opacity: 0.6, marginBottom: -1 }}>{isNew ? 'Adding contact for' : 'Editing contact for'}</ThemedText>
+                            <ThemedText style={{ fontSize: 18, opacity: 0.8 }} >{person.name}</ThemedText>
                         </View>
-                    )}
+                    </Animated.View>
 
                     <View style={styles.sectionHeaderRow}>
                         <ThemedText type="sectionHeader" style={{ fontSize: 19, marginBottom: -8, marginTop: -20 }}>Platform</ThemedText>
@@ -290,41 +318,48 @@ export default function ContactEditorScreen() {
 
                     {isNew ? (
                         <View style={styles.platformsGrid}>
-                            {PLATFORMS.map(platform => {
-                                const isSelected = selectedPlatform.id === platform.id;
-                                const Icon = platform.icon;
-                                return (
-                                    <ScalePressable
-                                        key={platform.id}
-                                        style={[
-                                            styles.platformOption,
-                                            {
-                                                backgroundColor: isSelected ? colors.tint : colors.surface,
-                                                borderColor: isSelected && theme === 'light' ? colors.tint : 'transparent',
-                                                borderWidth: theme === 'light' ? 1.5 : 0
-                                            }
-                                        ]}
-                                        innerStyle={{ borderRadius: 16 }}
-                                        overlayColor={isSelected ? 'rgba(0,0,0,0.15)' : undefined}
-                                        onPress={() => {
-                                            if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                            setSelectedPlatform(platform);
-                                            if (fieldError) setFieldError(null);
-                                        }}
-                                    >
-                                        <Icon size={20} color={isSelected ? (theme === 'dark' ? colors.background : '#FFF') : colors.text} weight={isSelected ? "fill" : "regular"} />
-                                        <ThemedText style={{
-                                            color: isSelected ? (theme === 'dark' ? colors.background : '#FFF') : colors.text,
-                                            fontWeight: isSelected ? '700' : '500',
-                                            marginTop: 1,
-                                            marginBottom: 12,
-                                            fontSize: 12
-                                        }}>
-                                            {platform.id}
-                                        </ThemedText>
-                                    </ScalePressable>
-                                );
-                            })}
+                            {PLATFORMS_ROWS.map((row, rowIndex) => (
+                                <Animated.View
+                                    key={rowIndex}
+                                    entering={FadeInDown.delay(70 + rowIndex * 60).duration(440).springify().damping(22).stiffness(125).mass(0.9)}
+                                    style={styles.platformRow}
+                                >
+                                    {row.map((platform) => {
+                                        const isSelected = selectedPlatform.id === platform.id;
+                                        const Icon = platform.icon;
+                                        return (
+                                            <ScalePressable
+                                                key={platform.id}
+                                                style={[
+                                                    styles.platformOption,
+                                                    {
+                                                        backgroundColor: isSelected ? colors.tint : colors.surface,
+                                                        borderColor: isSelected && theme === 'light' ? colors.tint : 'transparent',
+                                                        borderWidth: theme === 'light' ? 1.5 : 0
+                                                    }
+                                                ]}
+                                                innerStyle={{ borderRadius: 16 }}
+                                                overlayColor={isSelected ? 'rgba(0,0,0,0.15)' : undefined}
+                                                onPress={() => {
+                                                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                                    setSelectedPlatform(platform);
+                                                    if (fieldError) setFieldError(null);
+                                                }}
+                                            >
+                                                <Icon size={20} color={isSelected ? (theme === 'dark' ? colors.background : '#FFF') : colors.text} weight={isSelected ? "fill" : "regular"} />
+                                                <ThemedText style={{
+                                                    color: isSelected ? (theme === 'dark' ? colors.background : '#FFF') : colors.text,
+                                                    fontWeight: isSelected ? '700' : '500',
+                                                    marginTop: 6,
+                                                    fontSize: 12
+                                                }}>
+                                                    {platform.id}
+                                                </ThemedText>
+                                            </ScalePressable>
+                                        );
+                                    })}
+                                </Animated.View>
+                            ))}
                         </View>
                     ) : (
                         <View style={[styles.activePlatformRow, { backgroundColor: colors.surface, marginBottom: 8 }]}>
@@ -335,44 +370,48 @@ export default function ContactEditorScreen() {
                         </View>
                     )}
 
-                    <ThemedText type="sectionHeader" style={{ fontSize: 19, marginTop: isNew ? -32 : 8, marginBottom: 8 }}>Contact Value</ThemedText>
-                    <Input
-                        value={value}
-                        onChangeText={(text) => {
-                            setValue(text);
-                            if (fieldError) setFieldError(null);
-                        }}
-                        placeholder={selectedPlatform.placeholder}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType={selectedPlatform.keyboard as any}
-                        error={fieldError ?? undefined}
-                        style={{ marginBottom: 1 }}
-                    />
-
-                    <Button
-                        title="Save Contact"
-                        onPress={handleSave}
-                        textStyle={{ fontSize: 17 }}
-                        style={styles.saveButton}
-                        disabled={!hasChanges || isSaving || !person}
-                    />
-
-                    {!isNew && (
-                        <ScalePressable
-                            style={styles.deleteButton}
-                            innerStyle={{ borderRadius: 12 }}
-                            onPress={() => {
-                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                setShowDeleteModal(true);
+                    <Animated.View entering={FadeInDown.delay(240).duration(460).springify().damping(22).stiffness(120).mass(1.0)}>
+                        <ThemedText type="sectionHeader" style={{ fontSize: 19, marginTop: 8, marginBottom: 8 }}>Contact Value</ThemedText>
+                        <Input
+                            value={value}
+                            onChangeText={(text) => {
+                                setValue(text);
+                                if (fieldError) setFieldError(null);
                             }}
-                        >
-                            <Trash size={20} color={colors.error} />
-                            <ThemedText style={{ color: colors.error, fontWeight: '700', marginLeft: 8 }}>
-                                Delete Contact
-                            </ThemedText>
-                        </ScalePressable>
-                    )}
+                            placeholder={selectedPlatform.placeholder}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType={selectedPlatform.keyboard as any}
+                            error={fieldError ?? undefined}
+                            style={{ marginBottom: 1 }}
+                        />
+
+                        <Animated.View style={saveButtonAnimatedStyle}>
+                            <Button
+                                title="Save Contact"
+                                onPress={handleSave}
+                                textStyle={{ fontSize: 17 }}
+                                style={styles.saveButton}
+                                disabled={!hasChanges || isSaving || !person}
+                            />
+                        </Animated.View>
+
+                        {!isNew && (
+                            <ScalePressable
+                                style={styles.deleteButton}
+                                innerStyle={{ borderRadius: 12 }}
+                                onPress={() => {
+                                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    setShowDeleteModal(true);
+                                }}
+                            >
+                                <Trash size={20} color={colors.error} />
+                                <ThemedText style={{ color: colors.error, fontWeight: '700', marginLeft: 8 }}>
+                                    Delete Contact
+                                </ThemedText>
+                            </ScalePressable>
+                        )}
+                    </Animated.View>
                     </>
                     )}
 
@@ -458,13 +497,17 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     platformsGrid: {
+        flexDirection: 'column',
+        gap: 12,
+        marginBottom: 16,
+    },
+    platformRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: 12,
     },
     platformOption: {
         width: '30%',
-        aspectRatio: 1,
+        height: 78,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',

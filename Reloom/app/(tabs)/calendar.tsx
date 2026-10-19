@@ -95,9 +95,11 @@ export default function CalendarScreen() {
     const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
     const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
     const [eventToDelete, setEventToDelete] = useState<any>(null);
+    const [tabFocusKey, setTabFocusKey] = useState(0);
 
     useFocusEffect(
         useCallback(() => {
+            setTabFocusKey(k => k + 1);
             loadData();
         }, [])
     );
@@ -536,7 +538,7 @@ export default function CalendarScreen() {
                             ))}
                         </View>
                         <Animated.View
-                            key={`days-grid-${currentDate.getFullYear()}-${currentDate.getMonth()}`}
+                            key={`days-grid-${currentDate.getFullYear()}-${currentDate.getMonth()}-${tabFocusKey}`}
                             entering={(monthDirection === 'next' ? FadeInRight : FadeInLeft).duration(260).springify().damping(22).stiffness(240).mass(0.8)}
                             style={styles.calendarGrid}
                         >
@@ -547,6 +549,7 @@ export default function CalendarScreen() {
 
                 <View style={styles.upcomingSection}>
                     <Animated.View
+                        key={`upcoming-header-${tabFocusKey}`}
                         entering={FadeInDown.duration(260).springify().damping(24).stiffness(280).mass(0.7)}
                         style={styles.sectionHeaderRow}
                     >
@@ -556,6 +559,7 @@ export default function CalendarScreen() {
 
                     {upcomingEvents.length === 0 ? (
                         <Animated.View
+                            key={`upcoming-empty-${tabFocusKey}`}
                             entering={FadeInDown.duration(260).springify().damping(24).stiffness(280).mass(0.7)}
                             style={[styles.upcomingSheet, styles.upcomingPlaceholderSheet, { backgroundColor: colors.card }]}
                         >
@@ -567,7 +571,7 @@ export default function CalendarScreen() {
                                 const isLast = idx === upcomingEvents.length - 1;
                                 return (
                                     <Animated.View
-                                        key={`${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}
+                                        key={`event-${tabFocusKey}-${event.type}-${event.person?.id ?? event.reminder?.id ?? event.title}-${idx}`}
                                         entering={FadeInDown.delay(Math.min(idx, 6) * 15).duration(260).springify().damping(24).stiffness(280).mass(0.7)}
                                     >
                                         <ScalePressable

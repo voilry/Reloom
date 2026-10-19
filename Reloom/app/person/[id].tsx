@@ -282,14 +282,7 @@ export default function PersonDetailScreen() {
     };
 
     if (isLoading) {
-        return (
-            <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
-                <Stack.Screen options={{ headerShown: false }} />
-                <Skeleton width={72} height={72} style={{ borderRadius: 36, marginBottom: 16 }} />
-                <Skeleton width={140} height={18} style={{ borderRadius: 6, marginBottom: 8 }} />
-                <Skeleton width={200} height={14} style={{ borderRadius: 4 }} />
-            </ThemedView>
-        );
+        return <ThemedView style={styles.container} />;
     }
 
     if (!person) {

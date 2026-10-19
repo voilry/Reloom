@@ -13,6 +13,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Person } from '../../db/repositories/PersonRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSettings } from '../../store/SettingsContext';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { ScalePressable } from '../ui/ScalePressable';
 
 interface EditPersonModalProps {
     visible: boolean;
@@ -86,24 +88,26 @@ export function EditPersonModal({ visible, onClose, onSave, person }: EditPerson
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <StatusBar style="auto" />
                 <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 12 }]}>
-                    <TouchableOpacity
+                    <ScalePressable
                         onPress={handleClose}
                         style={styles.headerAction}
                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                        activeOpacity={0.6}
+                        overlayColor="transparent"
+                        scaleTo={0.9}
                     >
                         <X size={24} color={colors.text} />
-                    </TouchableOpacity>
+                    </ScalePressable>
                     <ThemedText type="display" style={styles.headerTitle}>Edit Profile</ThemedText>
-                    <TouchableOpacity
+                    <ScalePressable
                         onPress={handleSave}
                         disabled={!name.trim()}
                         style={styles.headerAction}
                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                        activeOpacity={0.6}
+                        overlayColor="transparent"
+                        scaleTo={0.9}
                     >
                         <Check size={24} color={name.trim() ? colors.tint : colors.secondary} />
-                    </TouchableOpacity>
+                    </ScalePressable>
                 </View>
 
                 <KeyboardAvoidingView
@@ -117,34 +121,40 @@ export function EditPersonModal({ visible, onClose, onSave, person }: EditPerson
                         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                         showsVerticalScrollIndicator={false}
                     >
-                        <View style={styles.avatarSection}>
-                            <TouchableOpacity onPress={pickImage} activeOpacity={0.7}>
+                        <Animated.View 
+                            entering={ZoomIn.duration(440).springify().damping(22).stiffness(140).mass(0.9)}
+                            style={styles.avatarSection}
+                        >
+                            <ScalePressable onPress={pickImage} scaleTo={0.94} overlayColor="transparent">
                                 <View style={styles.avatarWrapper}>
                                     <Avatar name={name} uri={avatarUri} size={110} />
                                     <View style={[styles.cameraBadge, { backgroundColor: colors.tint, borderColor: colors.background }]}>
                                         <PhotoAlbum size={18} color={theme === 'dark' ? '#000' : '#fff'} weight="fill" />
                                     </View>
                                 </View>
-                            </TouchableOpacity>
-                        </View>
+                            </ScalePressable>
+                        </Animated.View>
 
                         <View style={styles.formSection}>
-                            <Input label="Full Name" value={name} onChangeText={setName} maxLength={40} />
-                            <View style={{ height: 16 }} />
-                            <Input label="Headline" value={pitch} onChangeText={setPitch} multiline placeholder="Bio" maxLength={35} />
-                            <View style={{ height: 16 }} />
+                            <Animated.View entering={FadeInDown.delay(70).duration(460).springify().damping(22).stiffness(120).mass(1.0)}>
+                                <Input label="Full Name" value={name} onChangeText={setName} maxLength={40} />
+                                <View style={{ height: 16 }} />
+                                <Input label="Headline" value={pitch} onChangeText={setPitch} multiline placeholder="Bio" maxLength={35} />
+                            </Animated.View>
 
-                            <View style={styles.row}>
-                                <View style={{ flex: 1, marginRight: 12 }}>
-                                    <Input label="Gender" value={gender} onChangeText={setGender} maxLength={20} />
+                            <Animated.View entering={FadeInDown.delay(140).duration(460).springify().damping(22).stiffness(120).mass(1.0)} style={{ marginTop: 16 }}>
+                                <View style={styles.row}>
+                                    <View style={{ flex: 1, marginRight: 12 }}>
+                                        <Input label="Gender" value={gender} onChangeText={setGender} maxLength={20} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <DatePicker label="Birthday" value={birthdate} onChange={setBirthdate} maxDate={new Date()} />
+                                    </View>
                                 </View>
-                                <View style={{ flex: 1 }}>
-                                    <DatePicker label="Birthday" value={birthdate} onChange={setBirthdate} maxDate={new Date()} />
-                                </View>
-                            </View>
 
-                            <View style={{ height: 16 }} />
-                            <DatePicker label="First Met" value={firstMet} onChange={setFirstMet} maxDate={new Date()} />
+                                <View style={{ height: 16 }} />
+                                <DatePicker label="First Met" value={firstMet} onChange={setFirstMet} maxDate={new Date()} />
+                            </Animated.View>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
