@@ -31,7 +31,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { GroupSelector, GroupSelectorHandle } from '../../components/GroupSelector';
 import { ScalePressable } from '../../components/ui/ScalePressable';
 import { PersonPickerModal } from '../../components/person/PersonPickerModal';
-import { NewEntryModal } from '../../components/person/NewEntryModal';
+import { QuickNoteModal } from '../../components/person/QuickNoteModal';
 import { ManageGroupsModal } from '../../components/person/ManageGroupsModal';
 import { GalleryPersonCard } from '../../components/person/GalleryPersonCard';
 import { DashboardGroupCard } from '../../components/person/DashboardGroupCard';
@@ -43,7 +43,6 @@ import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ContactRepository } from '../../db/repositories/ContactRepository';
 import { AddressBook } from '@/components/ui/Icon';
 import { QuickScrollButton } from '../../components/ui/QuickScrollButton';
-import { UpdateModal } from '../../components/ui/UpdateModal';
 
 const sameGlanceIds = (a: any[], b: any[], getId: (x: any) => any = (x) => x.id) =>
     a.length === b.length && a.every((x, i) => getId(x) === getId(b[i]));
@@ -109,9 +108,7 @@ export default function PeopleScreen() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const { colors, theme, hapticsEnabled } = useAppTheme();
-    const { settings, hasUpdate, latestVersion } = useSettings();
-    const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const hasShownUpdateRef = useRef(false);
+    const { settings } = useSettings();
 
     // Scroll Logic
     const scrollY = useSharedValue(0);
@@ -299,15 +296,18 @@ export default function PeopleScreen() {
     const handleSaveQuickNote = async (category: string, content: string) => {
         if (selectedPersonForNote) {
             await EntryRepository.addEntry(selectedPersonForNote.id, category, content, settings.addTimestampToNotes);
-            setShowQuickNoteModal(false);
             const name = selectedPersonForNote.name;
-            setSelectedPersonForNote(null);
 
             const { showToast } = require('../../components/ui/Toast');
             showToast(`Note added for ${name}`);
             // Optional: feedback
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
+    };
+
+    const handleCloseQuickNote = () => {
+        setShowQuickNoteModal(false);
+        setTimeout(() => setSelectedPersonForNote(null), 350);
     };
 
     const handleQuickReminder = () => {
@@ -319,16 +319,6 @@ export default function PeopleScreen() {
         setPersonToManage(person);
         setShowPersonManageModal(true);
     };
-
-    useEffect(() => {
-        if (hasUpdate && settings.checkForUpdatesEnabled && !hasShownUpdateRef.current) {
-            const timer = setTimeout(() => {
-                setShowUpdateModal(true);
-                hasShownUpdateRef.current = true;
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [hasUpdate]);
 
     useEffect(() => {
         const sub1 = DeviceEventEmitter.addListener('globalAction:newPerson', () => setShowAddModal(true));
@@ -684,19 +674,6 @@ export default function PeopleScreen() {
                         springConfig={DesignSystem.animation.springs.fast}
                     >
                         <Settings size={22} color={colors.text} />
-                        {hasUpdate && settings.checkForUpdatesEnabled && (
-                            <View style={{
-                                position: 'absolute',
-                                top: 2,
-                                right: 2,
-                                width: 10,
-                                height: 10,
-                                borderRadius: 5,
-                                backgroundColor: '#ef4444',
-                                borderWidth: 2,
-                                borderColor: colors.surface,
-                            }} />
-                        )}
                     </ScalePressable>
                 </View>
             </View>
@@ -1177,11 +1154,11 @@ export default function PeopleScreen() {
                 title={pickerMode === 'contact' ? "Whose contact is this?" : "Who is this note for?"}
             />
 
-            <NewEntryModal
+            <QuickNoteModal
                 visible={showQuickNoteModal}
-                onClose={() => setShowQuickNoteModal(false)}
+                person={selectedPersonForNote}
+                onClose={handleCloseQuickNote}
                 onSave={handleSaveQuickNote}
-                personId={selectedPersonForNote?.id}
             />
 
             <AddReminderModal
@@ -1352,11 +1329,6 @@ export default function PeopleScreen() {
                 contentHeight={listContentHeight}
                 layoutHeight={listLayoutHeight}
                 onPress={handleQuickScroll}
-            />
-            <UpdateModal
-                visible={showUpdateModal}
-                version={latestVersion}
-                onClose={() => setShowUpdateModal(false)}
             />
         </ThemedView>
     );

@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { useSettings } from '../../store/SettingsContext';
 import { DesignSystem } from '../../constants/DesignSystem';
-import { CloudArrowUp, Layout, Clock } from '@/components/ui/Icon';
+import { Layout, Clock } from '@/components/ui/Icon';
 import { Card } from '../../components/ui/Card';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,22 +41,6 @@ export default function ExtraSettingsScreen() {
                 
                 <View style={styles.section}>
                     <Card style={styles.card} padding="none">
-                        <SettingRow
-                            label="Check for Updates"
-                            description="Reloom will automatically check for new versions on GitHub."
-                            icon={<CloudArrowUp size={20} color={colors.tint} weight="duotone" />}
-                            colors={colors}
-                            style={[styles.paddingBox, { paddingVertical: 18 }]}
-                        >
-                            <Toggle
-                                value={settings.checkForUpdatesEnabled}
-                                onValueChange={(v) => {
-                                    triggerHaptic();
-                                    updateSetting('checkForUpdatesEnabled', v);
-                                }}
-                            />
-                        </SettingRow>
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
                         <SettingRow
                             label="Quick Glance"
                             description="Show a quick overview panel on the home screen."

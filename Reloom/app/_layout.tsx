@@ -53,7 +53,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
-  const { settings, isLoading: settingsLoading, refreshKey, checkForUpdates } = useSettings();
+  const { settings, isLoading: settingsLoading, refreshKey } = useSettings();
   const { colors: appColors, isDark } = useAppTheme();
   
   // Track if we are fully ready to show the app
@@ -126,15 +126,6 @@ function RootLayoutContent() {
       return () => subscription.remove();
     }
   }, []);
-
-  useEffect(() => {
-    if (isReady) {
-      const timer = setTimeout(() => {
-        checkForUpdates();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isReady]);
 
   useEffect(() => {
     async function prepare() {

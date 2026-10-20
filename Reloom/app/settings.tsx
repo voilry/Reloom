@@ -7,7 +7,7 @@ import { useSettings, ThemeMode } from '../store/SettingsContext';
 import { Colors } from '../constants/Colors';
 import { DesignSystem } from '../constants/DesignSystem';
 import { Typography } from '../constants/Typography';
-import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CloudArrowUp, CircleHalf, Mosaic, Palette } from '@/components/ui/Icon';
+import { CaretLeft, CaretRight, Moon, Sun, Desktop as Monitor, Waveform, Trash, Database, Info, GithubLogo as Github, ShieldCheck, Heart, ShareNetwork as Share2, ArrowsInLineHorizontal, Sliders, ArrowSquareOut as ExternalLink, DownloadSimple as Download, Bell, ListMagnifyingGlass as ListFilter, Layout, TextT, SelectionBackground, MagicWand, Cards, Compass, PaintBrush, Book, LockKey, Calendar, CircleHalf, Mosaic, Palette } from '@/components/ui/Icon';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import * as Haptics from 'expo-haptics';
@@ -29,7 +29,7 @@ import { ScalePressable } from '../components/ui/ScalePressable';
 import { APP_VERSION } from '../constants/Version';
 
 export default function SettingsScreen() {
-    const { settings, updateSetting, resetSettings, refreshApp, hasUpdate, latestVersion } = useSettings();
+    const { settings, updateSetting, resetSettings, refreshApp } = useSettings();
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -277,29 +277,6 @@ export default function SettingsScreen() {
                             />
                         </SettingRow>
                     </Card>
-                )}
-
-                {hasUpdate && settings.checkForUpdatesEnabled && (
-                    <ScalePressable
-                        onPress={() => {
-                            triggerHaptic();
-                            Linking.openURL('https://github.com/voilry/Reloom/releases/latest');
-                        }}
-                        scaleTo={0.97}
-                        style={{ width: '100%', marginBottom: 32 }}
-                        innerStyle={{ borderRadius: DesignSystem.radius.lg }}
-                    >
-                        <Card style={[styles.card, { borderColor: colors.tint + '40', borderWidth: 1.2 }]} padding="none">
-                            <MenuOption
-                                label={`Update Available: ${latestVersion}`}
-                                description="A new version of Reloom is ready."
-                                icon={null}
-                                colors={colors}
-                                rightIcon={<ExternalLink size={16} color={colors.tint} />}
-                                noBackground
-                            />
-                        </Card>
-                    </ScalePressable>
                 )}
 
                 <Section title="App Dynamics">
