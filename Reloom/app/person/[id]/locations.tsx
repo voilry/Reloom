@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView, Linking } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ThemedView } from '../../../components/ui/ThemedView';
 import { ThemedText } from '../../../components/ui/ThemedText';
@@ -159,17 +160,13 @@ export default function PersonLocationsScreen() {
                 }
             />
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            <KeyboardAwareScrollView
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                bottomOffset={24}
             >
-                <ScrollView
-                    style={{ flex: 1 }}
-                    contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
                     <View style={{ height: 12 }} />
 
                     <LocationInputRow
@@ -202,8 +199,7 @@ export default function PersonLocationsScreen() {
                         colors={colors}
                     />
 
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
 
             <DeleteModal
                 visible={showDiscardModal}

@@ -25,11 +25,12 @@ import { useSettings } from '../store/SettingsContext';
 const bridgeExtensions = TenTapStartKit.filter(ext => ext.name !== 'placeholder');
 
 export default function EditorScreen() {
-    const { id, type, edit } = useLocalSearchParams();
+    const { id, type, edit, personId } = useLocalSearchParams();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors, theme, hapticsEnabled } = useAppTheme();
     const { settings } = useSettings();
+    const isNewEntry = type === 'entry' && id === 'new';
 
     const [content, setContent] = useState('');
     const [title, setTitle] = useState('');
@@ -37,7 +38,7 @@ export default function EditorScreen() {
     const [originalTitle, setOriginalTitle] = useState('');
     const [editingTitle, setEditingTitle] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isEditing, setIsEditing] = useState(edit === 'true');
+    const [isEditing, setIsEditing] = useState(isNewEntry || edit === 'true');
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -52,10 +53,11 @@ export default function EditorScreen() {
 
     // editorHtml is null until SQLite data loads. The WebView is gated on this so
     // initialContent is always the real content when the WebView first boots.
-    const [editorHtml, setEditorHtml] = useState<string | null>(null);
+    // New entries have no SQLite row yet, so they boot with an empty document.
+    const [editorHtml, setEditorHtml] = useState<string | null>(isNewEntry ? markdownToHtml('') : null);
 
     const editor = useEditorBridge({
-        autofocus: edit === 'true',
+        autofocus: isNewEntry || edit === 'true',
         // NOTE: intentionally NO initialContent. Boot-injection proved stale
         // across save→re-edit cycles; RichEditor instead force-applies the
         // exact app-state document (expectedDoc) once the editor is provably
@@ -130,6 +132,20 @@ export default function EditorScreen() {
     const loadData = async () => {
         if (!id) return;
 
+        if (isNewEntry) {
+            // The note has no database row until the first save. Keep the
+            // editor blank and let the header name field use its Untitled
+            // placeholder instead of loading any existing entry.
+            setContent('');
+            setOriginalContent('');
+            setTitle('');
+            setOriginalTitle('');
+            setLastUpdated(null);
+            setEditorHtml(markdownToHtml(''));
+            isDataLoadedRef.current = true;
+            return;
+        }
+
         if (type === 'description') {
             const p = await PersonRepository.getById(Number(id));
             if (p) {
@@ -159,10 +175,37 @@ export default function EditorScreen() {
     const handleSave = async () => {
         if (!id) return;
         setIsSaving(true);
-        if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         try {
             const html = await editor.getHTML();
             const markdown = htmlToMarkdown(html);
+
+            if (isNewEntry) {
+                if (!markdown.trim() && !title.trim()) {
+                    return;
+                }
+
+                const personIdValue = Array.isArray(personId) ? personId[0] : personId;
+                const parentPersonId = Number(personIdValue);
+                if (!Number.isFinite(parentPersonId)) {
+                    showAlert('Error', 'Could not determine which person this note belongs to.', 'error');
+                    return;
+                }
+
+                if (hapticsEnabled && Platform.OS !== 'web') {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                }
+
+                await EntryRepository.createEntry(
+                    parentPersonId,
+                    title.trim() || 'Untitled',
+                    markdown
+                );
+                Keyboard.dismiss();
+                router.back();
+                return;
+            }
+
+            if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
             if (type === 'description') {
                 await PersonRepository.update(Number(id), { description: markdown });
@@ -198,12 +241,18 @@ export default function EditorScreen() {
     };
 
     const confirmDiscard = () => {
+        setShowDiscardModal(false);
+        Keyboard.dismiss();
+
+        if (isNewEntry) {
+            router.back();
+            return;
+        }
+
         setContent(originalContent);
         setTitle(originalTitle);
         setHasChanges(false);
-        setShowDiscardModal(false);
         setIsEditing(false);
-        Keyboard.dismiss();
     };
 
     // Single hardware-back handler: discard prompt while editing with unsaved
@@ -226,15 +275,32 @@ export default function EditorScreen() {
                             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                             setEditingTitle(true);
                         }} style={styles.titleEditRow}>
-                            <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 16, letterSpacing: -0.3, textAlign: 'center', maxWidth: 180 }}>{title}</ThemedText>
+                            <ThemedText
+                                type="defaultSemiBold"
+                                numberOfLines={1}
+                                style={{
+                                    fontSize: 16,
+                                    letterSpacing: -0.3,
+                                    textAlign: 'center',
+                                    maxWidth: 180,
+                                    color: title ? colors.text : colors.secondary,
+                                }}
+                            >
+                                {title || 'Untitled'}
+                            </ThemedText>
                             <Edit3 size={12} color={colors.secondary} />
                         </TouchableOpacity>
                     ) : isEditing && type === 'entry' && editingTitle ? (
                         <TextInput
                             value={title}
-                            onChangeText={setTitle}
+                            onChangeText={(value) => {
+                                setTitle(value);
+                                if (isDataLoadedRef.current) setHasChanges(true);
+                            }}
                             onBlur={() => setEditingTitle(false)}
                             autoFocus
+                            placeholder="Untitled"
+                            placeholderTextColor={colors.secondary}
                             style={[styles.titleInput, { color: colors.text, borderBottomColor: colors.tint, textAlign: 'center', minWidth: 120 }]}
                             selectionColor={colors.tint}
                             keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}

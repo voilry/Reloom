@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { View, StyleSheet, Platform, BackHandler } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { ThemedView } from '../../components/ui/ThemedView';
 import { ThemedText } from '../../components/ui/ThemedText';
 import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withSpring, withSequence } from 'react-native-reanimated';
@@ -34,6 +36,13 @@ const PLATFORMS_ROWS = [
     PLATFORMS.slice(3, 6),
     PLATFORMS.slice(6, 8),
 ];
+
+const HANDLE_PATTERN = /^@?[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/i;
+const URL_PATTERN = /^(https?:\/\/)?(www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?::\d+)?(?:[/?#][^\s]*)?$/i;
+
+function isUrlLike(value: string) {
+    return URL_PATTERN.test(value.trim());
+}
 
 export default function ContactEditorScreen() {
     const { id, personId } = useLocalSearchParams();
@@ -79,8 +88,13 @@ export default function ContactEditorScreen() {
                 }
                 setOriginalContact(contact);
                 setValue(contact.value);
-                const plat = PLATFORMS.find(p => p.id === contact.platform) || PLATFORMS[0];
-                setSelectedPlatform(plat);
+                const plat = PLATFORMS.find(p => p.id.toLowerCase() === contact.platform.toLowerCase());
+                setSelectedPlatform(plat ?? {
+                    id: contact.platform,
+                    icon: Globe,
+                    placeholder: 'Enter contact value',
+                    keyboard: 'default',
+                });
 
                 const p = await PersonRepository.getById(contact.personId);
                 if (!p) {
@@ -100,8 +114,35 @@ export default function ContactEditorScreen() {
     const hasChanges = useMemo(() => {
         if (isNew) return value.trim() !== '';
         if (!originalContact) return false;
-        return selectedPlatform.id !== originalContact.platform || value.trim() !== originalContact.value;
+        return selectedPlatform.id.toLowerCase() !== originalContact.platform.toLowerCase() || value.trim() !== originalContact.value;
     }, [isNew, value, selectedPlatform, originalContact]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                if (showDeleteModal) {
+                    setShowDeleteModal(false);
+                    return true;
+                }
+                if (showDiscardModal) {
+                    setShowDiscardModal(false);
+                    return true;
+                }
+                if (alertConfig?.visible) {
+                    setAlertConfig(null);
+                    return true;
+                }
+                if (hasChanges) {
+                    setShowDiscardModal(true);
+                    return true;
+                }
+                return false;
+            };
+
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [alertConfig?.visible, hasChanges, showDeleteModal, showDiscardModal])
+    );
 
     const canSave = Boolean(hasChanges && !isSaving && person && value.trim().length > 0);
     const saveButtonScale = useSharedValue(1);
@@ -135,17 +176,19 @@ export default function ContactEditorScreen() {
                 return null;
             case 'Instagram':
             case 'TikTok':
-                if (!trimmed.replace(/^@/, '')) return 'Enter a valid handle.';
+                if (!isUrlLike(trimmed) && !HANDLE_PATTERN.test(trimmed)) {
+                    return 'Enter a valid handle or URL.';
+                }
                 return null;
             case 'Facebook':
             case 'LinkedIn':
-            case 'Website': {
-                const lower = trimmed.toLowerCase();
-                if (!lower.startsWith('http://') && !lower.startsWith('https://') && !trimmed.includes('.')) {
-                    return 'Enter a valid URL.';
+                if (!isUrlLike(trimmed) && !HANDLE_PATTERN.test(trimmed)) {
+                    return 'Enter a username or URL.';
                 }
                 return null;
-            }
+            case 'Website':
+                if (!isUrlLike(trimmed)) return 'Enter a valid URL.';
+                return null;
             default:
                 return null;
         }
@@ -180,7 +223,7 @@ export default function ContactEditorScreen() {
             const existing = await ContactRepository.getContactsForPerson(person.id);
             const trimmedValue = value.trim().toLowerCase();
             const duplicate = existing.find(c =>
-                c.platform === selectedPlatform.id &&
+                c.platform.toLowerCase() === selectedPlatform.id.toLowerCase() &&
                 c.value.trim().toLowerCase() === trimmedValue &&
                 (isNew || c.id !== Number(id))
             );
@@ -272,12 +315,12 @@ export default function ContactEditorScreen() {
                 }
             />
 
-            <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+            <KeyboardAwareScrollView
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                bottomOffset={24}
             >
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
 
                     {loadError ? (
                         <View style={styles.errorContainer}>
@@ -363,8 +406,8 @@ export default function ContactEditorScreen() {
                         </View>
                     ) : (
                         <View style={[styles.activePlatformRow, { backgroundColor: colors.surface, marginBottom: 8 }]}>
-                            <View style={[styles.activePlatformIcon, { backgroundColor: colors.tint + '15' }]}>
-                                <selectedPlatform.icon size={22} color={colors.tint} weight="fill" />
+                            <View style={styles.activePlatformIcon}>
+                                <selectedPlatform.icon size={25} color={colors.tint} weight="fill" />
                             </View>
                             <ThemedText style={{ fontSize: 16, fontWeight: '700' }}>{selectedPlatform.id}</ThemedText>
                         </View>
@@ -392,7 +435,7 @@ export default function ContactEditorScreen() {
                                 onPress={handleSave}
                                 textStyle={{ fontSize: 17 }}
                                 style={styles.saveButton}
-                                disabled={!hasChanges || isSaving || !person}
+                                disabled={!canSave}
                             />
                         </Animated.View>
 
@@ -415,8 +458,7 @@ export default function ContactEditorScreen() {
                     </>
                     )}
 
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
 
             <DeleteModal
                 visible={showDeleteModal}
@@ -491,7 +533,6 @@ const styles = StyleSheet.create({
     activePlatformIcon: {
         width: 44,
         height: 44,
-        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 16,

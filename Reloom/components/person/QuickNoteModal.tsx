@@ -3,7 +3,6 @@ import {
     ActivityIndicator,
     Dimensions,
     Keyboard,
-    KeyboardAvoidingView,
     Modal,
     PanResponder,
     Platform,
@@ -15,6 +14,7 @@ import {
     View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -532,9 +532,8 @@ export function QuickNoteModal({ visible, person, onClose, onSave }: QuickNoteMo
                 </View>
 
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior="padding"
                     style={styles.keyboardArea}
-                    keyboardVerticalOffset={0}
                 >
                     <View style={styles.composerArea}>
                         <TextInput
@@ -625,7 +624,7 @@ export function QuickNoteModal({ visible, person, onClose, onSave }: QuickNoteMo
                         </Animated.View>
 
                         <KeyboardAvoidingView
-                            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                            behavior="padding"
                             style={styles.sheetKeyboard}
                             pointerEvents="box-none"
                         >

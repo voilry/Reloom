@@ -1,4 +1,5 @@
-import { View, StyleSheet, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, DeviceEventEmitter } from 'react-native';
+import { View, StyleSheet, Modal, TextInput, Platform, ScrollView, DeviceEventEmitter } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, FadeInDown, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -65,7 +66,6 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const [styleColor, setStyleColor] = useState<string>(REMINDER_COLORS[0].value);
     const lastPresetRef = useRef(DEFAULT_NUDGE);
     const searchInputRef = useRef<TextInput>(null);
-    const scrollViewRef = useRef<ScrollView>(null);
     const mountedRef = useRef(true);
 
     useEffect(() => {
@@ -280,16 +280,13 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                     </ScalePressable>
                 </View>
 
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                <KeyboardAwareScrollView
                     style={{ flex: 1 }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: insets.bottom + 40 }}
+                    bottomOffset={24}
                 >
-                    <ScrollView
-                        ref={scrollViewRef}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: insets.bottom + 40 }}
-                    >
                         <View style={[styles.inputSection, { marginTop: 8 }]}>
                             <View style={{ position: 'relative' }}>
                                 <Input
@@ -520,9 +517,6 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                             placeholder="Search people..."
                                             placeholderTextColor={colors.icon}
                                             style={[styles.searchInput, { color: colors.text }]}
-                                            onFocus={() => {
-                                                setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
-                                            }}
                                         />
                                     </ScalePressable>
 
@@ -553,8 +547,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                 </>
                             )}
                         </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                </KeyboardAwareScrollView>
             </View>
         </Modal>
     );

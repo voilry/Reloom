@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -110,17 +111,13 @@ export function EditPersonModal({ visible, onClose, onSave, person }: EditPerson
                     </ScalePressable>
                 </View>
 
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                <KeyboardAwareScrollView
+                    style={styles.content}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                    showsVerticalScrollIndicator={false}
+                    bottomOffset={24}
                 >
-                    <ScrollView
-                        style={styles.content}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-                        showsVerticalScrollIndicator={false}
-                    >
                         <Animated.View 
                             entering={ZoomIn.duration(440).springify().damping(22).stiffness(140).mass(0.9)}
                             style={styles.avatarSection}
@@ -156,8 +153,7 @@ export function EditPersonModal({ visible, onClose, onSave, person }: EditPerson
                                 <DatePicker label="First Met" value={firstMet} onChange={setFirstMet} maxDate={new Date()} />
                             </Animated.View>
                         </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                </KeyboardAwareScrollView>
             </View>
         </Modal>
     );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Animated as RNAnimated, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform, Animated as RNAnimated, Alert, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
@@ -271,17 +272,13 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                     }
                 />
 
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                <KeyboardAwareScrollView
+                    style={styles.content}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                    showsVerticalScrollIndicator={false}
+                    bottomOffset={24}
                 >
-                    <ScrollView
-                        style={styles.content}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-                        showsVerticalScrollIndicator={false}
-                    >
                         <View style={styles.form}>
                             <View style={styles.categoryHeader}>
                                 <ThemedText type="sectionHeader" style={[styles.sectionLabel, { marginBottom: 0, opacity: 0.9 }]}>Category</ThemedText>
@@ -372,8 +369,7 @@ export function NewEntryModal({ visible, onClose, onSave, personId }: NewEntryMo
                                 textAlignVertical="top"
                             />
                         </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                </KeyboardAwareScrollView>
             </View>
 
             <DeleteModal

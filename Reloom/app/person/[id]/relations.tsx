@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     View, StyleSheet, ScrollView, TouchableOpacity, Modal,
-    TextInput, Platform, KeyboardAvoidingView, Pressable,
+    TextInput, Platform, Pressable,
     Animated as RNAnimated, DeviceEventEmitter
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ThemedView } from '../../../components/ui/ThemedView';
 import { ThemedText } from '../../../components/ui/ThemedText';
@@ -390,10 +391,7 @@ export default function RelationsScreen() {
             >
                 <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
                     <StatusBar style="auto" />
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1, paddingTop: insets.top + 8 }}
-                    >
+                    <View style={{ flex: 1, paddingTop: insets.top + 8 }}>
                         {step === 'pick' && (
                             <>
                                 {/* Modal Header */}
@@ -429,11 +427,12 @@ export default function RelationsScreen() {
                                     </View>
 
                                     {/* People List */}
-                                    <ScrollView
+                                    <KeyboardAwareScrollView
                                         style={{ flex: 1, marginTop: 16 }}
                                         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                                         showsVerticalScrollIndicator={false}
                                         keyboardShouldPersistTaps="handled"
+                                        bottomOffset={24}
                                     >
                                         {filteredPeople.map(p => (
                                             <ScalePressable
@@ -466,7 +465,7 @@ export default function RelationsScreen() {
                                                 </ThemedText>
                                             </View>
                                         )}
-                                    </ScrollView>
+                                    </KeyboardAwareScrollView>
                                 </View>
                             </>
                         )}
@@ -490,7 +489,11 @@ export default function RelationsScreen() {
                                     </View>
                                 </View>
 
-                                <ScrollView contentContainerStyle={[styles.modalContent, { paddingHorizontal: 20 }]} keyboardShouldPersistTaps="handled">
+                                <KeyboardAwareScrollView
+                                    contentContainerStyle={[styles.modalContent, { paddingHorizontal: 20 }]}
+                                    keyboardShouldPersistTaps="handled"
+                                    bottomOffset={24}
+                                >
                                     {/* Both people + connector visual */}
                                     <View style={styles.connectionVisual}>
                                         {/* Person A */}
@@ -600,10 +603,10 @@ export default function RelationsScreen() {
                                             ← Change person
                                         </ThemedText>
                                     </ScalePressable>
-                                </ScrollView>
+                                </KeyboardAwareScrollView>
                             </>
                         )}
-                    </KeyboardAvoidingView>
+                    </View>
                 </View>
             </Modal>
         </ThemedView>

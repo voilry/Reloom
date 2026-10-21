@@ -1,4 +1,5 @@
-import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable, BackHandler } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Platform, ScrollView, Dimensions, Alert, DeviceEventEmitter, Pressable, BackHandler } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, Layout, FadeIn, FadeOut, SlideInDown, SlideOutDown, ZoomIn, useSharedValue, useAnimatedScrollHandler, runOnJS, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -971,17 +972,13 @@ export default function PeopleScreen() {
                         </ScalePressable>
                     </View>
 
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    <KeyboardAwareScrollView
                         style={{ flex: 1 }}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                        bottomOffset={24}
                     >
-                        <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            keyboardShouldPersistTaps="handled"
-                            style={styles.fullScreenContent}
-                            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-                        >
                             <Animated.View 
                                 entering={ZoomIn.duration(440).springify().damping(22).stiffness(140).mass(0.9)}
                                 style={styles.fullScreenAvatarSection}
@@ -1051,8 +1048,7 @@ export default function PeopleScreen() {
                                     </View>
                                 </Animated.View>
                             </View>
-                        </ScrollView>
-                    </KeyboardAvoidingView>
+                    </KeyboardAwareScrollView>
                 </View>
             </Modal>
             <ManageGroupMembersModal

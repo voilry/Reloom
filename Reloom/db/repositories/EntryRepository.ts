@@ -126,6 +126,22 @@ export class EntryRepository {
         return result[0];
     }
 
+    /**
+     * Creates a brand-new entry without merging into an existing entry of the
+     * same type. Used by the full note editor, where every "+" is its own note.
+     * Quick Note keeps using addEntry() and intentionally appends.
+     */
+    static async createEntry(personId: number, typeLabel: string, content: string) {
+        const type = await this.createType(typeLabel);
+        const result = await db.insert(entries).values({
+            personId,
+            typeId: type.id,
+            content,
+        }).returning();
+
+        return result[0];
+    }
+
     static async mergeAllEntriesForPerson(personId: number) {
         const allEntries = await this.getForPerson(personId);
         const typesToMerge = new Map<string, any[]>();

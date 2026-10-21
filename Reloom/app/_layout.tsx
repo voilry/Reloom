@@ -48,6 +48,7 @@ import {
 import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
 import { Fraunces_700Bold, Fraunces_900Black } from '@expo-google-fonts/fraunces';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -226,11 +227,13 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SettingsProvider>
-        <RootLayoutContent />
-        <AppLock />
-        <Toast />
-      </SettingsProvider>
+      <KeyboardProvider>
+        <SettingsProvider>
+          <RootLayoutContent />
+          <AppLock />
+          <Toast />
+        </SettingsProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

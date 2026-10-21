@@ -28,7 +28,6 @@ import { JournalsTab } from '../../components/person/JournalsTab';
 import { ContactsTab } from '../../components/person/ContactsTab';
 import { EditPersonModal } from '../../components/person/EditPersonModal';
 import { ContactRepository, Contact } from '../../db/repositories/ContactRepository';
-import { NewEntryModal } from '../../components/person/NewEntryModal';
 import { ManageGroupsModal } from '../../components/person/ManageGroupsModal';
 import { DeleteModal } from '../../components/ui/DeleteModal';
 import { ScalePressable } from '../../components/ui/ScalePressable';
@@ -68,7 +67,6 @@ export default function PersonDetailScreen() {
     const [showMoreMenu, setShowMoreMenu] = useState(false);
 
     // Modal Visibility States
-    const [showNewEntryModal, setShowNewEntryModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [profileToDelete, setProfileToDelete] = useState(false);
@@ -182,12 +180,17 @@ export default function PersonDetailScreen() {
         loadData();
     };
 
-    const handleCreateEntry = async (title: string, content: string) => {
+    const openNewNote = () => {
         if (!person) return;
-        const entryTitle = title.trim() || 'General Note';
-        await EntryRepository.addEntry(person.id, entryTitle, content, settings.addTimestampToNotes);
-        setShowNewEntryModal(false);
-        loadData();
+        router.push({
+            pathname: '/editor',
+            params: {
+                id: 'new',
+                type: 'entry',
+                personId: person.id,
+                edit: 'true',
+            },
+        });
     };
 
     const handleDeleteEntry = (entryId: number) => {
@@ -412,7 +415,7 @@ export default function PersonDetailScreen() {
                     {activeTab === 'entries' && (
                         <EntriesTab
                             entries={entries}
-                            onAdd={() => setShowNewEntryModal(true)}
+                            onAdd={openNewNote}
                             onDelete={handleDeleteEntry}
                             theme={theme}
                             isAcrylic={settings.profileBlurBackground && !!person.avatarUri}
@@ -482,13 +485,6 @@ export default function PersonDetailScreen() {
                     </Animated.View>
                 )}
             </Animated.ScrollView>
-
-            <NewEntryModal
-                visible={showNewEntryModal}
-                onClose={() => setShowNewEntryModal(false)}
-                onSave={handleCreateEntry}
-                personId={person?.id}
-            />
 
             <EditPersonModal
                 visible={showEditModal}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, Platform, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { ThemedText } from '../ui/ThemedText';
 import { ThemedView } from '../ui/ThemedView';
 import { Avatar } from '../ui/Avatar';
@@ -173,22 +174,19 @@ export const ManageGroupMembersModal = ({
                 </Animated.View>
 
                 {/* Content */}
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={{ flex: 1 }}
+                <KeyboardAwareScrollView
+                    style={styles.content}
+                    contentContainerStyle={{
+                        paddingHorizontal: 16,
+                        paddingBottom: insets.bottom + 40,
+                        paddingTop: insets.top + (isAddingMode ? 140 : 74)
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    onScroll={scrollHandler}
+                    scrollEventThrottle={16}
+                    bottomOffset={24}
                 >
-                    <Animated.ScrollView
-                        style={styles.content}
-                        contentContainerStyle={{
-                            paddingHorizontal: 16,
-                            paddingBottom: insets.bottom + 40,
-                            paddingTop: insets.top + (isAddingMode ? 140 : 74)
-                        }}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        onScroll={scrollHandler}
-                        scrollEventThrottle={16}
-                    >
                         <Animated.View layout={Layout.springify()}>
                             {!isAddingMode && members.length > 0 && (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 1 }}>
@@ -280,8 +278,7 @@ export const ManageGroupMembersModal = ({
                                 )
                             )}
                         </Animated.View>
-                    </Animated.ScrollView>
-                </KeyboardAvoidingView>
+                </KeyboardAwareScrollView>
             </ThemedView>
         </Modal>
     );

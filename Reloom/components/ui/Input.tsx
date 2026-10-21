@@ -1,7 +1,5 @@
-import { TextInput, StyleSheet, TextInputProps, View, Platform } from 'react-native';
-import { DesignSystem } from '../../constants/DesignSystem';
+import { TextInput, StyleSheet, TextInputProps, View } from 'react-native';
 import { ThemedText } from './ThemedText';
-import { useState } from 'react';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface InputProps extends TextInputProps {
@@ -12,7 +10,6 @@ interface InputProps extends TextInputProps {
 
 export function Input({ label, error, style, containerStyle, ...rest }: InputProps) {
     const { colors, theme } = useAppTheme();
-    const [isFocused, setIsFocused] = useState(false);
 
     return (
         <View style={[styles.container, containerStyle]}>
@@ -30,19 +27,16 @@ export function Input({ label, error, style, containerStyle, ...rest }: InputPro
                         {
                             backgroundColor: colors.surface,
                             color: colors.text,
-                            borderColor: error ? colors.error : (isFocused ? colors.tint : 'transparent'),
+                            borderColor: error ? colors.error : 'transparent',
                             borderWidth: 2,
                             textAlignVertical: rest.multiline ? 'top' : 'center',
                             paddingTop: rest.multiline ? 16 : 0,
                             paddingBottom: rest.multiline ? (rest.maxLength ? 28 : 16) : 0,
                             paddingRight: rest.maxLength && !rest.multiline ? 52 : 16,
-                            ...(isFocused ? DesignSystem.shadows.sm : {})
                         },
                         style,
                     ]}
                     placeholderTextColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
                     {...rest}
                 />
                 {rest.maxLength && (

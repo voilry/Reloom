@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, Platform, TextInput, ScrollView } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { ThemedText } from '../ui/ThemedText';
@@ -47,7 +48,7 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
     return (
         <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
             <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 style={styles.modalOverlay}
             >
                 <Animated.View entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))} style={StyleSheet.absoluteFill}>
