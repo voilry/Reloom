@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PanResponder, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+    runOnJS,
     useAnimatedStyle,
     useSharedValue,
     withSpring,
@@ -15,10 +17,30 @@ const TRACK_HEIGHT = 34;
 // sliver of track shows above or below it at any position.
 const KNOB_SIZE = TRACK_HEIGHT;
 const KNOB_INSET = KNOB_SIZE / 2;
-// Label strip height INCLUDING its 5px top gap. It has to be the full number
-// the column actually occupies, or the reserved box comes up short and the
-// row resizes when the two controls swap.
+// Label strip height INCLUDING its top gap. It has to be the full number the
+// column actually occupies, or the reserved box comes up short and the row
+// resizes when the two controls swap.
 const LABEL_STRIP = 27;
+// Vertical offset that matches the old centred label row. ThemedText's default
+// line box is 24px, so centring it in the 22px area below the 5px gap starts
+// the box at 4px.
+const LABEL_TOP = 4;
+// Wide enough for the longest label at this size. Slots may overlap between
+// neighbouring detents, but the text itself stays clear because it is centred.
+const MIN_LABEL_SLOT = 44;
+// A press that travels farther than this is a drag, not a tap.
+const TAP_SLOP = 10;
+// Extra distance, in detent widths, the finger has to travel past the midpoint
+// before the "active" label (and haptic tick) moves. The stops on this control
+// are close together, so without a deadband the label flickers between two
+// neighbouring rungs when the finger rests near a boundary.
+const DETENT_HYSTERESIS = 0.16;
+
+const SETTLE_SPRING = {
+    damping: 28,
+    stiffness: 300,
+    mass: 0.7,
+};
 
 /** Track box only, for callers that need to reason about the control's height. */
 export const SLIDER_TRACK_HEIGHT = TRACK_HEIGHT;
@@ -40,55 +62,45 @@ interface NotificationSliderProps {
  * Discrete intensity slider. Snaps to `labels.length` positions so the whole
  * notification ladder stays readable on one control instead of a chip grid.
  *
- * The knob tracks the finger on the UI thread and only commits an index on
- * release. Committing per move event re-rendered the host modal every frame,
- * which is what made the drag feel heavy.
+ * The knob is driven entirely by a Gesture Handler worklet on the UI thread,
+ * so close detents still track the finger at frame rate instead of waiting for
+ * Javascript. The parent is only told about a new index on release, and the
+ * active label/haptic uses a small deadband so it does not flicker between two
+ * neighbouring rungs.
  */
 export function NotificationSlider({ labels, index, onChange }: NotificationSliderProps) {
     const { colors, hapticsEnabled } = useAppTheme();
-    const areaRef = useRef<View>(null);
+    // Measured width is needed to place the labels over their detents.
+    const [trackWidth, setTrackWidth] = useState(0);
+    // Which rung should look active. Updated only when a drag crosses a detent.
+    const [displayIndex, setDisplayIndex] = useState(index);
 
     const count = labels.length;
     const lastIndex = count - 1;
 
-    // progress is a 0..1 ratio; width is needed on the UI thread to convert it
-    // to pixels without a round trip through React.
-    const progress = useSharedValue(lastIndex > 0 ? index / lastIndex : 0);
+    const progress = useSharedValue(
+        lastIndex > 0 ? Math.min(1, Math.max(0, index / lastIndex)) : 0
+    );
     const width = useSharedValue(0);
-    const dragging = useSharedValue(0);
+    // Ratio the drag started from; keeps the knob relative to the finger with
+    // no dependency on an async screen measurement.
+    const dragStartRatio = useSharedValue(0);
+    // Sticky nearest rung for the label/haptics. It only moves once the finger
+    // clears the hysteresis band, not at the exact midpoint.
+    const activeDetent = useSharedValue(index);
+    const dragActive = useSharedValue(0);
 
-    // Live props for the JS-side gesture handlers.
-    const widthRef = useRef(0);
-    const originXRef = useRef(0);
-    const countRef = useRef(count);
-    const lastIndexRef = useRef(lastIndex);
     const onChangeRef = useRef(onChange);
     const hapticsRef = useRef(hapticsEnabled);
+    const indexRef = useRef(index);
     const lastTickRef = useRef(index);
-    // Index the release gesture has already committed and is springing toward.
-    const releaseTargetRef = useRef<number | null>(null);
+    // Index a release has already committed and is springing toward. Used to
+    // suppress the duplicate spring from the prop-sync effect.
+    const pendingTargetRef = useRef<number | null>(null);
 
-    countRef.current = count;
-    lastIndexRef.current = lastIndex;
     onChangeRef.current = onChange;
     hapticsRef.current = hapticsEnabled;
-
-    const measure = useCallback(() => {
-        areaRef.current?.measureInWindow((x, _y, w) => {
-            originXRef.current = x;
-            if (w > 0) {
-                widthRef.current = w;
-                width.value = w;
-            }
-        });
-    }, [width]);
-
-    // Commit outward, then tick. Haptics fire on the crossed detent only, so a
-    // slow drag produces one tick per rung instead of one per frame.
-    const commit = useCallback((next: number) => {
-        const clamped = Math.max(0, Math.min(countRef.current - 1, next));
-        onChangeRef.current(clamped);
-    }, []);
+    indexRef.current = index;
 
     const tick = useCallback(() => {
         if (hapticsRef.current && Platform.OS !== 'web') {
@@ -96,101 +108,140 @@ export function NotificationSlider({ labels, index, onChange }: NotificationSlid
         }
     }, []);
 
-    // Called on the JS side whenever a drag crosses into a new detent.
-    const handleDetentCrossed = useCallback(() => {
-        const steps = countRef.current - 1;
-        if (steps <= 0) return;
-        const next = Math.round(Math.min(1, Math.max(0, progress.value)) * steps);
+    // Called from the UI thread while dragging, and only when the sticky
+    // detent actually changes. Five label re-renders over a full sweep is
+    // cheap; the knob itself never waits for React.
+    const announceDetent = useCallback((next: number) => {
+        setDisplayIndex(next);
         if (next !== lastTickRef.current) {
             lastTickRef.current = next;
             tick();
         }
-    }, [progress, tick]);
+    }, [tick]);
 
-    const snapToRatio = useCallback((ratio: number, animate: boolean) => {
-        const clamped = Math.min(1, Math.max(0, ratio));
-        if (animate) {
-            progress.value = withSpring(clamped, {
-                damping: 26,
-                stiffness: 320,
-                mass: 0.6,
-            });
-        } else {
-            progress.value = clamped;
+    // Called once a gesture has chosen its final rung. Commits only when the
+    // value really changed, and ticks if the final snap landed on a rung the
+    // drag had not announced yet.
+    const finishSettle = useCallback((next: number) => {
+        setDisplayIndex(next);
+        if (next !== lastTickRef.current) {
+            lastTickRef.current = next;
+            tick();
         }
-    }, [progress]);
+        if (next !== indexRef.current) {
+            pendingTargetRef.current = next;
+            onChangeRef.current(next);
+        }
+    }, [tick]);
 
-    const ratioFromLocalX = useCallback((localX: number) => {
-        const travel = widthRef.current - KNOB_INSET * 2;
-        if (travel <= 0) return 0;
-        return (localX - KNOB_INSET) / travel;
-    }, []);
+    const gesture = React.useMemo(() => {
+        const settle = (ratio: number) => {
+            'worklet';
+            const settled = lastIndex > 0
+                ? Math.max(0, Math.min(lastIndex, Math.round(ratio * lastIndex)))
+                : 0;
+            progress.value = withSpring(
+                lastIndex > 0 ? settled / lastIndex : 0,
+                SETTLE_SPRING
+            );
+            runOnJS(finishSettle)(settled);
+        };
 
-    const ratioFromPageX = useCallback((pageX: number) => {
-        const travel = widthRef.current - KNOB_INSET * 2;
-        if (travel <= 0) return 0;
-        return (pageX - originXRef.current - KNOB_INSET) / travel;
-    }, []);
+        const pan = Gesture.Pan()
+            // Wait for horizontal intent, but give clear vertical movement to
+            // the surrounding form scroll instead of swallowing it.
+            .activeOffsetX([-6, 6])
+            .failOffsetY([-14, 14])
+            .onStart(() => {
+                'worklet';
+                dragStartRatio.value = progress.value;
+                dragActive.value = 1;
+                activeDetent.value = lastIndex > 0
+                    ? Math.round(progress.value * lastIndex)
+                    : 0;
+            })
+            .onUpdate((event) => {
+                'worklet';
+                const travel = Math.max(1, width.value - KNOB_INSET * 2);
+                const ratio = Math.min(
+                    1,
+                    Math.max(0, dragStartRatio.value + event.translationX / travel)
+                );
+                progress.value = ratio;
 
-    const responder = React.useMemo(() => PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: (e) => {
-            measure();
-            dragging.value = 1;
-            // Drop any stale claim from a previous gesture. Releasing without
-            // changing the index never re-ran the sync effect, so the ref could
-            // latch and silently swallow the next external index change.
-            releaseTargetRef.current = null;
-            // locationX is trustworthy at grant time; moveX is not, because the
-            // origin offset only arrives once measureInWindow resolves.
-            progress.value = Math.min(1, Math.max(0, ratioFromLocalX(e.nativeEvent.locationX)));
-            handleDetentCrossed();
-        },
-        onPanResponderMove: (_e, gesture) => {
-            progress.value = Math.min(1, Math.max(0, ratioFromPageX(gesture.moveX)));
-            handleDetentCrossed();
-        },
-        onPanResponderRelease: () => {
-            dragging.value = 0;
-            const steps = countRef.current - 1;
-            const settled = steps > 0 ? Math.round(progress.value * steps) : 0;
-            // Spring to the exact rung so it lands clean rather than wherever
-            // the finger happened to let go.
-            const target = steps > 0 ? Math.min(1, Math.max(0, settled / steps)) : 0;
-            progress.value = withSpring(target, {
-                damping: 24,
-                stiffness: 300,
-                mass: 0.6,
+                if (lastIndex <= 0) return;
+
+                const exact = ratio * lastIndex;
+                const previous = activeDetent.value;
+                // Deadband around the midpoint. The knob keeps moving smoothly;
+                // only the label/haptic changes wait for a clear winner.
+                if (Math.abs(exact - previous) > 0.5 + DETENT_HYSTERESIS) {
+                    const next = Math.max(0, Math.min(lastIndex, Math.round(exact)));
+                    if (next !== previous) {
+                        activeDetent.value = next;
+                        runOnJS(announceDetent)(next);
+                    }
+                }
+            })
+            .onEnd(() => {
+                'worklet';
+                dragActive.value = 0;
+                settle(progress.value);
+            })
+            .onFinalize((_event, success) => {
+                'worklet';
+                // Also catch an active drag that was cancelled (e.g. the modal
+                // closed or another gesture won) so the knob cannot be left
+                // between two labels.
+                if (success || dragActive.value === 0) return;
+                dragActive.value = 0;
+                settle(progress.value);
             });
-            // Claim the index change as ours so the sync effect ignores it.
-            releaseTargetRef.current = settled;
-            commit(settled);
-        },
-        onPanResponderTerminate: () => {
-            dragging.value = 0;
-        },
-    }), [measure, dragging, progress, ratioFromLocalX, ratioFromPageX, handleDetentCrossed, commit, releaseTargetRef]);
+
+        const tap = Gesture.Tap()
+            .maxDistance(TAP_SLOP)
+            .onEnd((event) => {
+                'worklet';
+                const travel = Math.max(1, width.value - KNOB_INSET * 2);
+                const ratio = Math.min(
+                    1,
+                    Math.max(0, (event.x - KNOB_INSET) / travel)
+                );
+                settle(ratio);
+            });
+
+        return Gesture.Race(pan, tap);
+    }, [
+        activeDetent,
+        announceDetent,
+        dragActive,
+        dragStartRatio,
+        finishSettle,
+        lastIndex,
+        progress,
+        width,
+    ]);
 
     // An index arriving from outside the slider (form reset, accessibility
     // increment) animates to its rung instead of jumping.
-    //
-    // releaseTargetRef suppresses this while the gesture's own spring is still
-    // settling. Without it, releasing fires commit(), which changes `index`,
-    // which re-enters here and starts a second spring to the same place and
-    // leaves the knob drifting.
     useEffect(() => {
+        if (dragActive.value === 1) return;
+
+        activeDetent.value = index;
         lastTickRef.current = index;
-        if (dragging.value) return;
-        if (releaseTargetRef.current !== null) {
-            if (releaseTargetRef.current === index) {
-                releaseTargetRef.current = null;
-            }
-            return;
+        setDisplayIndex(index);
+
+        if (pendingTargetRef.current !== null) {
+            const pending = pendingTargetRef.current;
+            pendingTargetRef.current = null;
+            if (pending === index) return;
         }
-        snapToRatio(lastIndex > 0 ? index / lastIndex : 0, true);
-    }, [index, lastIndex, dragging, snapToRatio]);
+
+        progress.value = withSpring(
+            lastIndex > 0 ? Math.min(1, Math.max(0, index / lastIndex)) : 0,
+            SETTLE_SPRING
+        );
+    }, [index, lastIndex, activeDetent, dragActive, progress]);
 
     const fillStyle = useAnimatedStyle(() => {
         const travel = Math.max(0, width.value - KNOB_INSET * 2);
@@ -211,89 +262,102 @@ export function NotificationSlider({ labels, index, onChange }: NotificationSlid
         opacity: progress.value > 0.001 ? 1 : 0,
     }));
 
+    const travel = Math.max(0, trackWidth - KNOB_INSET * 2);
+    const labelSlot = trackWidth > 0
+        ? Math.max(MIN_LABEL_SLOT, lastIndex > 0 ? travel / lastIndex : trackWidth)
+        : 0;
+
     return (
         <View style={styles.container}>
-            <View
-                ref={areaRef}
-                style={styles.trackArea}
-                onLayout={(e) => {
-                    const w = e.nativeEvent.layout.width;
-                    if (w > 0) {
-                        widthRef.current = w;
-                        width.value = w;
-                    }
-                    measure();
-                }}
-                {...responder.panHandlers}
-                accessible
-                accessibilityRole="adjustable"
-                accessibilityLabel="Notification intensity"
-                accessibilityValue={{ min: 0, max: lastIndex, now: index, text: labels[index] }}
-                accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                onAccessibilityAction={(e) => {
-                    if (e.nativeEvent.actionName === 'increment') commit(index + 1);
-                    if (e.nativeEvent.actionName === 'decrement') commit(index - 1);
-                }}
-            >
+            <GestureDetector gesture={gesture}>
                 <View
-                    pointerEvents="none"
-                    style={[styles.track, { height: TRACK_HEIGHT, borderRadius: TRACK_HEIGHT / 2, backgroundColor: colors.surface }]}
+                    style={styles.trackArea}
+                    onLayout={(e) => {
+                        const w = e.nativeEvent.layout.width;
+                        if (w <= 0) return;
+                        width.value = w;
+                        setTrackWidth(prev => (prev === w ? prev : w));
+                    }}
+                    accessible
+                    accessibilityRole="adjustable"
+                    accessibilityLabel="Notification intensity"
+                    accessibilityValue={{ min: 0, max: lastIndex, now: index, text: labels[index] }}
+                    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                    onAccessibilityAction={(e) => {
+                        const next = e.nativeEvent.actionName === 'increment' ? index + 1 : index - 1;
+                        const clamped = Math.max(0, Math.min(lastIndex, next));
+                        if (clamped !== index) onChange(clamped);
+                    }}
                 >
-                    {/* Fill length doubles as the intensity read-out: more colour means more nagging.
-                        Only the left corners are rounded. Rounding the right end too left a dark
-                        wedge between fill and knob that read as the two being unconnected. */}
-                    <Animated.View
-                        style={[
-                            {
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                borderTopLeftRadius: TRACK_HEIGHT / 2,
-                                borderBottomLeftRadius: TRACK_HEIGHT / 2,
-                                backgroundColor: colors.tint,
-                            },
-                            fillStyle,
-                            fillOpacity,
-                        ]}
-                    />
-                    {/* Knob punches a hole in the fill so it stays readable on both halves of the track. */}
-                    <Animated.View
-                        style={[
-                            styles.knob,
-                            {
-                                width: KNOB_SIZE,
-                                height: KNOB_SIZE,
-                                borderRadius: KNOB_INSET,
-                                backgroundColor: colors.background,
-                                borderColor: colors.tint,
-                            },
-                            knobStyle,
-                        ]}
-                    />
+                    <View
+                        pointerEvents="none"
+                        style={[styles.track, { height: TRACK_HEIGHT, borderRadius: TRACK_HEIGHT / 2, backgroundColor: colors.surface }]}
+                    >
+                        {/* Fill length doubles as the intensity read-out: more colour means more nagging.
+                            Only the left corners are rounded. Rounding the right end too left a dark
+                            wedge between fill and knob that read as the two being unconnected. */}
+                        <Animated.View
+                            style={[
+                                {
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    borderTopLeftRadius: TRACK_HEIGHT / 2,
+                                    borderBottomLeftRadius: TRACK_HEIGHT / 2,
+                                    backgroundColor: colors.tint,
+                                },
+                                fillStyle,
+                                fillOpacity,
+                            ]}
+                        />
+                        {/* Knob punches a hole in the fill so it stays readable on both halves of the track. */}
+                        <Animated.View
+                            style={[
+                                styles.knob,
+                                {
+                                    width: KNOB_SIZE,
+                                    height: KNOB_SIZE,
+                                    borderRadius: KNOB_INSET,
+                                    backgroundColor: colors.background,
+                                    borderColor: colors.tint,
+                                },
+                                knobStyle,
+                            ]}
+                        />
+                    </View>
                 </View>
-            </View>
+            </GestureDetector>
 
             <View style={styles.labels} pointerEvents="none">
-                {labels.map((label, i) => (
-                    <ThemedText
-                        key={label}
-                        numberOfLines={1}
-                        style={[
-                            styles.label,
-                            {
-                                // secondary, not textTertiary: tertiary is ~2.8:1 on the
-                                // warm background and these labels are only 10px.
-                                color: i === index ? colors.text : colors.secondary,
-                                fontFamily: i === index
-                                    ? Typography.fontFamily.bold
-                                    : Typography.fontFamily.medium,
-                            },
-                        ]}
-                    >
-                        {label}
-                    </ThemedText>
-                ))}
+                {trackWidth > 0 && labels.map((label, i) => {
+                    // Detent centres, not equal flex slots: the first and last
+                    // positions are half a knob in from each edge because the
+                    // knob travels between those two centres.
+                    const center = lastIndex > 0
+                        ? KNOB_INSET + (i / lastIndex) * travel
+                        : trackWidth / 2;
+                    const active = i === displayIndex;
+                    return (
+                        <ThemedText
+                            key={`${label}-${i}`}
+                            numberOfLines={1}
+                            style={[
+                                styles.label,
+                                {
+                                    left: center - labelSlot / 2,
+                                    width: labelSlot,
+                                    color: active ? colors.text : colors.secondary,
+                                    fontFamily: active
+                                        ? Typography.fontFamily.bold
+                                        : Typography.fontFamily.medium,
+                                },
+                            ]}
+                        >
+                            {label}
+                        </ThemedText>
+                    );
+                })}
             </View>
         </View>
     );
@@ -321,13 +385,13 @@ const styles = StyleSheet.create({
     },
     labels: {
         height: LABEL_STRIP,
-        paddingTop: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        position: 'relative',
     },
     label: {
+        position: 'absolute',
+        top: LABEL_TOP,
         fontSize: 10,
         letterSpacing: 0.2,
+        textAlign: 'center',
     },
 });

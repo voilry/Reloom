@@ -1,7 +1,8 @@
-import { View, StyleSheet, Modal, TextInput, Platform, ScrollView, DeviceEventEmitter } from 'react-native';
+import { View, StyleSheet, Modal, TextInput, Platform, ScrollView, DeviceEventEmitter, Keyboard, Dimensions } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeOut, FadeInDown, Easing } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInDown, Easing, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '../ui/ThemedText';
@@ -67,58 +68,124 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     const lastPresetRef = useRef(DEFAULT_NUDGE);
     const searchInputRef = useRef<TextInput>(null);
     const mountedRef = useRef(true);
+    const initializedRef = useRef(false);
+
+    // Portrait-locked, so this stays stable while the keyboard resizes the window.
+    const slideDistance = Dimensions.get('screen').height + 32;
+    const translateY = useSharedValue(slideDistance);
+    const [modalMounted, setModalMounted] = useState(visible);
+    const [activeReminder, setActiveReminder] = useState<Reminder | null>(editingReminder ?? null);
+
+    // Keep the mode stable while the page slides away; Calendar clears its
+    // editingReminder prop as soon as it asks us to close.
+    useEffect(() => {
+        if (visible) setActiveReminder(editingReminder ?? null);
+    }, [visible, editingReminder]);
 
     useEffect(() => {
         mountedRef.current = true;
         return () => { mountedRef.current = false; };
     }, []);
 
-    // Initial State logic
+    // Android's native Modal animation tears down the dialog content before
+    // the window finishes sliding out. Keep the page mounted and slide it
+    // ourselves so the content stays visible all the way off-screen.
     useEffect(() => {
         if (visible) {
-            if (editingReminder) {
-                setTitle(editingReminder.title);
-                setDescription(editingReminder.description || '');
-                setTime(editingReminder.time || '09:00');
-                setSelectedDate(editingReminder.date);
-                setPersonId(editingReminder.personId || null);
-                setNudgeType(editingReminder.nudgeType || DEFAULT_NUDGE);
-                setCustomCount(editingReminder.customNudgesCount || 0);
-                setStyleIcon(editingReminder.icon || 'Bell');
-                setStyleColor(editingReminder.color || REMINDER_COLORS[0].value);
-                lastPresetRef.current = NUDGE_STEPS.some((s) => s.value === editingReminder.nudgeType)
-                    ? editingReminder.nudgeType!
-                    : DEFAULT_NUDGE;
-            } else {
-                setTitle('');
-                setDescription('');
-                setTime('09:00');
-                setPersonId(null);
-                setNudgeType(DEFAULT_NUDGE);
-                setCustomCount(0);
-                setStyleIcon('Bell');
-                setStyleColor(REMINDER_COLORS[0].value);
-                lastPresetRef.current = DEFAULT_NUDGE;
-
-                const d = date || new Date();
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                setSelectedDate(`${y}-${m}-${day}`);
+            if (!modalMounted) {
+                translateY.value = slideDistance;
+                setModalMounted(true);
             }
-            loadPeople();
+            return;
+        }
+
+        if (!modalMounted) return;
+
+        translateY.value = withTiming(
+            slideDistance,
+            { duration: 220, easing: Easing.bezier(0.3, 0.0, 0.8, 0.15) },
+            (finished) => {
+                if (finished) runOnJS(setModalMounted)(false);
+            }
+        );
+    }, [visible, modalMounted, slideDistance, translateY]);
+
+    useEffect(() => {
+        if (!modalMounted || !visible) return;
+
+        translateY.value = withTiming(0, {
+            duration: 260,
+            easing: Easing.bezier(0.2, 0.0, 0.0, 1.0),
+        });
+    }, [modalMounted, visible, slideDistance, translateY]);
+
+    const pageAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    // Initial State logic
+    useEffect(() => {
+        // Reset for the next open. Doing this on open (instead of on close)
+        // keeps the current values on screen while the page slides away.
+        if (!visible) {
+            initializedRef.current = false;
+            return;
+        }
+
+        // Home passes `date={new Date()}`, a fresh object on every parent
+        // render. Without this guard, an unrelated re-render while the sheet
+        // is open would re-run this effect and wipe what the user has typed.
+        if (initializedRef.current) return;
+        initializedRef.current = true;
+
+        setSearchQuery('');
+        if (editingReminder) {
+            setTitle(editingReminder.title);
+            setDescription(editingReminder.description || '');
+            setTime(editingReminder.time || '09:00');
+            setSelectedDate(editingReminder.date);
+            setPersonId(editingReminder.personId || null);
+            // Unknown/stale values would leave the slider showing On Time while
+            // the stored value is something the scheduler does not understand.
+            const validNudge = editingReminder.nudgeType === 'custom' ||
+                NUDGE_STEPS.some((s) => s.value === editingReminder.nudgeType)
+                ? editingReminder.nudgeType!
+                : DEFAULT_NUDGE;
+            setNudgeType(validNudge);
+            const storedCustomCount = Math.max(
+                0,
+                Math.min(10, editingReminder.customNudgesCount || 0)
+            );
+            // 0 is not a valid custom state (it would schedule only the
+            // on-time ping), so repair legacy rows when they are reopened.
+            setCustomCount(
+                validNudge === 'custom'
+                    ? Math.max(1, storedCustomCount)
+                    : storedCustomCount
+            );
+            setStyleIcon(editingReminder.icon || 'Bell');
+            setStyleColor(editingReminder.color || REMINDER_COLORS[0].value);
+            lastPresetRef.current = NUDGE_STEPS.some((s) => s.value === validNudge)
+                ? validNudge
+                : DEFAULT_NUDGE;
         } else {
-            // Reset state immediately when closed to prevent "blinking" on next open
             setTitle('');
             setDescription('');
+            setTime('09:00');
             setPersonId(null);
-            setSearchQuery('');
             setNudgeType(DEFAULT_NUDGE);
             setCustomCount(0);
             setStyleIcon('Bell');
             setStyleColor(REMINDER_COLORS[0].value);
             lastPresetRef.current = DEFAULT_NUDGE;
+
+            const d = date || new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            setSelectedDate(`${y}-${m}-${day}`);
         }
+        loadPeople();
     // REMINDER_COLORS[0].value is read inside for the style swatch default
 }, [visible, editingReminder, date]);
 
@@ -181,19 +248,26 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
     };
 
     const isDirty = useMemo(() => {
-        if (!editingReminder) return false;
+        if (!activeReminder) return false;
         return (
-            title !== (editingReminder.title || '') ||
-            description !== (editingReminder.description || '') ||
-            time !== (editingReminder.time || '09:00') ||
-            selectedDate !== (editingReminder.date || '') ||
-            personId !== (editingReminder.personId || null) ||
-            nudgeType !== (editingReminder.nudgeType || 'on_time') ||
-            customCount !== (editingReminder.customNudgesCount || 0) ||
-            styleIcon !== (editingReminder.icon || 'Bell') ||
-            styleColor !== (editingReminder.color || REMINDER_COLORS[0].value)
+            title !== (activeReminder.title || '') ||
+            description !== (activeReminder.description || '') ||
+            time !== (activeReminder.time || '09:00') ||
+            selectedDate !== (activeReminder.date || '') ||
+            personId !== (activeReminder.personId || null) ||
+            nudgeType !== (activeReminder.nudgeType || 'on_time') ||
+            customCount !== (activeReminder.customNudgesCount || 0) ||
+            styleIcon !== (activeReminder.icon || 'Bell') ||
+            styleColor !== (activeReminder.color || REMINDER_COLORS[0].value)
         );
-    }, [editingReminder, title, description, time, selectedDate, personId, nudgeType, customCount, styleIcon, styleColor]);
+    }, [activeReminder, title, description, time, selectedDate, personId, nudgeType, customCount, styleIcon, styleColor]);
+
+    const handleClose = () => {
+        // If the keyboard is open, dismiss it before sliding the modal away so
+        // the keyboard and modal windows don't animate out at the same time.
+        Keyboard.dismiss();
+        onClose();
+    };
 
     const handleSave = async () => {
         if (!title.trim()) return;
@@ -207,8 +281,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                 }
             }).catch(() => {});
 
-            if (editingReminder) {
-                await ReminderRepository.update(editingReminder.id, {
+            if (activeReminder) {
+                await ReminderRepository.update(activeReminder.id, {
                     title,
                     description,
                     date: selectedDate,
@@ -236,8 +310,8 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
 
             DeviceEventEmitter.emit('refreshCalendar');
             if (hapticsEnabled && Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            onSuccess();
-            onClose();
+            onSuccess?.();
+            handleClose();
         } catch (error) {
             console.error('Failed to save reminder:', error);
         } finally {
@@ -247,18 +321,19 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
 
     return (
         <Modal
-            visible={visible}
-            animationType="slide"
+            visible={modalMounted}
+            animationType="none"
             transparent={true}
             statusBarTranslucent={true}
-            onRequestClose={onClose}
+            onRequestClose={handleClose}
         >
-            <View style={[styles.modalPage, { backgroundColor: colors.background }]}>
+            <GestureHandlerRootView style={styles.modalRoot}>
+            <Animated.View style={[styles.modalPage, { backgroundColor: colors.background }, pageAnimatedStyle]}>
                 <StatusBar style="auto" />
 
                 <View style={[styles.modalHeaderFullScreen, { paddingTop: insets.top + 8 }]}>
                     <ScalePressable
-                        onPress={onClose}
+                        onPress={handleClose}
                         style={styles.modalHeaderAction}
                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                         overlayColor="transparent"
@@ -267,7 +342,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                         <X size={24} color={colors.text} />
                     </ScalePressable>
                     <ThemedText type="display" style={{ fontSize: 22 }}>
-                        {editingReminder ? 'Edit Reminder' : 'Add Reminder'}
+                        {activeReminder ? 'Edit Reminder' : 'Add Reminder'}
                     </ThemedText>
                     <ScalePressable
                         onPress={handleSave}
@@ -276,7 +351,7 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                         scaleTo={0.9}
                     >
-                        <Check size={22} color={title.trim() && (isDirty || !editingReminder) ? colors.tint : colors.text} weight="bold" />
+                        <Check size={22} color={title.trim() && (isDirty || !activeReminder) ? colors.tint : colors.text} weight="bold" />
                     </ScalePressable>
                 </View>
 
@@ -296,7 +371,6 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                                     placeholder="What's the plan?"
                                     style={styles.titleInput}
                                     containerStyle={{ marginBottom: 12 }}
-                                    autoFocus={!editingReminder}
                                 />
                             </View>
                             <View style={{ position: 'relative' }}>
@@ -548,12 +622,14 @@ export function AddReminderModal({ visible, onClose, date, onSuccess, editingRem
                             )}
                         </View>
                 </KeyboardAwareScrollView>
-            </View>
+            </Animated.View>
+            </GestureHandlerRootView>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
+    modalRoot: { flex: 1 },
     modalPage: { flex: 1 },
     modalHeaderFullScreen: {
         flexDirection: 'row',
