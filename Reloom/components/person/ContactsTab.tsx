@@ -62,14 +62,6 @@ const PLATFORM_LABELS: Record<string, string> = {
     website: 'Website',
 };
 
-const ACTION_LABELS: Record<string, string> = {
-    phone: 'Call',
-    sms: 'Message',
-    email: 'Email',
-    whatsapp: 'WhatsApp',
-    website: 'Visit website',
-};
-
 const SOCIAL_PLATFORMS = new Set([
     'instagram',
     'facebook',
@@ -122,14 +114,6 @@ function formatPlatform(platform: string) {
     const cleaned = platform.trim();
     if (!cleaned) return 'Contact';
     return PLATFORM_LABELS[cleaned.toLowerCase()] ?? cleaned.replace(/\b\w/g, char => char.toUpperCase());
-}
-
-function getActionLabel(platform: string) {
-    const lower = platform.toLowerCase();
-    if (SOCIAL_PLATFORMS.has(lower)) {
-        return `Open ${formatPlatform(platform)}`;
-    }
-    return ACTION_LABELS[lower] ?? formatPlatform(platform);
 }
 
 function getEllipsizeMode(platform: string): 'middle' | 'tail' {
@@ -500,7 +484,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                                     scaleTo={0.975}
                                     hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                                     accessibilityRole="button"
-                                    accessibilityLabel={`${getActionLabel(primaryContact.platform)} ${primaryContact.value}`}
+                                    accessibilityLabel={`${formatPlatform(primaryContact.platform)} ${primaryContact.value}`}
                                 >
                                     <View style={[styles.heroIcon, { backgroundColor: `${colors.tint}18` }]}>
                                         <PlatformGlyph
@@ -514,7 +498,7 @@ export function ContactsTab({ contacts, onAdd, onDelete, onEdit, theme, isAcryli
                                             style={[styles.heroAction, { color: colors.secondary }]}
                                             numberOfLines={1}
                                         >
-                                            {getActionLabel(primaryContact.platform)}
+                                            {formatPlatform(primaryContact.platform)}
                                         </ThemedText>
                                         <ThemedText
                                             style={[styles.heroValue, { color: colors.text }]}
