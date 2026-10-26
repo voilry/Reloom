@@ -47,11 +47,41 @@ export class GroupRepository {
         return result[0];
     }
 
+    static async addPeopleToGroup(personIds: number[], groupId: number) {
+        if (personIds.length === 0) return;
+
+        const existing = await db.select({ personId: personGroups.personId })
+            .from(personGroups)
+            .where(and(
+                eq(personGroups.groupId, groupId),
+                inArray(personGroups.personId, personIds)
+            ));
+
+        const existingIds = new Set(existing.map(row => row.personId));
+        const rows = personIds
+            .filter(personId => !existingIds.has(personId))
+            .map(personId => ({ personId, groupId }));
+
+        if (rows.length === 0) return;
+
+        await db.insert(personGroups).values(rows);
+    }
+
     static async removePersonFromGroup(personId: number, groupId: number) {
         await db.delete(personGroups)
             .where(and(
                 eq(personGroups.personId, personId),
                 eq(personGroups.groupId, groupId)
+            ));
+    }
+
+    static async removePeopleFromGroup(personIds: number[], groupId: number) {
+        if (personIds.length === 0) return;
+
+        await db.delete(personGroups)
+            .where(and(
+                eq(personGroups.groupId, groupId),
+                inArray(personGroups.personId, personIds)
             ));
     }
 

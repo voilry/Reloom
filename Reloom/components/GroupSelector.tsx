@@ -267,7 +267,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                             onPress={() => setSelectedIcon(icon)}
                                             style={[
                                                 styles.iconOption,
-                                                selectedIcon === icon && { backgroundColor: selectedColor, borderColor: selectedColor }
+                                                { backgroundColor: selectedIcon === icon ? selectedColor : colors.surface }
                                             ]}
                                             innerStyle={{ borderRadius: 18 }}
                                             scale={false}
@@ -329,7 +329,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             <View style={styles.modalHeader}>
                                 <View>
                                     <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Edit Group</ThemedText>
-                                    <ThemedText type="small" style={{ opacity: 0.6, marginTop: -2, fontSize: 12 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
+                                    <ThemedText type="small" style={{ opacity: 0.55, marginTop: -2, fontSize: 12 }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</ThemedText>
                                 </View>
                                 {onManageMembers && (
                                     <ScalePressable
@@ -350,13 +350,15 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                             </View>
 
                             <View style={styles.modalContent}>
-                                    <Input
-                                        label="Group Name"
-                                        placeholder="..."
-                                        value={editName}
-                                        onChangeText={setEditName}
-                                        maxLength={25}
-                                    />
+                                <ThemedText style={styles.label}>Group name</ThemedText>
+                                <Input
+                                    placeholder="..."
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                    maxLength={25}
+                                    containerStyle={{ marginBottom: 0 }}
+                                    style={{ minHeight: 50 }}
+                                />
 
                                 <ThemedText style={styles.label}>Update color</ThemedText>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectorScroll}>
@@ -384,7 +386,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                             onPress={() => setEditIcon(icon)}
                                             style={[
                                                 styles.iconOption,
-                                                editIcon === icon && { backgroundColor: editColor, borderColor: editColor }
+                                                { backgroundColor: editIcon === icon ? editColor : colors.surface }
                                             ]}
                                             innerStyle={{ borderRadius: 18 }}
                                             scale={false}
@@ -395,7 +397,7 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
                                     ))}
                                 </ScrollView>
 
-                                <View style={{ gap: 12, marginTop: 16 }}>
+                                <View style={{ gap: 10, marginTop: 12 }}>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <ScalePressable
                                             onPress={() => setSelectedGroupToEdit(null)}
@@ -417,12 +419,13 @@ export const GroupSelector = forwardRef<GroupSelectorHandle, GroupSelectorProps>
 
                                     <ScalePressable
                                         onPress={handleDelete}
-                                        style={[styles.actionBtn, { backgroundColor: colors.error + '25', marginTop: 4 }]}
-                                        innerStyle={{ borderRadius: 12 }}
-                                        scaleTo={0.95}
+                                        style={styles.deleteRow}
+                                        scaleTo={0.97}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Delete Group"
                                     >
-                                        <Trash size={18} color={colors.error} weight="bold" />
-                                        <ThemedText style={{ color: colors.error, fontWeight: '800', fontSize: 14 }}>Delete Group</ThemedText>
+                                        <Trash size={16} color={colors.error} weight="fill" />
+                                        <ThemedText style={{ color: colors.error, fontFamily: Typography.fontFamily.semibold, fontSize: 13.5 }}>Delete Group</ThemedText>
                                     </ScalePressable>
                                 </View>
                             </View>
@@ -472,16 +475,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        paddingHorizontal: 16,
+        paddingTop: 13,
+        paddingBottom: 10,
     },
     modalContent: {
-        padding: 16,
+        paddingHorizontal: 14,
+        paddingTop: 0,
+        paddingBottom: 12,
     },
     selectorScroll: {
-        marginTop: 4,
-        marginBottom: 12,
+        marginTop: 0,
+        marginBottom: 8,
         maxHeight: 40,
     },
     iconOption: {
@@ -491,8 +496,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
     },
     colorOption: {
         width: 32,
@@ -508,20 +511,29 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     actionBtn: {
-        height: 48,
+        height: 46,
         borderRadius: 12,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 8,
     },
+    deleteRow: {
+        height: 44,
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        paddingHorizontal: 14,
+        gap: 7,
+    },
     label: {
-        fontSize: 13,
-        fontWeight: '800',
-        marginTop: 12,
-        marginBottom: 2,
+        fontSize: 12,
+        fontFamily: Typography.fontFamily.semibold,
+        marginTop: 10,
+        marginBottom: 4,
         opacity: 0.5,
-        textTransform: 'none',
-        letterSpacing: 1,
+        letterSpacing: 0.2,
     }
 });

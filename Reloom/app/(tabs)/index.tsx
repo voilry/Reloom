@@ -1061,25 +1061,25 @@ export default function PeopleScreen() {
                     setModalMembers([]);
                     loadPeople();
                 }}
-                onToggleMember={async (id, isAdding) => {
-                    if (!groupToManage) return;
-                    if (isAdding) {
-                        // Check if already in group (security/data integrity)
-                        const isInGroup = modalMembers.some(m => m.id === id);
-                        if (isInGroup) {
-                            await GroupRepository.removePersonFromGroup(id, groupToManage.id);
-                        } else {
-                            await GroupRepository.addPersonToGroup(id, groupToManage.id);
-                        }
-                    } else {
-                        // In management mode, this is a remove button
-                        await GroupRepository.removePersonFromGroup(id, groupToManage.id);
-                    }
+                onAddMembers={async (ids) => {
+                    if (!groupToManage || ids.length === 0) return;
+                    await GroupRepository.addPeopleToGroup(ids, groupToManage.id);
 
-                    // Refresh modal members to stay focused
-                    const members = await GroupRepository.getPeopleInGroup(groupToManage.id, settings.defaultSort);
-                    setModalMembers(members);
-                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                    const idSet = new Set(ids);
+                    setModalMembers((prev) => {
+                        const existing = new Set(prev.map((p) => p.id));
+                        const added = allPeople.filter(
+                            (p) => idSet.has(p.id) && !existing.has(p.id)
+                        );
+                        return [...prev, ...added];
+                    });
+                }}
+                onRemoveMembers={async (ids) => {
+                    if (!groupToManage || ids.length === 0) return;
+                    await GroupRepository.removePeopleFromGroup(ids, groupToManage.id);
+
+                    const idSet = new Set(ids);
+                    setModalMembers((prev) => prev.filter((p) => !idSet.has(p.id)));
                 }}
                 colors={colors}
                 theme={theme}
