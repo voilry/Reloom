@@ -1,13 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable, FlatList } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Modal, Pressable } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Calendar } from '@/components/ui/Icon';
-import { BlurView } from 'expo-blur';
 import { DesignSystem } from '../../constants/DesignSystem';
-import * as Haptics from 'expo-haptics';
+import { Typography } from '../../constants/Typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { ScalePressable } from './ScalePressable';
 
 interface DeleteModalProps {
@@ -20,17 +18,17 @@ interface DeleteModalProps {
     actionColor?: string;
 }
 
-export function DeleteModal({ 
-    visible, 
-    title, 
-    description, 
-    onCancel, 
-    onDelete, 
-    actionLabel = 'Delete', 
+export function DeleteModal({
+    visible,
+    title,
+    description,
+    onCancel,
+    onDelete,
+    actionLabel = 'Delete',
     actionColor = '#ef4444',
     actionTextColor = '#fff'
 }: DeleteModalProps & { actionTextColor?: string }) {
-    const { colors, hapticsEnabled } = useAppTheme();
+    const { colors } = useAppTheme();
     const insets = useSafeAreaInsets();
 
     if (!visible) return null;
@@ -39,41 +37,39 @@ export function DeleteModal({
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onCancel}>
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                    entering={FadeIn.duration(250)}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                 />
                 <Pressable style={styles.modalBackdrop} onPress={onCancel}>
                     <Animated.View
                         entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
                         style={[
-                            styles.modalContent, 
-                            { 
+                            styles.modalContent,
+                            {
                                 backgroundColor: colors.card,
                                 paddingBottom: 100 + insets.bottom + 24
                             }
                         ]}
                         onStartShouldSetResponder={() => true}
                     >
-                        <View style={styles.handle} />
+                        <View style={[styles.handle, { backgroundColor: colors.border }]} />
                         <ThemedText type="sectionHeader" style={styles.title}>{title}</ThemedText>
-                        <ThemedText style={[styles.description, { color: colors.secondary }]}>{description}</ThemedText>
+                        <ThemedText style={[styles.description, { color: colors.textSecondary }]}>{description}</ThemedText>
 
                         <View style={styles.actions}>
                             <ScalePressable
                                 style={[styles.button, { backgroundColor: actionColor, flex: 1, marginRight: 8 }]}
                                 innerStyle={{ borderRadius: 16 }}
-                                onPress={() => {
-                                    onDelete();
-                                }}
+                                onPress={onDelete}
                             >
-                                <ThemedText style={{ color: actionTextColor, fontWeight: '800', textAlign: 'center' }}>{actionLabel}</ThemedText>
+                                <ThemedText style={[styles.buttonLabel, { color: actionTextColor }]}>{actionLabel}</ThemedText>
                             </ScalePressable>
                             <ScalePressable
                                 style={[styles.button, { backgroundColor: colors.surface, flex: 1, marginLeft: 8 }]}
                                 innerStyle={{ borderRadius: 16 }}
                                 onPress={onCancel}
                             >
-                                <ThemedText style={{ fontWeight: '700', textAlign: 'center' }}>Cancel</ThemedText>
+                                <ThemedText style={styles.buttonLabel}>Cancel</ThemedText>
                             </ScalePressable>
                         </View>
                     </Animated.View>
@@ -94,38 +90,43 @@ const styles = StyleSheet.create({
     modalContent: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingTop: 14,
         marginBottom: -100,
-        paddingBottom: 100 + 20,
         ...DesignSystem.shadows.xl,
     },
     handle: {
-        width: 40,
-        height: 5,
-        backgroundColor: 'rgba(128,128,128,0.2)',
-        borderRadius: 2.5,
+        width: 36,
+        height: 4,
+        borderRadius: 2,
         alignSelf: 'center',
-        marginBottom: 20,
+        marginBottom: 18,
     },
     title: {
-        marginBottom: 12,
+        marginBottom: 8,
         textAlign: 'center',
     },
     description: {
-        fontSize: 15,
-        lineHeight: 22,
+        fontSize: 14.5,
+        lineHeight: 21,
         textAlign: 'center',
-        marginBottom: 32,
-        paddingHorizontal: 16,
+        marginBottom: 26,
+        paddingHorizontal: 8,
+        fontFamily: Typography.fontFamily.regular,
     },
     actions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     button: {
-        paddingVertical: 16,
+        height: 52,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-    }
+    },
+    buttonLabel: {
+        fontSize: 15.5,
+        fontFamily: Typography.fontFamily.semibold,
+        textAlign: 'center',
+    },
 });

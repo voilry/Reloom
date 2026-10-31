@@ -6,7 +6,7 @@ import { Typography } from '../../constants/Typography';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { Check, Folder } from '@/components/ui/Icon';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Group } from '../../db/repositories/GroupRepository';
 import { getGroupIcon } from '../../constants/GroupIcons';
@@ -20,13 +20,15 @@ interface ManageGroupsModalProps {
     onToggleGroup: (groupId: number) => Promise<void>;
 }
 
+const EASE_ENTER = Easing.bezier(0.05, 0.7, 0.1, 1.0);
+
 export function ManageGroupsModal({ visible, onClose, personName, allGroups, personGroups, onToggleGroup }: ManageGroupsModalProps) {
     const { colors, hapticsEnabled } = useAppTheme();
     const insets = useSafeAreaInsets();
 
     const triggerHaptic = () => {
         if (hapticsEnabled && Platform.OS !== 'web') {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.selectionAsync().catch(() => {});
         }
     };
 
@@ -40,87 +42,94 @@ export function ManageGroupsModal({ visible, onClose, personName, allGroups, per
         >
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
-                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}
+                    entering={FadeIn.duration(240).easing(EASE_ENTER)}
+                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                 />
                 <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={onClose}>
                     <Animated.View
-                        entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
+                        entering={SlideInDown.duration(360).easing(EASE_ENTER)}
                         onStartShouldSetResponder={() => true}
                         style={[
                             styles.bottomSheet,
                             {
                                 backgroundColor: colors.card,
-                                paddingBottom: 100 + insets.bottom + 32,
-                                minHeight: 500,
+                                paddingBottom: 100 + insets.bottom + 28,
                             }
                         ]}
                     >
-                        <View style={styles.handle} />
+                        <View style={[styles.handle, { backgroundColor: colors.border }]} />
                         <View style={styles.sheetHeader}>
-                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Manage Groups</ThemedText>
-                            <ThemedText type="small" style={{ color: colors.secondary, marginTop: 4 }}>
+                            <ThemedText style={styles.sheetTitle}>Manage Groups</ThemedText>
+                            <ThemedText style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
                                 Add or remove {personName} from groups
                             </ThemedText>
                         </View>
 
                         <ScrollView
-                            style={{ maxHeight: 500 }}
+                            style={{ maxHeight: 440 }}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 20 }}
+                            contentContainerStyle={{ paddingBottom: 8 }}
                         >
                             {allGroups.length > 0 ? (
-                                allGroups.map(g => {
+                                allGroups.map((g, index) => {
                                     const isSelected = personGroups.some(pg => pg.id === g.id);
                                     const groupColor = g.color || colors.tint;
                                     const IconComponent = getGroupIcon(g.icon);
 
                                     return (
-                                        <ScalePressable
+                                        <Animated.View
                                             key={g.id}
-                                            style={[
-                                                styles.groupOption,
-                                                {
-                                                    backgroundColor: colors.surface,
-                                                }
-                                            ]}
-                                            onPress={() => {
-                                                triggerHaptic();
-                                                onToggleGroup(g.id);
-                                            }}
-                                            scaleTo={0.96}
+                                            entering={FadeInDown.delay(60 + Math.min(index, 8) * 26)
+                                                .duration(300)
+                                                .easing(EASE_ENTER)}
                                         >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                                                 <IconComponent
-                                                     size={22}
-                                                     color={isSelected ? groupColor : colors.secondary}
-                                                     weight={isSelected ? 'fill' : 'regular'}
-                                                 />
-                                                 <ThemedText style={{
-                                                     color: isSelected ? colors.text : colors.secondary,
-                                                     fontFamily: isSelected ? Typography.fontFamily.bold : Typography.fontFamily.medium,
-                                                     fontSize: 17,
-                                                 }}>
-                                                     {g.name}
-                                                 </ThemedText>
-                                            </View>
-                                            <View style={[
-                                                styles.checkCircle,
-                                                {
-                                                    backgroundColor: isSelected ? groupColor : 'transparent',
-                                                    borderColor: isSelected ? groupColor : colors.border,
-                                                }
-                                            ]}>
-                                                {isSelected && <Check size={12} color="#fff" weight="bold" />}
-                                            </View>
-                                        </ScalePressable>
+                                            <ScalePressable
+                                                style={styles.groupOption}
+                                                onPress={() => {
+                                                    triggerHaptic();
+                                                    onToggleGroup(g.id);
+                                                }}
+                                                scaleTo={0.985}
+                                                haptic={false}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`${g.name}, ${isSelected ? 'in group' : 'not in group'}`}
+                                            >
+                                                <View style={styles.groupIdentity}>
+                                                    <IconComponent
+                                                        size={22}
+                                                        color={isSelected ? groupColor : colors.textTertiary}
+                                                        weight="fill"
+                                                    />
+                                                    <ThemedText
+                                                        numberOfLines={1}
+                                                        style={[
+                                                            styles.groupName,
+                                                            {
+                                                                color: isSelected ? colors.text : colors.textSecondary,
+                                                                fontFamily: isSelected
+                                                                    ? Typography.fontFamily.semibold
+                                                                    : Typography.fontFamily.medium,
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {g.name}
+                                                    </ThemedText>
+                                                </View>
+                                                {isSelected ? (
+                                                    <Check size={18} color={groupColor} weight="fill" />
+                                                ) : null}
+                                            </ScalePressable>
+                                        </Animated.View>
                                     );
                                 })
                             ) : (
-                                <View style={{ paddingTop: 60, alignItems: 'center' }}>
-                                    <Folder size={64} color={colors.secondary + '4D'} />
-                                    <ThemedText style={{ color: colors.secondary, marginTop: 16, textAlign: 'center', fontSize: 16 }}>
-                                        No groups created yet
+                                <View style={styles.emptyState}>
+                                    <Folder size={44} color={colors.textTertiary} weight="fill" />
+                                    <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
+                                        No groups yet
+                                    </ThemedText>
+                                    <ThemedText style={[styles.emptyBody, { color: colors.textSecondary }]}>
+                                        Create a group first, then add {personName} to it.
                                     </ThemedText>
                                 </View>
                             )}
@@ -140,43 +149,74 @@ const styles = StyleSheet.create({
     bottomSheet: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        padding: 24,
+        paddingHorizontal: 20,
+        paddingTop: 14,
         marginBottom: -100,
-        paddingBottom: 100 + 24,
         ...DesignSystem.shadows.xl,
     },
     handle: {
-        width: 40,
-        height: 5,
-        backgroundColor: 'rgba(128,128,128,0.2)',
-        borderRadius: 2.5,
+        width: 36,
+        height: 4,
+        borderRadius: 2,
         alignSelf: 'center',
-        marginBottom: 24,
+        marginBottom: 16,
     },
     sheetHeader: {
-        marginBottom: 24,
+        marginBottom: 12,
+    },
+    sheetTitle: {
+        fontSize: 22,
+        lineHeight: 28,
+        letterSpacing: -0.3,
+        fontFamily: Typography.fontFamily.serif,
+    },
+    sheetSubtitle: {
+        marginTop: 3,
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: Typography.fontFamily.regular,
     },
     groupOption: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 14,
-        borderRadius: DesignSystem.radius.lg,
-        marginBottom: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 2,
+        minHeight: 50,
     },
-    groupIconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        justifyContent: 'center',
+    groupIdentity: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 13,
+        paddingRight: 12,
     },
-    checkCircle: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        borderWidth: 2,
-        justifyContent: 'center',
+    groupName: {
+        fontSize: 16,
+        lineHeight: 21,
+        letterSpacing: -0.1,
+        flexShrink: 1,
+    },
+    emptyState: {
         alignItems: 'center',
+        paddingTop: 40,
+        paddingBottom: 32,
+        paddingHorizontal: 20,
+    },
+    emptyTitle: {
+        marginTop: 14,
+        fontSize: 20,
+        lineHeight: 26,
+        letterSpacing: -0.4,
+        textAlign: 'center',
+        fontFamily: Typography.fontFamily.serif,
+    },
+    emptyBody: {
+        marginTop: 6,
+        fontSize: 13,
+        lineHeight: 19,
+        textAlign: 'center',
+        maxWidth: 270,
+        fontFamily: Typography.fontFamily.regular,
     },
 });

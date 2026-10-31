@@ -131,6 +131,7 @@ export const Gear = (props: any) => <Icon name={props.weight === 'fill' ? 'setti
 export const Sparkle = (props: any) => <Icon name={props.weight === 'fill' ? 'sparkles_fill' : 'sparkles_line'} {...props} />;
 export const Gift = (props: any) => <Icon name={props.weight === 'fill' ? 'gift_fill' : 'gift_line'} {...props} />;
 export const Target = (props: any) => <Icon name={props.weight === 'fill' ? 'target_fill' : 'target_line'} {...props} />;
+export const AimingTwo = (props: any) => <Icon name={props.weight === 'line' ? 'aiming_2_line' : 'aiming_2_fill'} {...props} />;
 export const Tag = (props: any) => <Icon name={props.weight === 'fill' ? 'tag_fill' : 'tag_line'} {...props} />;
 export const LightningSlash = (props: any) => <Icon name={props.weight === 'fill' ? 'flash_line' : 'flash_line'} {...props} />;
 export const RadioButton = (props: any) => <Icon name={props.weight === 'fill' ? 'round_fill' : 'round_line'} {...props} />;

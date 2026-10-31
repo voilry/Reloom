@@ -14,20 +14,24 @@ import { DesignSystem } from '../../../constants/DesignSystem';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Card } from '../../../components/ui/Card';
+import { PersonPickerModal } from '../../../components/person/PersonPickerModal';
 import {
-    Trash, Plus, AddIcon, Link, CaretRight, MagnifyingGlass as Search,
-    ArrowsLeftRight, X, Check, UserRemove, Graph, List, Candles
+    Trash, Plus, AddIcon, Link,
+    ArrowsLeftRight, X, Check, UserRemove, Graph, List,
+    Heart, Briefcase, Compass, Sparkle, Filter, CaretDown
 } from '@/components/ui/Icon';
 import { SocialWebCanvas, getRelationColor } from '../../../components/person/SocialWebCanvas';
 import { useAppTheme } from '../../../hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, Layout, Easing } from 'react-native-reanimated';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../../components/ui/Input';
 import { ScalePressable } from '../../../components/ui/ScalePressable';
 import { StatusBar } from 'expo-status-bar';
 import { Typography } from '../../../constants/Typography';
+
+const EASE_ENTER = Easing.bezier(0.05, 0.7, 0.1, 1.0);
 
 // ─── Step tracking ───────────────────────────────────────────────────────────
 type Step = 'list' | 'pick' | 'label';
@@ -46,12 +50,12 @@ export default function RelationsScreen() {
     const [allRelationships, setAllRelationships] = useState<Relationship[]>([]);
     const [viewMode, setViewMode] = useState<'web' | 'list'>('web');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [isListFilterOpen, setIsListFilterOpen] = useState(false);
 
     // Step control
     const [step, setStep] = useState<Step>('list');
     const [selectedTarget, setSelectedTarget] = useState<Person | null>(null);
     const [relationType, setRelationType] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (id) loadData();
@@ -96,9 +100,6 @@ export default function RelationsScreen() {
         r.sourcePersonId === personId ? r.targetPersonId : r.sourcePersonId
     );
     const availablePeople = allPeople.filter(p => !alreadyLinkedIds.includes(p.id));
-    const filteredPeople = availablePeople.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     // ─── Actions ─────────────────────────────────────────────────────────────
     const handleSelectTarget = (target: Person) => {
@@ -128,7 +129,6 @@ export default function RelationsScreen() {
         setStep('list');
         setSelectedTarget(null);
         setRelationType('');
-        setSearchQuery('');
     };
 
     const openPicker = () => {
@@ -159,8 +159,6 @@ export default function RelationsScreen() {
     };
 
     if (!person) return <ThemedView style={{ flex: 1 }} />;
-
-    const isModalVisible = step === 'pick' || step === 'label';
 
     return (
         <ThemedView style={styles.container}>
@@ -219,65 +217,6 @@ export default function RelationsScreen() {
                 }
             />
 
-            {/* ─── Circle Filter Chips (Shown in List View) ───────────────── */}
-            {viewMode === 'list' && relationships.length > 0 && categories.length > 1 && (
-                <View style={styles.filterRowContainer}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.filterScroll}
-                    >
-                        <ScalePressable
-                            onPress={() => {
-                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                setSelectedCategory('all');
-                            }}
-                            style={[
-                                styles.filterChip,
-                                { backgroundColor: selectedCategory === 'all' ? colors.tint : colors.surface }
-                            ]}
-                            innerStyle={{ borderRadius: 16 }}
-                            scaleTo={0.92}
-                        >
-                            <ThemedText style={[
-                                styles.filterChipText,
-                                { color: selectedCategory === 'all' ? (theme === 'light' ? '#fff' : '#000') : colors.text }
-                            ]}>
-                                All ({relationships.length})
-                            </ThemedText>
-                        </ScalePressable>
-
-                        {categories.map((cat: string) => {
-                            const count = relationships.filter(r => r.relationType?.trim().toLowerCase() === cat.toLowerCase()).length;
-                            const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
-                            const catColor = getRelationColor(cat, colors.tint);
-                            return (
-                                <ScalePressable
-                                    key={cat}
-                                    onPress={() => {
-                                        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                        setSelectedCategory(isSelected ? 'all' : cat);
-                                    }}
-                                    style={[
-                                        styles.filterChip,
-                                        { backgroundColor: isSelected ? catColor : colors.surface }
-                                    ]}
-                                    innerStyle={{ borderRadius: 16 }}
-                                    scaleTo={0.92}
-                                >
-                                    <ThemedText style={[
-                                        styles.filterChipText,
-                                        { color: isSelected ? (theme === 'light' ? '#fff' : '#000') : colors.text }
-                                    ]}>
-                                        {cat} ({count})
-                                    </ThemedText>
-                                </ScalePressable>
-                            );
-                        })}
-                    </ScrollView>
-                </View>
-            )}
-
             {/* ─── Social Web View, List View, or Empty State ──────────────── */}
             {relationships.length === 0 ? (
                 <View style={[styles.emptyContainer, { paddingBottom: insets.bottom + 80 }]}>
@@ -305,84 +244,215 @@ export default function RelationsScreen() {
                     onAddLink={openPicker}
                 />
             ) : (
-                <ScrollView
-                    contentContainerStyle={[
-                        styles.listContent,
-                        displayedRelationships.length === 0 && { flexGrow: 1, justifyContent: 'center', paddingBottom: insets.bottom + 120 },
-                        displayedRelationships.length > 0 && { paddingBottom: insets.bottom + 40 }
-                    ]}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {displayedRelationships.length > 0 && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
-                            <ThemedText style={{ color: colors.secondary, fontSize: 14, fontFamily: Typography.fontFamily.semibold, opacity: 0.8 }}>
-                                Connections
-                            </ThemedText>
-                            <ThemedText style={{ color: colors.tint, fontSize: 13, fontWeight: '800', marginLeft: 8 }}>{displayedRelationships.length}</ThemedText>
-                        </View>
-                    )}
+                <View style={{ flex: 1 }}>
+                    <ScrollView
+                        contentContainerStyle={[
+                            styles.listContent,
+                            displayedRelationships.length === 0 && { flexGrow: 1, justifyContent: 'center', paddingBottom: insets.bottom + 120 },
+                            displayedRelationships.length > 0 && { paddingBottom: insets.bottom + 40 }
+                        ]}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {displayedRelationships.length > 0 && (
+                            <View style={styles.listHeaderRow}>
+                                <View style={styles.listHeaderLeft}>
+                                    <ThemedText style={[styles.listHeaderTitle, { color: colors.secondary }]}>
+                                        {selectedCategory !== 'all' ? selectedCategory : 'All connections'}
+                                    </ThemedText>
+                                    <ThemedText style={[styles.listCountInline, { color: colors.tint }]}>
+                                        {displayedRelationships.length}
+                                    </ThemedText>
+                                </View>
 
-                    {displayedRelationships.length === 0 ? (
-                        <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
-                            <ArrowsLeftRight size={48} color={colors.tint} weight="fill" />
-                            <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
-                                {selectedCategory !== 'all' ? `No ${selectedCategory} Connections` : 'No Connections'}
-                            </ThemedText>
-                            <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
-                                tap link to add
-                            </ThemedText>
-                        </Animated.View>
-                    ) : (
-                        displayedRelationships.map((rel: Relationship, index: number) => {
-                            const other = getOtherPerson(rel);
-                            if (!other) return null;
-                            const roleColor = getRelationColor(rel.relationType, colors.tint);
-                            return (
-                                <Animated.View
-                                    key={rel.id}
-                                    layout={Layout.springify()}
-                                    style={{ marginBottom: 10 }}
-                                >
-                                    <Animated.View
-                                        entering={FadeInDown.delay(index * 40).duration(350)}
+                                {categories.length > 1 && (
+                                    <ScalePressable
+                                        onPress={() => {
+                                            if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                            setIsListFilterOpen(prev => !prev);
+                                        }}
+                                        style={[
+                                            styles.filterChipButton,
+                                            {
+                                                backgroundColor: selectedCategory !== 'all' ? (theme === 'dark' ? colors.tint + '28' : colors.tint + '18') : colors.surface
+                                            }
+                                        ]}
+                                        innerStyle={{ borderRadius: 14 }}
+                                        scaleTo={0.93}
                                     >
-                                        <Swipeable
-                                            renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
-                                            overshootRight={false}
-                                            friction={3}
-                                            overshootFriction={8}
-                                            rightThreshold={60}
+                                        <Filter size={13} color={selectedCategory !== 'all' ? colors.tint : colors.icon} weight={selectedCategory !== 'all' ? 'fill' : 'regular'} />
+                                        <ThemedText style={[styles.filterChipButtonText, { color: selectedCategory !== 'all' ? colors.tint : colors.text }]}>
+                                            {selectedCategory !== 'all' ? selectedCategory : 'Filter'}
+                                        </ThemedText>
+                                        <CaretDown size={12} color={selectedCategory !== 'all' ? colors.tint : colors.icon} />
+                                    </ScalePressable>
+                                )}
+                            </View>
+                        )}
+
+                        {displayedRelationships.length === 0 ? (
+                            <Animated.View entering={FadeIn.duration(300)} style={styles.emptyState}>
+                                <ArrowsLeftRight size={48} color={colors.tint} weight="fill" />
+                                <ThemedText style={{ marginTop: 16, opacity: 0.9, fontSize: 18, fontFamily: Typography.fontFamily.bold }}>
+                                    {selectedCategory !== 'all' ? `No ${selectedCategory} Connections` : 'No Connections'}
+                                </ThemedText>
+                                <ThemedText style={{ fontSize: 11, color: colors.secondary, marginTop: -1, textAlign: 'center', lineHeight: 17, fontWeight: '800' }}>
+                                    tap link to add
+                                </ThemedText>
+                            </Animated.View>
+                        ) : (
+                            displayedRelationships.map((rel: Relationship, index: number) => {
+                                const other = getOtherPerson(rel);
+                                if (!other) return null;
+                                const roleColor = getRelationColor(rel.relationType, colors.tint);
+
+                                return (
+                                    <Animated.View
+                                        key={rel.id}
+                                        layout={Layout.springify()}
+                                        style={{ marginBottom: 4 }}
+                                    >
+                                        <Animated.View
+                                            entering={FadeInDown.delay(index * 25).duration(260)}
                                         >
-                                            <ScalePressable
-                                                onPress={() => router.push(`/person/${other.id}`)}
-                                                innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                            <Swipeable
+                                                renderRightActions={(_prog, dragX) => renderRightActions(rel.id, dragX)}
+                                                overshootRight={false}
+                                                friction={3}
+                                                overshootFriction={8}
+                                                rightThreshold={60}
                                             >
-                                                <Card style={styles.relCard}>
-                                                    <Avatar name={other.name} uri={other.avatarUri} size={48} />
-                                                    <View style={styles.relInfo}>
-                                                        <ThemedText style={styles.relName} numberOfLines={1}>{other.name}</ThemedText>
-                                                    </View>
-                                                    {rel.relationType ? (
-                                                        <View style={[styles.roleBadge, { backgroundColor: roleColor + (theme === 'dark' ? '25' : '15') }]}>
-                                                            <ThemedText type="tiny" style={{ color: roleColor, fontWeight: '800', fontSize: 10, letterSpacing: 0, textTransform: 'capitalize' }}>
-                                                                {rel.relationType}
+                                                <ScalePressable
+                                                    onPress={() => router.push(`/person/${other.id}`)}
+                                                    style={styles.connectionRow}
+                                                    innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                                    scaleTo={0.98}
+                                                >
+                                                    <Avatar name={other.name} uri={other.avatarUri} size={46} />
+
+                                                    <View style={styles.connectionMeta}>
+                                                        <View style={styles.connectionTopLine}>
+                                                            <ThemedText style={styles.connectionName} numberOfLines={1}>
+                                                                {other.name}
                                                             </ThemedText>
+                                                            {rel.relationType ? (
+                                                                <ThemedText style={[styles.connectionRoleLabel, { color: roleColor }]}>
+                                                                    {rel.relationType}
+                                                                </ThemedText>
+                                                            ) : null}
                                                         </View>
-                                                    ) : null}
-                                                </Card>
-                                            </ScalePressable>
-                                        </Swipeable>
+
+                                                        {other.elevatorPitch ? (
+                                                            <ThemedText
+                                                                numberOfLines={1}
+                                                                style={[styles.connectionPitch, { color: colors.textSecondary }]}
+                                                            >
+                                                                {other.elevatorPitch}
+                                                            </ThemedText>
+                                                        ) : null}
+                                                    </View>
+                                                </ScalePressable>
+                                            </Swipeable>
+                                        </Animated.View>
                                     </Animated.View>
-                                </Animated.View>
-                            );
-                        })
+                                );
+                            })
+                        )}
+                    </ScrollView>
+
+                    {/* Filter Popup Menu */}
+                    {isListFilterOpen && categories.length > 1 && (
+                        <>
+                            <Pressable
+                                style={StyleSheet.absoluteFill}
+                                onPress={() => setIsListFilterOpen(false)}
+                            />
+                            <Animated.View
+                                entering={FadeIn.duration(150)}
+                                style={[
+                                    styles.listFilterDropdown,
+                                    { backgroundColor: colors.surface }
+                                ]}
+                            >
+                                <ScalePressable
+                                    onPress={() => {
+                                        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                        setSelectedCategory('all');
+                                        setIsListFilterOpen(false);
+                                    }}
+                                    style={[
+                                        styles.listFilterItem,
+                                        selectedCategory === 'all' && { backgroundColor: colors.tint + '18' }
+                                    ]}
+                                    innerStyle={{ borderRadius: 8 }}
+                                    scaleTo={0.96}
+                                >
+                                    <View style={styles.listFilterItemLeft}>
+                                        <View style={[styles.listFilterDot, { backgroundColor: colors.tint }]} />
+                                        <ThemedText style={[
+                                            styles.listFilterItemText,
+                                            selectedCategory === 'all' && { color: colors.tint, fontFamily: Typography.fontFamily.bold }
+                                        ]}>
+                                            All
+                                        </ThemedText>
+                                    </View>
+                                    <ThemedText style={[styles.listFilterItemCount, { color: colors.secondary }]}>
+                                        {relationships.length}
+                                    </ThemedText>
+                                </ScalePressable>
+
+                                {categories.map((cat: string) => {
+                                    const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+                                    const catColor = getRelationColor(cat, colors.tint);
+                                    const count = relationships.filter(r => r.relationType?.trim().toLowerCase() === cat.toLowerCase()).length;
+                                    return (
+                                        <ScalePressable
+                                            key={cat}
+                                            onPress={() => {
+                                                if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                                setSelectedCategory(isSelected ? 'all' : cat);
+                                                setIsListFilterOpen(false);
+                                            }}
+                                            style={[
+                                                styles.listFilterItem,
+                                                isSelected && { backgroundColor: catColor + '18' }
+                                            ]}
+                                            innerStyle={{ borderRadius: 8 }}
+                                            scaleTo={0.96}
+                                        >
+                                            <View style={styles.listFilterItemLeft}>
+                                                <View style={[styles.listFilterDot, { backgroundColor: catColor }]} />
+                                                <ThemedText style={[
+                                                    styles.listFilterItemText,
+                                                    isSelected && { color: catColor, fontFamily: Typography.fontFamily.bold }
+                                                ]}>
+                                                    {cat}
+                                                </ThemedText>
+                                            </View>
+                                            <ThemedText style={[styles.listFilterItemCount, { color: colors.secondary }]}>
+                                                {count}
+                                            </ThemedText>
+                                        </ScalePressable>
+                                    );
+                                })}
+                            </Animated.View>
+                        </>
                     )}
-                </ScrollView>
+                </View>
             )}
 
-            {/* ─── Full Screen Picker/Label Modal ──────────────────────── */}
+            {/* ─── Person Picker Modal ────────────────────────────────────── */}
+            <PersonPickerModal
+                visible={step === 'pick'}
+                people={availablePeople}
+                onSelect={handleSelectTarget}
+                onClose={resetModal}
+                title="Who are they connected to?"
+                titleFontSize={22}
+            />
+
+            {/* ─── Label Modal ─────────────────────────────────────────────── */}
             <Modal
-                visible={isModalVisible}
+                visible={step === 'label' && !!selectedTarget}
                 animationType="slide"
                 transparent={false}
                 presentationStyle="fullScreen"
@@ -391,222 +461,185 @@ export default function RelationsScreen() {
             >
                 <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
                     <StatusBar style="auto" />
-                    <View style={{ flex: 1, paddingTop: insets.top + 8 }}>
-                        {step === 'pick' && (
-                            <>
-                                {/* Modal Header */}
-                                <View style={styles.modalHeader}>
-                                    <ScalePressable
-                                        onPress={resetModal}
-                                        style={styles.closeBtn}
-                                        innerStyle={{ borderRadius: 20 }}
-                                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                                        overlayColor="transparent"
+                    {selectedTarget && (
+                        <View style={{ flex: 1 }}>
+                            {/* Screen Header */}
+                            <ScreenHeader
+                                onBack={resetModal}
+                                bottomPadding={8}
+                                backButtonIcon={<X size={22} color={colors.text} />}
+                                backButtonStyle={{ backgroundColor: 'transparent' }}
+                                centerContent={
+                                    <ThemedText
+                                        numberOfLines={1}
+                                        adjustsFontSizeToFit
+                                        minimumFontScale={0.8}
+                                        style={{ fontSize: 24, color: colors.text, fontFamily: Typography.fontFamily.serif, textAlign: 'center' }}
                                     >
-                                        <X size={24} color={colors.text} />
-                                    </ScalePressable>
-                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40, marginLeft: 12 }}>
-                                        <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
-                                            Who are they connected to?
-                                        </ThemedText>
-                                    </View>
-                                </View>
+                                        Define Link
+                                    </ThemedText>
+                                }
+                            />
 
-                                {/* Search */}
-                                <View style={[styles.modalContent, { flex: 1 }]}>
-                                    <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
-                                        <Search size={16} color={colors.icon} style={{ marginRight: 8 }} />
-                                        <TextInput
-                                            placeholder="Search people..."
-                                            placeholderTextColor={colors.secondary}
-                                            value={searchQuery}
-                                            onChangeText={setSearchQuery}
-                                            style={[styles.searchInput, { color: colors.text }]}
-                                            autoFocus
-                                        />
-                                    </View>
+                            <KeyboardAwareScrollView
+                                contentContainerStyle={[
+                                    styles.modalContent,
+                                    { paddingHorizontal: 24, paddingBottom: insets.bottom + 24 }
+                                ]}
+                                keyboardShouldPersistTaps="handled"
+                                bottomOffset={24}
+                            >
+                                {/* Living Connection Bridge */}
+                                {(() => {
+                                    const activeColor = relationType.trim()
+                                        ? getRelationColor(relationType, colors.tint)
+                                        : colors.border;
+                                    const isConnected = relationType.trim().length > 0;
 
-                                    {/* People List */}
-                                    <KeyboardAwareScrollView
-                                        style={{ flex: 1, marginTop: 16 }}
-                                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-                                        showsVerticalScrollIndicator={false}
-                                        keyboardShouldPersistTaps="handled"
-                                        bottomOffset={24}
-                                    >
-                                        {filteredPeople.map(p => (
-                                            <ScalePressable
-                                                key={p.id}
-                                                style={styles.personPickerItem}
-                                                innerStyle={{ borderRadius: 12 }}
-                                                onPress={() => handleSelectTarget(p)}
-                                            >
-                                                <View style={[styles.personPickerItemInner, { borderBottomColor: colors.border }]}>
-                                                    <Avatar name={p.name} uri={p.avatarUri} size={42} />
-                                                    <View style={styles.personPickerInfo}>
-                                                        <ThemedText style={styles.personPickerName}>{p.name}</ThemedText>
-                                                        {p.elevatorPitch ? (
-                                                            <ThemedText type="tiny" style={{ color: colors.secondary }} numberOfLines={1}>
-                                                                {p.elevatorPitch}
-                                                            </ThemedText>
-                                                        ) : null}
-                                                    </View>
-                                                    <CaretRight size={20} color={colors.icon} style={{ opacity: 0.4 }} />
+                                    return (
+                                        <Animated.View entering={FadeInDown.duration(280).easing(EASE_ENTER)} style={styles.connectionVisual}>
+                                            <View style={styles.defineConnectionRow}>
+                                                <View style={styles.personCol}>
+                                                    <Avatar name={person.name} uri={person.avatarUri} size={76} />
+                                                    <ThemedText style={styles.connectionPersonName} numberOfLines={1}>
+                                                        {person.name}
+                                                    </ThemedText>
                                                 </View>
-                                            </ScalePressable>
-                                        ))}
-                                        {filteredPeople.length === 0 && (
-                                            <View style={styles.noResults}>
-                                                <Candles size={56} color={colors.tint} weight="fill" />
-                                                <ThemedText style={{ color: colors.secondary, marginTop: 10 }}>
-                                                    {availablePeople.length === 0
-                                                        ? 'Everyone is already connected.'
-                                                        : 'No person found.'}
-                                                </ThemedText>
+
+                                                <View style={styles.connectorBridge}>
+                                                    <View style={[styles.connectorLine, { backgroundColor: colors.surface }]} />
+                                                    <View
+                                                        style={[
+                                                            styles.connectorIcon,
+                                                            { backgroundColor: colors.surface }
+                                                        ]}
+                                                    >
+                                                        <Link size={18} color={isConnected ? activeColor : colors.icon} weight={isConnected ? "bold" : "regular"} />
+                                                    </View>
+                                                    <View style={[styles.connectorLine, { backgroundColor: colors.surface }]} />
+                                                </View>
+
+                                                <View style={styles.personCol}>
+                                                    <Avatar name={selectedTarget.name} uri={selectedTarget.avatarUri} size={76} />
+                                                    <ThemedText style={styles.connectionPersonName} numberOfLines={1}>
+                                                        {selectedTarget.name}
+                                                    </ThemedText>
+                                                </View>
                                             </View>
-                                        )}
-                                    </KeyboardAwareScrollView>
-                                </View>
-                            </>
-                        )}
+                                        </Animated.View>
+                                    );
+                                })()}
 
-                        {step === 'label' && selectedTarget && (
-                            <>
-                                {/* Modal Header */}
-                                <View style={styles.modalHeader}>
-                                    <ScalePressable
-                                        onPress={resetModal}
-                                        style={[styles.closeBtn, { backgroundColor: colors.surface }]}
-                                        innerStyle={{ borderRadius: 20 }}
-                                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                                    >
-                                        <X size={20} color={colors.text} />
-                                    </ScalePressable>
-                                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-                                        <ThemedText style={{ fontSize: 22, color: colors.text, fontFamily: Typography.fontFamily.serif }}>
-                                            Define Link
-                                        </ThemedText>
-                                    </View>
-                                </View>
-
-                                <KeyboardAwareScrollView
-                                    contentContainerStyle={[styles.modalContent, { paddingHorizontal: 20 }]}
-                                    keyboardShouldPersistTaps="handled"
-                                    bottomOffset={24}
-                                >
-                                    {/* Both people + connector visual */}
-                                    <View style={styles.connectionVisual}>
-                                        {/* Person A */}
-                                        <View style={styles.connectionPerson}>
-                                            <Avatar name={person.name} uri={person.avatarUri} size={72} />
-                                            <ThemedText style={styles.connectionPersonName} numberOfLines={1}>
-                                                {person.name}
-                                            </ThemedText>
-                                        </View>
-
-                                        {/* Connector */}
-                                        <View style={styles.connectorBridge}>
-                                            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
-                                            <View style={[styles.connectorIcon, { backgroundColor: colors.tint + '15' }]}>
-                                                <Link size={20} color={colors.tint} weight="bold" />
-                                            </View>
-                                            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
-                                        </View>
-
-                                        {/* Person B */}
-                                        <View style={styles.connectionPerson}>
-                                            <Avatar name={selectedTarget.name} uri={selectedTarget.avatarUri} size={72} />
-                                            <ThemedText style={styles.connectionPersonName} numberOfLines={1}>
-                                                {selectedTarget.name}
-                                            </ThemedText>
-                                        </View>
-                                    </View>
-
-                                    {/* Relation Label */}
-                                    <ThemedText style={styles.sectionLabel}>How are they connected?</ThemedText>
-
-                                    {/* Quick Chips */}
+                                {/* Tags horizontal scroll list (placed above input) */}
+                                <Animated.View entering={FadeInDown.delay(50).duration(280).easing(EASE_ENTER)} style={styles.tagScrollContainer}>
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
-                                        contentContainerStyle={styles.chipScroll}
+                                        contentContainerStyle={styles.tagScroll}
                                     >
-                                        {['Friend', 'Family', 'Coworker', 'Mentor', 'Colleague', 'Partner'].map(chip => (
-                                            <ScalePressable
-                                                key={chip}
-                                                onPress={() => {
-                                                    if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
-                                                    setRelationType(chip);
-                                                }}
-                                                style={[
-                                                    styles.chip,
-                                                    {
-                                                        backgroundColor: relationType === chip ? colors.tint : colors.surface,
-                                                    }
-                                                ]}
-                                                innerStyle={{ borderRadius: 20 }}
-                                                scale={true}
-                                                overlayColor={relationType === chip ? "rgba(0,0,0,0.15)" : undefined}
-                                            >
-                                                <ThemedText style={[
-                                                    styles.chipText,
-                                                    { color: relationType === chip ? (theme === 'light' ? '#fff' : '#000') : colors.text }
-                                                ]}>
-                                                    {chip}
-                                                </ThemedText>
-                                            </ScalePressable>
-                                        ))}
+                                        {[
+                                            'Friend',
+                                            'Family',
+                                            'Coworker',
+                                            'Mentor',
+                                            'Partner',
+                                            'Colleague',
+                                        ].map(tag => {
+                                            const isSelected = relationType.trim().toLowerCase() === tag.toLowerCase();
+                                            const tagColor = getRelationColor(tag, colors.tint);
+
+                                            return (
+                                                <ScalePressable
+                                                    key={tag}
+                                                    onPress={() => {
+                                                        if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
+                                                        setRelationType(isSelected ? '' : tag);
+                                                    }}
+                                                    style={[
+                                                        styles.cloudChip,
+                                                        {
+                                                            backgroundColor: isSelected ? tagColor : colors.surface,
+                                                        }
+                                                    ]}
+                                                    innerStyle={{ borderRadius: 10 }}
+                                                    scaleTo={0.92}
+                                                    springConfig={DesignSystem.animation.springs.expressive}
+                                                    overlayColor="transparent"
+                                                >
+                                                    <ThemedText style={[
+                                                        styles.cloudChipText,
+                                                        {
+                                                            color: isSelected ? '#ffffff' : colors.textSecondary,
+                                                            fontFamily: isSelected ? Typography.fontFamily.bold : Typography.fontFamily.medium,
+                                                        }
+                                                    ]}>
+                                                        {tag}
+                                                    </ThemedText>
+                                                </ScalePressable>
+                                            );
+                                        })}
                                     </ScrollView>
+                                </Animated.View>
 
-                                    <View style={{ height: 24 }} />
-
+                                {/* Custom relation input (placed directly below tags) */}
+                                <Animated.View entering={FadeInDown.delay(100).duration(280).easing(EASE_ENTER)} style={styles.inputWrap}>
                                     <Input
-                                        placeholder="describe the connection..."
+                                        placeholder="or type custom connection..."
                                         value={relationType}
                                         onChangeText={setRelationType}
                                         maxLength={25}
                                     />
+                                </Animated.View>
 
-                                    {/* Confirm */}
-                                    {(() => {
-                                        const canConfirm = relationType.trim().length > 0;
-                                        return (
+                                {/* Confirm Button */}
+                                {(() => {
+                                    const canConfirm = relationType.trim().length > 0;
+                                    const bondColor = canConfirm ? getRelationColor(relationType, colors.tint) : colors.tint;
+
+                                    return (
+                                        <Animated.View entering={FadeInDown.delay(140).duration(280).easing(EASE_ENTER)}>
                                             <ScalePressable
                                                 disabled={!canConfirm}
                                                 onPress={canConfirm ? handleConfirmLink : undefined}
                                                 style={[
                                                     styles.confirmBtn,
                                                     { 
-                                                        backgroundColor: colors.tint,
-                                                        opacity: canConfirm ? 1 : 0.35,
-                                                        ...(canConfirm ? DesignSystem.shadows.md : {})
+                                                        backgroundColor: bondColor,
+                                                        opacity: canConfirm ? 1 : 0.38,
                                                     }
                                                 ]}
-                                                innerStyle={{ borderRadius: DesignSystem.radius.lg }}
+                                                innerStyle={{ borderRadius: DesignSystem.radius.full }}
+                                                scaleTo={0.96}
+                                                springConfig={DesignSystem.animation.springs.expressive}
                                             >
-                                                <Check size={20} color={theme === 'light' ? '#fff' : '#000'} weight="bold" />
-                                                <ThemedText style={{ color: theme === 'light' ? '#fff' : '#000', fontSize: 14, fontFamily: Typography.fontFamily.bold, marginLeft: 4 }}>
-                                                    Confirm
+                                                <ThemedText style={[
+                                                    styles.confirmBtnText,
+                                                    { color: theme === 'light' ? '#fff' : '#000' }
+                                                ]}>
+                                                    Confirm Connection
                                                 </ThemedText>
                                             </ScalePressable>
-                                        );
-                                    })()}
+                                        </Animated.View>
+                                    );
+                                })()}
 
+                                <Animated.View entering={FadeInDown.delay(180).duration(280).easing(EASE_ENTER)}>
                                     <ScalePressable
                                         onPress={() => setStep('pick')}
                                         style={styles.backLink}
-                                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                        hitSlop={{ top: 16, bottom: 16, left: 20, right: 20 }}
                                         scaleTo={0.93}
+                                        springConfig={DesignSystem.animation.springs.expressive}
                                         overlayColor="transparent"
                                     >
-                                        <ThemedText style={{ color: colors.secondary, fontSize: 15 }}>
-                                            ← Change person
+                                        <ThemedText style={[styles.backLinkText, { color: colors.secondary }]}>
+                                            Change person
                                         </ThemedText>
                                     </ScalePressable>
-                                </KeyboardAwareScrollView>
-                            </>
-                        )}
-                    </View>
+                                </Animated.View>
+                            </KeyboardAwareScrollView>
+                        </View>
+                    )}
                 </View>
             </Modal>
         </ThemedView>
@@ -643,47 +676,121 @@ const styles = StyleSheet.create({
         fontFamily: Typography.fontFamily.bold,
     },
 
-    // Circle Filter Chips
-    filterRowContainer: {
-        paddingTop: 8,
-        paddingBottom: 14,
-    },
-    filterScroll: {
-        paddingHorizontal: 20,
-        gap: 8,
-    },
-    filterChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-    },
-    filterChipText: {
-        fontSize: 12,
-        fontFamily: Typography.fontFamily.bold,
-    },
-
     // List
     listContent: {
         paddingHorizontal: 20,
     },
-
-    // Connection cards
-    relCard: {
+    listHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: DesignSystem.radius.lg,
-        gap: 14,
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        marginBottom: 6,
     },
-    relInfo: {
+    listHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    listHeaderTitle: {
+        fontSize: 15,
+        fontFamily: Typography.fontFamily.semibold,
+        textTransform: 'capitalize',
+        letterSpacing: -0.2,
+    },
+    listCountInline: {
+        fontSize: 14,
+        fontFamily: Typography.fontFamily.bold,
+    },
+    filterChipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 11,
+        paddingVertical: 5.5,
+        borderRadius: 14,
+    },
+    filterChipButtonText: {
+        fontSize: 12.5,
+        fontFamily: Typography.fontFamily.semibold,
+        textTransform: 'capitalize',
+    },
+
+    // Filter dropdown
+    listFilterDropdown: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        borderRadius: 14,
+        minWidth: 150,
+        padding: 5,
+        zIndex: 40,
+        ...DesignSystem.shadows.md,
+    },
+    listFilterItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 8,
+    },
+    listFilterItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    listFilterDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    listFilterItemText: {
+        fontSize: 12.5,
+        fontFamily: Typography.fontFamily.medium,
+    },
+    listFilterItemCount: {
+        fontSize: 11.5,
+        fontFamily: Typography.fontFamily.semibold,
+        marginLeft: 12,
+    },
+
+    // Connection rows (borderless, hierarchy-first)
+    connectionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+        borderRadius: DesignSystem.radius.lg,
+    },
+    connectionMeta: {
         flex: 1,
+        marginLeft: 12,
         justifyContent: 'center',
     },
-    relName: {
-        fontSize: 16,
+    connectionTopLine: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    connectionName: {
+        fontSize: 15.5,
+        fontFamily: Typography.fontFamily.semibold,
+        letterSpacing: -0.15,
+        flex: 1,
+        marginRight: 8,
+    },
+    connectionRoleLabel: {
+        fontSize: 12.5,
         fontFamily: Typography.fontFamily.bold,
-        marginBottom: 0, // Tighten gap to tag
+        textTransform: 'capitalize',
+        letterSpacing: 0.1,
+    },
+    connectionPitch: {
+        fontSize: 13,
+        lineHeight: 17,
+        fontFamily: Typography.fontFamily.regular,
+        marginTop: 1,
     },
 
     // Swipe delete
@@ -717,136 +824,88 @@ const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
     },
-    modalHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: 'transparent',
-    },
-    closeBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     modalContent: {
-        paddingVertical: 10,
+        flexGrow: 1,
+        paddingTop: 84,
+        paddingBottom: 24,
     },
-
-    // Person picker
-    searchBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        height: 48,
-        marginHorizontal: 20,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        fontFamily: Typography.fontFamily.medium,
-    },
-    personPickerItem: {
-        width: 'auto',
-        marginHorizontal: 8,
-    },
-    personPickerItemInner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-        paddingVertical: 12,
-        marginHorizontal: 12,
-        borderBottomWidth: 1,
-    },
-    personPickerInfo: { flex: 1 },
-    personPickerName: { fontSize: 16, fontFamily: Typography.fontFamily.bold },
-    roleBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    noResults: {
-        alignItems: 'center',
-        paddingVertical: 40,
-    },
-
     // Label step: connection visual
     connectionVisual: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 36,
-        marginTop: 12,
-        gap: 0,
+        marginBottom: 26,
     },
-    connectionPerson: {
+    defineConnectionRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+    },
+    personCol: {
         alignItems: 'center',
-        width: 100,
-        paddingTop: 15,
+        width: 92,
     },
     connectionPersonName: {
-        marginTop: 10,
-        fontSize: 15,
-        fontFamily: Typography.fontFamily.bold,
+        marginTop: 8,
+        fontSize: 13.5,
+        fontFamily: Typography.fontFamily.semibold,
         textAlign: 'center',
     },
     connectorBridge: {
-        flex: 1,
+        width: 96,
         flexDirection: 'row',
         alignItems: 'center',
+        marginTop: 19,
     },
     connectorLine: {
         flex: 1,
-        height: 2,
+        height: 1.5,
+        borderRadius: 1,
     },
     connectorIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 4,
     },
-
-    // Label step: chips
-    sectionLabel: {
-        fontSize: 14,
-        fontFamily: Typography.fontFamily.semibold,
-        letterSpacing: 0.5,
-        opacity: 0.5,
+    tagScrollContainer: {
         marginBottom: 12,
-        textTransform: 'none',
     },
-    chipScroll: {
+    tagScroll: {
         gap: 8,
-        paddingRight: 12,
+        paddingVertical: 2,
     },
-    chip: {
-        paddingHorizontal: 14,
+    cloudChip: {
+        paddingHorizontal: 13,
         paddingVertical: 7,
-        borderRadius: 20,
+        borderRadius: 10,
     },
-    chipText: {
-        fontSize: 13,
-        fontFamily: Typography.fontFamily.semibold,
+    cloudChipText: {
+        fontSize: 12.5,
+        letterSpacing: -0.1,
+    },
+    inputWrap: {
+        marginBottom: 12,
     },
 
     // Confirm button
     confirmBtn: {
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 0,
-        padding: 14,
-        borderRadius: DesignSystem.radius.lg,
-        marginTop: 24,
+        paddingVertical: 14,
+        borderRadius: DesignSystem.radius.full,
+        marginTop: 4,
+    },
+    confirmBtnText: {
+        fontSize: 14.5,
+        fontFamily: Typography.fontFamily.bold,
+        letterSpacing: 0.1,
     },
     backLink: {
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 10,
+        paddingVertical: 4,
+    },
+    backLinkText: {
+        fontSize: 13.5,
+        fontFamily: Typography.fontFamily.medium,
     },
 });

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     View, StyleSheet, LayoutChangeEvent, Dimensions, Pressable, Platform, ScrollView
 } from 'react-native';
-import Svg, { Line, Path } from 'react-native-svg';
+import Svg, { Line, Path, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, {
     useSharedValue, useAnimatedStyle, withTiming,
     FadeIn, SlideInDown, SlideOutDown, Easing
@@ -17,7 +17,7 @@ import { Typography } from '../../constants/Typography';
 import { Person } from '../../db/repositories/PersonRepository';
 import { Relationship } from '../../db/repositories/RelationshipRepository';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { CaretRight, UserRemove, X, Plus, Minus, Target, Filter } from '@/components/ui/Icon';
+import { CaretRight, UserRemove, X, Add, Minus, AimingTwo, Filter } from '@/components/ui/Icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const getRelationColor = (type: string | null | undefined, defaultTint: string): string => {
@@ -466,6 +466,18 @@ export function SocialWebCanvas({
                         viewBox={`${-SVG_PAD} ${-SVG_PAD} ${canvasSize.width + SVG_PAD * 2} ${canvasSize.height + SVG_PAD * 2}`}
                         pointerEvents="none"
                     >
+                        <Defs>
+                            <RadialGradient id="centerPersonGlow" cx="50%" cy="50%" rx="50%" ry="50%" fx="50%" fy="50%">
+                                <Stop offset="0%" stopColor={colors.tint} stopOpacity="0.4" />
+                                <Stop offset="40%" stopColor={colors.tint} stopOpacity="0.16" />
+                                <Stop offset="75%" stopColor={colors.tint} stopOpacity="0.04" />
+                                <Stop offset="100%" stopColor={colors.tint} stopOpacity="0" />
+                            </RadialGradient>
+                        </Defs>
+
+                        {/* Person Ambient Glow */}
+                        <Circle cx={cx} cy={cy} r={80} fill="url(#centerPersonGlow)" />
+
                         {/* Organic curved cross-link web threads */}
                         {crossLinks.map((link, idx) => {
                             const isHighlighted = selectedNodeId === link.from.id || selectedNodeId === link.to.id;
@@ -505,9 +517,7 @@ export function SocialWebCanvas({
 
                     {/* Central Ego Node */}
                     <View style={[styles.centerNodeWrapper, { left: cx - 40, top: cy - 40 }]} pointerEvents="box-none">
-                        <View style={[styles.centerHalo, { backgroundColor: colors.tint + '15' }]}>
-                            <Avatar name={centerPerson.name} uri={centerPerson.avatarUri} size={60} />
-                        </View>
+                        <Avatar name={centerPerson.name} uri={centerPerson.avatarUri} size={60} />
                         <View style={[styles.centerNamePill, { backgroundColor: colors.surface }]}>
                             <ThemedText style={styles.centerNameText} numberOfLines={1}>
                                 {centerPerson.name}
@@ -602,7 +612,7 @@ export function SocialWebCanvas({
                         scaleTo={0.88}
                         overlayColor="transparent"
                     >
-                        <Plus size={15} color={colors.text} />
+                        <Add size={16} color={colors.text} />
                     </ScalePressable>
                     <View style={[styles.zoomDivider, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : colors.border }]} />
                     <ScalePressable
@@ -622,7 +632,7 @@ export function SocialWebCanvas({
                         scaleTo={0.88}
                         overlayColor="transparent"
                     >
-                        <Target size={15} color={colors.text} />
+                        <AimingTwo size={16} color={colors.text} />
                     </ScalePressable>
                 </View>
             )}
@@ -895,12 +905,6 @@ const styles = StyleSheet.create({
         width: 80,
         alignItems: 'center',
         zIndex: 15,
-    },
-    centerHalo: {
-        padding: 4,
-        borderRadius: 999,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     centerNamePill: {
         marginTop: 4,

@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, Modal, Pressable } from 'react-native';
+import { View, StyleSheet, Modal, Pressable } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { DesignSystem } from '../../constants/DesignSystem';
-import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
+import { Typography } from '../../constants/Typography';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { CheckCircle, XCircle, Info, WarningCircle } from '@/components/ui/Icon';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,46 +20,44 @@ interface AlertModalProps {
 }
 
 export function AlertModal({ visible, title, description, type = 'info', onClose, buttonLabel = 'Done' }: AlertModalProps) {
-    const { colors, hapticsEnabled } = useAppTheme();
+    const { colors } = useAppTheme();
     const insets = useSafeAreaInsets();
 
     if (!visible) return null;
 
     const Icon = {
-        success: <CheckCircle size={48} color={colors.tint} weight="fill" />,
-        error: <XCircle size={48} color={colors.error} weight="fill" />,
-        info: <Info size={48} color={colors.secondary} weight="fill" />,
-        warning: <WarningCircle size={48} color={"#f59e0b"} weight="fill" />
+        success: <CheckCircle size={44} color={colors.tint} weight="fill" />,
+        error: <XCircle size={44} color={colors.error} weight="fill" />,
+        info: <Info size={44} color={colors.textSecondary} weight="fill" />,
+        warning: <WarningCircle size={44} color={colors.warning} weight="fill" />
     }[type];
 
     return (
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
             <View style={styles.modalOverlay}>
                 <Animated.View
-                    entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))}
+                    entering={FadeIn.duration(250)}
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                 />
                 <Pressable style={styles.modalBackdrop} onPress={onClose}>
                     <Animated.View
                         entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
-                        style={[styles.modalContent, { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 32 }]}
+                        style={[styles.modalContent, { backgroundColor: colors.card, paddingBottom: 100 + insets.bottom + 28 }]}
                         onStartShouldSetResponder={() => true}
                     >
-                        <View style={styles.handle} />
+                        <View style={[styles.handle, { backgroundColor: colors.border }]} />
                         <View style={styles.iconContainer}>
                             {Icon}
                         </View>
                         <ThemedText type="sectionHeader" style={styles.title}>{title}</ThemedText>
-                        <ThemedText style={[styles.description, { color: colors.secondary }]}>{description}</ThemedText>
+                        <ThemedText style={[styles.description, { color: colors.textSecondary }]}>{description}</ThemedText>
 
                         <ScalePressable
                             style={[styles.button, { backgroundColor: colors.tint }]}
                             innerStyle={{ borderRadius: 16 }}
-                            onPress={() => {
-                                onClose();
-                            }}
+                            onPress={onClose}
                         >
-                            <ThemedText style={{ color: colors.tintContrast, fontWeight: '800', textAlign: 'center' }}>{buttonLabel}</ThemedText>
+                            <ThemedText style={[styles.buttonLabel, { color: colors.tintContrast }]}>{buttonLabel}</ThemedText>
                         </ScalePressable>
                     </Animated.View>
                 </Pressable>
@@ -79,38 +77,45 @@ const styles = StyleSheet.create({
     modalContent: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingTop: 14,
         marginBottom: -100,
         ...DesignSystem.shadows.xl,
     },
     handle: {
-        width: 40,
-        height: 5,
-        backgroundColor: 'rgba(128,128,128,0.2)',
-        borderRadius: 2.5,
+        width: 36,
+        height: 4,
+        borderRadius: 2,
         alignSelf: 'center',
-        marginBottom: 20,
+        marginBottom: 18,
     },
     iconContainer: {
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 14,
     },
     title: {
-        marginBottom: 12,
+        marginBottom: 8,
         textAlign: 'center',
     },
     description: {
-        fontSize: 15,
-        lineHeight: 22,
+        fontSize: 14.5,
+        lineHeight: 21,
         textAlign: 'center',
-        marginBottom: 32,
-        paddingHorizontal: 16,
+        marginBottom: 26,
+        paddingHorizontal: 8,
+        fontFamily: Typography.fontFamily.regular,
     },
     button: {
-        paddingVertical: 16,
+        height: 52,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
-    }
+    },
+    buttonLabel: {
+        color: '#fff',
+        fontSize: 15.5,
+        fontFamily: Typography.fontFamily.semibold,
+        textAlign: 'center',
+    },
 });

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, Platform, TextInput, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn, SlideInDown, Easing } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
 import { ThemedText } from '../ui/ThemedText';
 import { ScalePressable } from '../ui/ScalePressable';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -25,10 +24,12 @@ const PLATFORMS = [
     { id: 'Website', icon: Globe, placeholder: 'https://example.com' },
 ];
 
+const EASE_ENTER = Easing.bezier(0.05, 0.7, 0.1, 1.0);
+
 export function AddContactModal({ visible, onClose, onSave, personId }: any) {
-    const { colors, theme, hapticsEnabled } = useAppTheme();
+    const { colors, hapticsEnabled } = useAppTheme();
     const insets = useSafeAreaInsets();
-    
+
     const [selectedPlatform, setSelectedPlatform] = useState(PLATFORMS[0]);
     const [value, setValue] = useState('');
 
@@ -47,43 +48,44 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
 
     return (
         <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior="padding"
                 style={styles.modalOverlay}
             >
-                <Animated.View entering={FadeIn.duration(250).easing(Easing.bezier(0.05, 0.7, 0.1, 1.0))} style={StyleSheet.absoluteFill}>
-                    <BlurView intensity={theme === 'dark' ? 40 : 20} tint={theme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)' }]} />
+                <Animated.View entering={FadeIn.duration(220).easing(EASE_ENTER)} style={StyleSheet.absoluteFill}>
+                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
                 </Animated.View>
-                
+
                 <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
 
                 <Animated.View
-                    entering={SlideInDown.duration(320).springify().damping(24).stiffness(240).mass(0.9)}
+                    entering={SlideInDown.duration(380).easing(EASE_ENTER)}
                     style={[
                         styles.bottomSheet,
-                        { 
-                            backgroundColor: colors.background, 
+                        {
+                            backgroundColor: colors.background,
                             paddingBottom: 100 + insets.bottom + 24,
                             marginBottom: -100
                         }
                     ]}
                 >
-                    <View style={styles.sheetHeader}>
-                        <View style={[styles.handleIndicator, { backgroundColor: colors.border }]} />
-                        <View style={styles.headerTitleRow}>
-                            <ThemedText style={{ fontSize: 18, color: colors.text, fontFamily: Typography.fontFamily.serif }}>Add Contact Info</ThemedText>
-                            <ScalePressable 
-                                onPress={onClose} 
-                                style={[styles.closeButton, { backgroundColor: colors.surface }]}
-                                innerStyle={{ borderRadius: 16 }}
-                            >
-                                <X size={20} color={colors.text} />
-                            </ScalePressable>
-                        </View>
+                    <View style={[styles.handleIndicator, { backgroundColor: colors.border }]} />
+                    <View style={styles.headerTitleRow}>
+                        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Add Contact Info</ThemedText>
+                        <ScalePressable
+                            onPress={onClose}
+                            style={styles.closeButton}
+                            innerStyle={{ borderRadius: 17 }}
+                            scaleTo={0.88}
+                            overlayColor="transparent"
+                            accessibilityRole="button"
+                            accessibilityLabel="Close"
+                        >
+                            <X size={20} color={colors.text} />
+                        </ScalePressable>
                     </View>
 
-                    <ThemedText style={[styles.sectionLabel, { color: colors.secondary }]}>PLATFORM</ThemedText>
+                    <ThemedText style={[styles.sectionLabel, { color: colors.textSecondary }]}>Platform</ThemedText>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.platformsScroll}>
                         {PLATFORMS.map(platform => {
                             const isSelected = selectedPlatform.id === platform.id;
@@ -93,21 +95,27 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                                     key={platform.id}
                                     style={[
                                         styles.platformButton,
-                                        { 
-                                            backgroundColor: isSelected ? colors.tint : colors.surface,
-                                            borderColor: isSelected && theme === 'light' ? colors.tint : 'transparent',
-                                            borderWidth: theme === 'light' ? 1.5 : 0
-                                        }
+                                        { backgroundColor: isSelected ? colors.tint : colors.surface }
                                     ]}
-                                    innerStyle={{ borderRadius: 12 }}
-                                    overlayColor={isSelected ? 'rgba(0,0,0,0.15)' : undefined}
+                                    innerStyle={{ borderRadius: 21 }}
                                     onPress={() => {
                                         if (hapticsEnabled && Platform.OS !== 'web') Haptics.selectionAsync();
                                         setSelectedPlatform(platform);
                                     }}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={platform.id}
                                 >
-                                    <Icon size={20} color={isSelected ? '#FFF' : colors.text} weight={isSelected ? "fill" : "regular"} />
-                                    <ThemedText style={{ color: isSelected ? '#FFF' : colors.text, marginLeft: 8, fontWeight: isSelected ? '700' : '500' }}>
+                                    <Icon
+                                        size={18}
+                                        color={isSelected ? colors.tintContrast : colors.textSecondary}
+                                        weight="fill"
+                                    />
+                                    <ThemedText
+                                        style={[
+                                            styles.platformLabel,
+                                            { color: isSelected ? colors.tintContrast : colors.textSecondary },
+                                        ]}
+                                    >
                                         {platform.id}
                                     </ThemedText>
                                 </ScalePressable>
@@ -115,7 +123,7 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                         })}
                     </ScrollView>
 
-                    <ThemedText style={[styles.sectionLabel, { color: colors.secondary, marginTop: 24 }]}>DETAILS</ThemedText>
+                    <ThemedText style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 20 }]}>Details</ThemedText>
                     <Input
                         value={value}
                         onChangeText={setValue}
@@ -123,12 +131,12 @@ export function AddContactModal({ visible, onClose, onSave, personId }: any) {
                         autoCapitalize="none"
                         autoCorrect={false}
                         keyboardType={['Phone', 'WhatsApp'].includes(selectedPlatform.id) ? 'phone-pad' : selectedPlatform.id === 'Email' ? 'email-address' : 'default'}
-                        style={{ marginBottom: 24 }}
+                        containerStyle={{ marginBottom: 20 }}
                     />
 
-                    <Button 
-                        title="Save Contact" 
-                        onPress={handleSave} 
+                    <Button
+                        title="Save Contact"
+                        onPress={handleSave}
                         disabled={value.trim() === ''}
                     />
                 </Animated.View>
@@ -143,53 +151,61 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     bottomSheet: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 20,
+        paddingTop: 14,
         ...DesignSystem.shadows.xl,
     },
-    sheetHeader: {
-        marginBottom: 20,
-    },
     handleIndicator: {
-        width: 40,
+        width: 36,
         height: 4,
         borderRadius: 2,
         alignSelf: 'center',
-        marginBottom: 16,
+        marginBottom: 14,
     },
     headerTitleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 18,
     },
     headerTitle: {
         fontSize: 20,
-        fontWeight: '700',
+        lineHeight: 26,
+        letterSpacing: -0.3,
+        fontFamily: Typography.fontFamily.serif,
     },
     closeButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         justifyContent: 'center',
         alignItems: 'center',
     },
     sectionLabel: {
-        fontSize: 12,
-        fontWeight: '800',
-        marginBottom: 12,
-        letterSpacing: 0.5,
+        fontSize: 12.5,
+        lineHeight: 17,
+        fontFamily: Typography.fontFamily.semibold,
+        marginBottom: 10,
+        letterSpacing: 0.2,
     },
     platformsScroll: {
         flexDirection: 'row',
-        gap: 12,
-        paddingRight: 24,
+        gap: 8,
+        paddingRight: 20,
     },
     platformButton: {
+        height: 42,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: 12,
-    }
+        gap: 7,
+        paddingHorizontal: 14,
+        borderRadius: 21,
+    },
+    platformLabel: {
+        fontSize: 13.5,
+        fontFamily: Typography.fontFamily.semibold,
+        letterSpacing: -0.1,
+    },
 });
