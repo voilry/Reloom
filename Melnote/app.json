@@ -13,14 +13,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.voileet.melnote"
+      "bundleIdentifier": "com.voilry.melnote"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F8F3EB"
       },
-      "package": "com.voileet.melnote"
+      "package": "com.voilry.melnote"
     },
     "androidNavigationBar": {
       "visible": "sticky-immersive"
