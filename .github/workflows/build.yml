@@ -41,11 +41,11 @@ jobs:
           fi
 
       - name: Install dependencies
-        working-directory: ./Reloom
+        working-directory: ./Melnote
         run: npm ci
 
       - name: Build APK locally
-        working-directory: ./Reloom
+        working-directory: ./Melnote
         env:
           EAS_LOCAL_BUILD_SKIP_CLEANUP: 1
           EXPO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
