@@ -1,12 +1,12 @@
 <div align="center">
- <img src="asset/reloom-icon.png" alt="Reloom Logo" width="120" />
- <h1>Reloom</h1>
+ <img src="asset/melnote-icon.png" alt="Melnote Logo" width="120" />
+ <h1>Melnote</h1>
  <p>People notes, journal and contacts. A private social registry built for networking and remembering.</p>
 </div>
 
 <br />
 
-Reloom is more than just a contact list. It's a personal space to remember the little things about people, keep track of different contacts, and write down your thoughts. If you've ever forgotten something important about someone, this is for you.
+Melnote is more than just a contact list. It's a personal space to remember the little things about people, keep track of different contacts, and write down your thoughts. If you've ever forgotten something important about someone, this is for you.
 
 The idea is simple: log info quickly when you're on the go, and find it again later without digging around. Everything stays on your device in a secure local vault, so your data stays private and your network stays organized.
 
@@ -59,10 +59,10 @@ The idea is simple: log info quickly when you're on the go, and find it again la
 
 ## Getting Started
 
-To run Reloom locally for development:
+To run Melnote locally for development:
 
 ```bash
-cd Reloom
+cd Melnote
 npm install
 npx expo start
 ```

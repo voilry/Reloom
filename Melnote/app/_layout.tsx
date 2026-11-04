@@ -1,0 +1,254 @@
+import { DarkTheme, DefaultTheme, ThemeProvider, Theme } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useState, useMemo } from 'react';
+import { useColorScheme, View, Platform, Text, TextInput, AppState, StyleSheet } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
+
+// Prevent system font scaling from overriding the app's typography scale
+if ((Text as any).defaultProps == null) {
+  (Text as any).defaultProps = {};
+}
+(Text as any).defaultProps.allowFontScaling = false;
+(Text as any).defaultProps.maxFontSizeMultiplier = 1;
+
+if ((TextInput as any).defaultProps == null) {
+  (TextInput as any).defaultProps = {};
+}
+(TextInput as any).defaultProps.allowFontScaling = false;
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1;
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import { db } from '../db/index';
+import migrations from '../drizzle/migrations';
+import { Colors } from '../constants/Colors';
+import { SettingsProvider, useSettings } from '../store/SettingsContext';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { AppLock } from '../components/AppLock';
+import { Toast } from '../components/ui/Toast';
+import { OnboardingScreen } from '../components/onboarding/OnboardingScreen';
+import { 
+  Figtree_400Regular,
+  Figtree_400Regular_Italic,
+  Figtree_500Medium, 
+  Figtree_600SemiBold, 
+  Figtree_700Bold,
+  Figtree_700Bold_Italic
+} from '@expo-google-fonts/figtree';
+import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
+import { Fraunces_700Bold, Fraunces_900Black } from '@expo-google-fonts/fraunces';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
+function RootLayoutContent() {
+  const { settings, isLoading: settingsLoading, refreshKey, hasCompletedOnboarding } = useSettings();
+  const { colors: appColors, isDark } = useAppTheme();
+  
+  // Track if we are fully ready to show the app
+  const [isReady, setIsReady] = useState(false);
+
+  const [loaded, fontError] = useFonts({
+    'Figtree-Regular': Figtree_400Regular,
+    'Figtree-Italic': Figtree_400Regular_Italic,
+    'Figtree-Medium': Figtree_500Medium,
+    'Figtree-SemiBold': Figtree_600SemiBold,
+    'Figtree-Bold': Figtree_700Bold,
+    'Figtree-BoldItalic': Figtree_700Bold_Italic,
+    'Display-Bold': BricolageGrotesque_700Bold,
+    'Display-ExtraBold': BricolageGrotesque_800ExtraBold,
+    'Serif-Bold': Fraunces_700Bold,
+    'Serif-Black': Fraunces_900Black,
+    'MingCute': require('../assets/fonts/MingCute.ttf'),
+  });
+
+  const { success: migrationSuccess, error: migrationError } = useMigrations(db, migrations);
+
+  const isIgnorableMigrationError = useMemo(() => {
+    if (!migrationError) return false;
+    const msg = migrationError.message || String(migrationError);
+    return msg.includes('location_home') || 
+           msg.includes('duplicate column') || 
+           msg.includes('already exists') || 
+           msg.includes('nudge_type') || 
+           msg.includes('custom_nudges_count') ||
+           msg.includes('icon') ||
+           msg.includes('color');
+  }, [migrationError]);
+
+  const hasMigrationFinished = migrationSuccess || isIgnorableMigrationError;
+
+  useEffect(() => {
+    if (fontError) {
+      console.error("Font loading error:", fontError);
+    }
+  }, [fontError]);
+
+  useEffect(() => {
+    if (migrationError && !isIgnorableMigrationError) {
+      console.error("Migration error:", migrationError);
+    }
+  }, [migrationError, isIgnorableMigrationError]);
+
+  useEffect(() => {
+    if (migrationSuccess) {
+      // Reverted ALTER TABLE migrations
+    }
+  }, [migrationSuccess]);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const hideNavBar = async () => {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden');
+          await NavigationBar.setBehaviorAsync('overlay-swipe');
+        } catch (e) {
+          // Ignore platform or permission errors
+        }
+      };
+      hideNavBar();
+      const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'active') {
+          hideNavBar();
+        }
+      });
+      return () => subscription.remove();
+    }
+  }, []);
+
+  useEffect(() => {
+    async function prepare() {
+      // Wait for everything: Fonts, Migrations, and Settings
+      if ((loaded || fontError) && (hasMigrationFinished || (migrationError && !isIgnorableMigrationError)) && !settingsLoading) {
+        // A small delay (50ms) ensures the view has actually painted the internal theme color
+        setTimeout(async () => {
+          await SplashScreen.hideAsync();
+          setIsReady(true);
+        }, 50);
+      }
+    }
+    prepare();
+  }, [loaded, fontError, hasMigrationFinished, migrationError, isIgnorableMigrationError, settingsLoading]);
+
+  if (fontError || (migrationError && !isIgnorableMigrationError)) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: appColors.background }}>
+        <Text style={{ fontSize: 18, color: 'red', marginHorizontal: 20, textAlign: 'center' }}>
+          {fontError ? 'Failed to load fonts.' : `Migration error: ${migrationError?.message}`}
+        </Text>
+      </View>
+    );
+  }
+
+  // While loading OR before the hideAsync is finished, show a View with the static splash color
+  if (!isReady) {
+    return <View style={{ flex: 1, backgroundColor: '#c9803a' }} />;
+  }
+
+  // Custom Navigation Themes to match our App Theme
+  const MyLightTheme: Theme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: appColors.tint,
+      background: appColors.background,
+      card: appColors.card,
+      text: appColors.text,
+      border: appColors.border,
+      notification: appColors.error,
+    },
+  };
+
+  const MyDarkTheme: Theme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: appColors.tint,
+      background: appColors.background,
+      card: appColors.card,
+      text: appColors.text,
+      border: appColors.border,
+      notification: appColors.error,
+    },
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: appColors.background }} key={refreshKey}>
+      <ThemeProvider value={isDark ? MyDarkTheme : MyLightTheme}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            headerStyle: {
+              backgroundColor: appColors.background,
+            },
+            headerTintColor: appColors.text,
+            headerShadowVisible: false,
+            contentStyle: {
+              backgroundColor: appColors.background,
+            },
+            animation: 'fade_from_bottom',
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]/locations" options={{ headerShown: false }} />
+          <Stack.Screen name="person/[id]/relations" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings', headerShown: false }} />
+          <Stack.Screen name="settings/appearance" options={{ title: 'Appearance', headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen
+            name="editor"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+              sheetGrabberVisible: true
+            }}
+          />
+        </Stack>
+      </ThemeProvider>
+      {/* First-run tour. Only mounts once hydration has resolved and the persisted
+          completion marker is explicitly false, so a default or stale value can
+          never flash the tour during startup. */}
+      {!settingsLoading && hasCompletedOnboarding === false && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: appColors.background, zIndex: 100 },
+          ]}
+        >
+          <OnboardingScreen />
+        </View>
+      )}
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <KeyboardProvider>
+        <SettingsProvider>
+          <RootLayoutContent />
+          <AppLock />
+          <Toast />
+        </SettingsProvider>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
+  );
+}

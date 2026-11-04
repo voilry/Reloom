@@ -1,0 +1,101 @@
+import { TextInput, StyleSheet, TextInputProps, View } from 'react-native';
+import { ThemedText } from './ThemedText';
+import { useAppTheme } from '../../hooks/useAppTheme';
+
+interface InputProps extends TextInputProps {
+    label?: string;
+    error?: string;
+    containerStyle?: any;
+    showCounter?: boolean;
+}
+
+export function Input({ label, error, style, containerStyle, showCounter = true, ...rest }: InputProps) {
+    const { colors, theme } = useAppTheme();
+
+    return (
+        <View style={[styles.container, containerStyle]}>
+            {label && (
+                <ThemedText type="defaultSemiBold" style={[styles.label, { color: colors.text, opacity: 0.5 }]}>
+                    {label}
+                </ThemedText>
+            )}
+            <View style={styles.inputWrapper}>
+                <TextInput
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1}
+                    style={[
+                        styles.input,
+                        {
+                            backgroundColor: colors.surface,
+                            color: colors.text,
+                            borderColor: error ? colors.error : 'transparent',
+                            borderWidth: 2,
+                            textAlignVertical: rest.multiline ? 'top' : 'center',
+                            paddingTop: rest.multiline ? 16 : 0,
+                            paddingBottom: rest.multiline ? (rest.maxLength && showCounter ? 28 : 16) : 0,
+                            paddingRight: rest.maxLength && showCounter && !rest.multiline ? 52 : 16,
+                        },
+                        style,
+                    ]}
+                    placeholderTextColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                    {...rest}
+                />
+                {showCounter && rest.maxLength && (
+                    <ThemedText
+                        type="tiny"
+                        style={[
+                            styles.counter,
+                            { color: colors.secondary },
+                            rest.multiline ? styles.counterMultiline : styles.counterSingle,
+                        ]}
+                    >
+                        {String(rest.value || '').length}/{rest.maxLength}
+                    </ThemedText>
+                )}
+            </View>
+            {error && (
+                <ThemedText type="small" style={{ color: colors.error, marginTop: 4 }}>{error}</ThemedText>
+            )}
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        width: '100%',
+        marginBottom: 16,
+    },
+    label: {
+        fontSize: 16,
+        marginBottom: 8,
+        letterSpacing: 0.1,
+        lineHeight: 20,
+    },
+    inputWrapper: {
+        position: 'relative',
+    },
+    input: {
+        minHeight: 56,
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        paddingBottom: 0,
+        fontSize: 14,
+        fontWeight: '600',
+        textAlignVertical: 'center',
+    },
+    counter: {
+        position: 'absolute',
+        opacity: 0.45,
+        fontSize: 11,
+    },
+    counterSingle: {
+        right: 14,
+        top: '50%',
+        transform: [{ translateY: -7 }],
+    },
+    counterMultiline: {
+        right: 14,
+        bottom: 10,
+    },
+});
