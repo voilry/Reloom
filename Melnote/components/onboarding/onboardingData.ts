@@ -61,4 +61,5 @@ export const SAMPLE_CONTACT = {
     value: '@maya.chen',
 };
 
-export const SAMPLE_NOTE = 'Mentioned a ceramic mug from the market on 5th.';
+export const SAMPLE_NOTE =
+    'She loves drinking coffee at 7 in the morning.';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     View, StyleSheet, ScrollView, Modal,
-    TextInput, Platform, Pressable,
+    Platform, Pressable,
     Animated as RNAnimated, DeviceEventEmitter
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -19,7 +19,8 @@ import {
     ArrowsLeftRight, X, UserRemove, Graph, List,
     Filter, CaretDown
 } from '@/components/ui/Icon';
-import { SocialWebCanvas, getRelationColor } from '../../../components/person/SocialWebCanvas';
+import { SocialWebCanvas } from '../../../components/person/SocialWebCanvas';
+import { getRelationColor } from '../../../utils/relationColor';
 import { useAppTheme } from '../../../hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown, Layout, Easing } from 'react-native-reanimated';

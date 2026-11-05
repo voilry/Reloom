@@ -7,7 +7,6 @@ import Animated, {
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withDelay,
     withSpring,
     withTiming,
 } from 'react-native-reanimated';
@@ -15,8 +14,6 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, {
     Circle,
     Defs,
-    Line,
-    Path,
     RadialGradient,
     Stop,
 } from 'react-native-svg';
@@ -33,7 +30,6 @@ import {
     Users,
 } from '../ui/Icon';
 import { ScalePressable } from '../ui/ScalePressable';
-import { getRelationColor } from '../person/SocialWebCanvas';
 import { getGroupIcon } from '../../constants/GroupIcons';
 import { OnboardingPreview } from './OnboardingPreview';
 import { OnboardingGroupModal } from './OnboardingGroupModal';
@@ -53,12 +49,8 @@ interface OnboardingStageProps {
 
 const STAGE_HEIGHT = 340;
 const SWIPE_WIDTH = 124;
-const SPRING_BLOOM = { dampingRatio: 0.8, duration: 320 };
-const SPRING_POP = { dampingRatio: 1, duration: 220 };
 
 const SAMPLE_PERSON = SAMPLE_PEOPLE[0];
-const SAMPLE_NODES = SAMPLE_PEOPLE.slice(1);
-const NODE_BASE_ANGLE = 0.35;
 
 export function OnboardingStage({ step, cardStyle }: OnboardingStageProps) {
     return (
@@ -69,7 +61,7 @@ export function OnboardingStage({ step, cardStyle }: OnboardingStageProps) {
                 exiting={FadeOut.duration(120)}
                 style={styles.scene}
             >
-                {step === 0 && <ConstellationScene />}
+                {step === 0 && <WelcomeScene />}
                 {step === 1 && <QuickNoteScene />}
                 {step === 2 && <OnboardingPreview cardStyle={cardStyle} />}
                 {step === 3 && <GestureScene />}
@@ -78,307 +70,89 @@ export function OnboardingStage({ step, cardStyle }: OnboardingStageProps) {
     );
 }
 
-interface BloomProps {
-    play: boolean;
-    delay?: number;
-    fromScale?: number;
-    fromX?: number;
-    fromY?: number;
-    spring?: { dampingRatio: number; duration: number };
-    style: any;
-    children: React.ReactNode;
-}
-
-function Bloom({
-    play,
-    delay = 0,
-    fromScale = 0.94,
-    fromX = 0,
-    fromY = 0,
-    spring = SPRING_BLOOM,
-    style,
-    children,
-}: BloomProps) {
+function WelcomeScene() {
+    const { colors } = useAppTheme();
     const progress = useSharedValue(0);
-    const opacity = useSharedValue(0);
 
     useEffect(() => {
-        if (!play) return;
-        progress.value = withDelay(delay, withSpring(1, spring));
-        opacity.value = withDelay(delay, withTiming(1, { duration: 140 }));
-    }, [play, delay, spring]);
+        progress.value = withTiming(1, {
+            duration: 720,
+            easing: Easing.out(Easing.cubic),
+        });
+    }, [progress]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: opacity.value,
-        transform: [
-            { translateX: fromX * (1 - progress.value) },
-            { translateY: fromY * (1 - progress.value) },
-            { scale: fromScale + (1 - fromScale) * progress.value },
-        ],
+    const markStyle = useAnimatedStyle(() => ({
+        opacity: progress.value,
+        transform: [{ scale: 0.96 + progress.value * 0.04 }],
     }));
 
     return (
-        <Animated.View pointerEvents="none" style={[style, animatedStyle]}>
-            {children}
-        </Animated.View>
-    );
-}
-
-function getCurvedPath(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    cx: number,
-    cy: number
-) {
-    const midX = (x1 + x2) / 2;
-    const midY = (y1 + y2) / 2;
-    const dx = midX - cx;
-    const dy = midY - cy;
-    const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-    const curveAmount = 24;
-    const qx = midX + (dx / distance) * curveAmount;
-    const qy = midY + (dy / distance) * curveAmount;
-    return `M ${x1} ${y1} Q ${qx} ${qy} ${x2} ${y2}`;
-}
-
-function ConstellationScene() {
-    const { colors, theme } = useAppTheme();
-    const [width, setWidth] = useState(0);
-    const [play, setPlay] = useState(false);
-    const lineOpacity = useSharedValue(0);
-
-    const cx = width / 2;
-    const cy = 172;
-    const orbit = 92;
-
-    useEffect(() => {
-        if (width > 0) {
-            setPlay(true);
-            lineOpacity.value = withDelay(
-                820,
-                withSpring(1, { dampingRatio: 1, duration: 200 })
-            );
-        }
-    }, [width, lineOpacity]);
-
-    const lineStyle = useAnimatedStyle(() => ({ opacity: lineOpacity.value }));
-
-    const nodes = SAMPLE_NODES.map((person, index) => {
-        const angle =
-            NODE_BASE_ANGLE + ((2 * Math.PI) / SAMPLE_NODES.length) * index;
-        const x = cx + orbit * Math.cos(angle);
-        const y = cy + orbit * Math.sin(angle);
-        const dx = x - cx;
-        const dy = y - cy;
-        const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-
-        return {
-            person,
-            x,
-            y,
-            color: getRelationColor(person.relation, colors.tint),
-            fromX: -(dx / distance) * 22,
-            fromY: -(dy / distance) * 22,
-            delay: 200 + index * 50,
-        };
-    });
-
-    const crossLink =
-        nodes.length >= 3
-            ? getCurvedPath(
-                  nodes[1].x,
-                  nodes[1].y,
-                  nodes[2].x,
-                  nodes[2].y,
-                  cx,
-                  cy
-              )
-            : null;
-
-    return (
-        <View
-            style={styles.fill}
-            onLayout={(event) => {
-                const nextWidth = event.nativeEvent.layout.width;
-                if (nextWidth !== width) setWidth(nextWidth);
-            }}
-        >
-            {width > 0 && (
-                <>
-                    <Animated.View
-                        pointerEvents="none"
-                        style={[StyleSheet.absoluteFill, lineStyle]}
+        <Animated.View pointerEvents="none" style={[styles.fill, markStyle]}>
+            <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 340 340"
+                preserveAspectRatio="xMidYMid meet"
+            >
+                <Defs>
+                    <RadialGradient
+                        id="welcomeGlow"
+                        cx="50%"
+                        cy="50%"
+                        rx="50%"
+                        ry="50%"
                     >
-                        <Svg width={width} height={STAGE_HEIGHT}>
-                            <Defs>
-                                <RadialGradient
-                                    id="onboardingPersonGlow"
-                                    cx="50%"
-                                    cy="50%"
-                                    rx="50%"
-                                    ry="50%"
-                                    fx="50%"
-                                    fy="50%"
-                                >
-                                    <Stop
-                                        offset="0%"
-                                        stopColor={colors.tint}
-                                        stopOpacity="0.4"
-                                    />
-                                    <Stop
-                                        offset="40%"
-                                        stopColor={colors.tint}
-                                        stopOpacity="0.16"
-                                    />
-                                    <Stop
-                                        offset="75%"
-                                        stopColor={colors.tint}
-                                        stopOpacity="0.04"
-                                    />
-                                    <Stop
-                                        offset="100%"
-                                        stopColor={colors.tint}
-                                        stopOpacity="0"
-                                    />
-                                </RadialGradient>
-                            </Defs>
-
-                            <Circle
-                                cx={cx}
-                                cy={cy}
-                                r={80}
-                                fill="url(#onboardingPersonGlow)"
-                            />
-
-                            {crossLink && (
-                                <Path
-                                    d={crossLink}
-                                    fill="none"
-                                    stroke={
-                                        theme === 'dark'
-                                            ? 'rgba(255,255,255,0.12)'
-                                            : 'rgba(0,0,0,0.08)'
-                                    }
-                                    strokeWidth={1}
-                                    strokeDasharray="3 3"
-                                />
-                            )}
-
-                            {nodes.map((node) => (
-                                <Line
-                                    key={`radial-${node.person.id}`}
-                                    x1={cx}
-                                    y1={cy}
-                                    x2={node.x}
-                                    y2={node.y}
-                                    stroke={
-                                        theme === 'dark'
-                                            ? node.color + '40'
-                                            : node.color + '30'
-                                    }
-                                    strokeWidth={1.5}
-                                />
-                            ))}
-                        </Svg>
-                    </Animated.View>
-
-                    <Bloom
-                        play={play}
-                        delay={0}
-                        fromScale={0.3}
-                        spring={SPRING_POP}
-                        style={{
-                            position: 'absolute',
-                            left: cx - 40,
-                            top: cy - 40,
-                            width: 80,
-                            alignItems: 'center',
-                            transformOrigin: '50% 30px',
-                        }}
-                    >
-                        <Avatar
-                            name={SAMPLE_PERSON.name}
-                            uri={SAMPLE_PERSON.avatarUri}
-                            size={60}
+                        <Stop
+                            offset="0%"
+                            stopColor={colors.tint}
+                            stopOpacity="0.24"
                         />
-                        <View
-                            style={[
-                                styles.centerNamePill,
-                                { backgroundColor: colors.surface },
-                            ]}
-                        >
-                            <Text
-                                numberOfLines={1}
-                                allowFontScaling={false}
-                                style={[
-                                    styles.centerNameText,
-                                    { color: colors.text },
-                                ]}
-                            >
-                                {SAMPLE_PERSON.name}
-                            </Text>
-                        </View>
-                    </Bloom>
+                        <Stop
+                            offset="45%"
+                            stopColor={colors.tint}
+                            stopOpacity="0.09"
+                        />
+                        <Stop
+                            offset="100%"
+                            stopColor={colors.tint}
+                            stopOpacity="0"
+                        />
+                    </RadialGradient>
+                </Defs>
 
-                    {nodes.map(
-                        ({ person, x, y, fromX, fromY, delay, color }) => (
-                            <Bloom
-                                key={person.id}
-                                play={play}
-                                delay={delay}
-                                fromX={fromX}
-                                fromY={fromY}
-                                style={{
-                                    position: 'absolute',
-                                    left: x - 40,
-                                    top: y - 30,
-                                    width: 80,
-                                    alignItems: 'center',
-                                    transformOrigin: '50% 25px',
-                                }}
-                            >
-                                <View style={styles.nodeAvatarRing}>
-                                    <Avatar
-                                        name={person.name}
-                                        uri={person.avatarUri}
-                                        size={44}
-                                    />
-                                </View>
-                                <View
-                                    style={[
-                                        styles.nodeMetaBlock,
-                                        { backgroundColor: colors.surface },
-                                    ]}
-                                >
-                                    <Text
-                                        numberOfLines={1}
-                                        allowFontScaling={false}
-                                        style={[
-                                            styles.nodeNameText,
-                                            { color: colors.text },
-                                        ]}
-                                    >
-                                        {person.name}
-                                    </Text>
-                                    <Text
-                                        numberOfLines={1}
-                                        allowFontScaling={false}
-                                        style={[
-                                            styles.nodeRoleText,
-                                            { color },
-                                        ]}
-                                    >
-                                        {person.relation}
-                                    </Text>
-                                </View>
-                            </Bloom>
-                        )
-                    )}
-                </>
-            )}
-        </View>
+                <Circle cx={170} cy={170} r={150} fill="url(#welcomeGlow)" />
+
+                <Circle
+                    cx={170}
+                    cy={170}
+                    r={132}
+                    stroke={colors.tint}
+                    strokeOpacity={0.1}
+                    strokeWidth={1}
+                    fill="none"
+                />
+                <Circle
+                    cx={170}
+                    cy={170}
+                    r={104}
+                    stroke={colors.tint}
+                    strokeOpacity={0.22}
+                    strokeWidth={1}
+                    fill="none"
+                />
+
+                <Circle cx={170} cy={170} r={44} fill={colors.tint} />
+
+                <Circle
+                    cx={252}
+                    cy={106}
+                    r={11}
+                    fill={colors.tint}
+                    fillOpacity={0.12}
+                />
+                <Circle cx={252} cy={106} r={4.5} fill={colors.tint} />
+            </Svg>
+        </Animated.View>
     );
 }
 
@@ -410,12 +184,6 @@ function QuickNoteScene() {
 
     return (
         <View style={styles.noteScreen}>
-            <View style={styles.noteTopBar}>
-                <View style={styles.noteClose}>
-                    <Icon name="close_line" size={22} color={colors.text} />
-                </View>
-            </View>
-
             <View style={styles.notePersonRow}>
                 <Avatar
                     name={SAMPLE_PERSON.name}
@@ -805,50 +573,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
 
-    centerNamePill: {
-        marginTop: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 10,
-        maxWidth: 90,
-    },
-    centerNameText: {
-        fontSize: 11,
-        fontFamily: Typography.fontFamily.bold,
-        lineHeight: 14,
-        textAlign: 'center',
-    },
-    nodeAvatarRing: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2.5,
-        borderColor: 'transparent',
-    },
-    nodeMetaBlock: {
-        marginTop: 3,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
-        alignItems: 'center',
-        maxWidth: 80,
-    },
-    nodeNameText: {
-        fontSize: 10,
-        fontFamily: Typography.fontFamily.bold,
-        lineHeight: 13,
-        textAlign: 'center',
-    },
-    nodeRoleText: {
-        fontSize: 8,
-        fontFamily: Typography.fontFamily.medium,
-        lineHeight: 10,
-        textTransform: 'capitalize',
-        opacity: 0.85,
-    },
-
     noteScreen: {
         width: '100%',
         maxWidth: 342,
@@ -856,23 +580,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         overflow: 'hidden',
     },
-    noteTopBar: {
-        height: 50,
-        paddingHorizontal: 16,
-        justifyContent: 'center',
-    },
-    noteClose: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     notePersonRow: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 24,
-        paddingTop: 4,
+        paddingTop: 30,
         paddingBottom: 20,
     },
     notePersonInfo: {

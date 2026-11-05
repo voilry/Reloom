@@ -7,7 +7,6 @@ import Animated, {
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
     withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,9 +16,10 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { ThemedText } from '../ui/ThemedText';
 import { ThemedView } from '../ui/ThemedView';
 import { Button } from '../ui/Button';
-import { Icon } from '../ui/Icon';
+import { Icon, List, Mosaic } from '../ui/Icon';
 import { ScalePressable } from '../ui/ScalePressable';
 import { Typography } from '../../constants/Typography';
+import { DesignSystem } from '../../constants/DesignSystem';
 import { OnboardingStage } from './OnboardingStage';
 
 interface OnboardingScreenProps {
@@ -241,7 +241,7 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
                     style={[
                         styles.footer,
                         {
-                            paddingBottom: insets.bottom + 16,
+                            paddingBottom: insets.bottom + 30,
                             backgroundColor: colors.background,
                         },
                     ]}
@@ -291,23 +291,13 @@ function StepHeading({
 }
 
 function WelcomeCopy() {
-    const { colors } = useAppTheme();
-
     return (
-        <View>
-            <StepHeading
-                title="Welcome to Melnote"
-                lead="Keep track of your people."
-                body="Remember how you met, what they care about, and when to reach out again."
-                large
-            />
-            <Text
-                allowFontScaling={false}
-                style={[styles.summary, { color: colors.textTertiary }]}
-            >
-                People, groups, notes, journals, and reminders in one place.
-            </Text>
-        </View>
+        <StepHeading
+            title="Welcome to Melnote"
+            lead="Keep track of your people."
+            body="People, notes, journals, contacts, and reminders in one place."
+            large
+        />
     );
 }
 
@@ -319,7 +309,7 @@ function QuickNoteCopy() {
             <StepHeading
                 title="Quick Note"
                 lead="Write it down in seconds."
-                body="Add a book, a gift idea, or something to follow up on. It stays on their profile."
+                body="Add a small detail, a gift idea, or something to follow up on. It stays on their profile."
             />
             <View style={styles.hintRow}>
                 <View
@@ -372,112 +362,76 @@ function CardStylePicker({
     value: 'list' | 'gallery';
     onChange: (value: 'list' | 'gallery') => void;
 }) {
-    const { colors, theme } = useAppTheme();
-    const [width, setWidth] = useState(0);
-    const selectedIndex = value === 'gallery' ? 1 : 0;
-    const options: Array<{ label: string; value: 'list' | 'gallery' }> = [
-        { label: 'List View', value: 'list' },
-        { label: 'Gallery Grid', value: 'gallery' },
+    const { colors } = useAppTheme();
+    const [selected, setSelected] = useState<'list' | 'gallery'>(value);
+    const options = [
+        { label: 'List', value: 'list' as const, icon: List },
+        { label: 'Gallery', value: 'gallery' as const, icon: Mosaic },
     ];
 
-    const pillStyle = useAnimatedStyle(() => {
-        if (width === 0) return { opacity: 0 };
-        const itemWidth = (width - 8) / options.length;
-        return {
-            width: itemWidth,
-            transform: [
-                {
-                    translateX: withSpring(selectedIndex * itemWidth, {
-                        damping: 20,
-                        stiffness: 240,
-                        mass: 0.8,
-                    }),
-                },
-            ],
-            opacity: 1,
-        };
-    });
+    useEffect(() => {
+        setSelected(value);
+    }, [value]);
+
+    const handleSelect = (next: 'list' | 'gallery') => {
+        if (next === selected) return;
+        setSelected(next);
+        requestAnimationFrame(() => onChange(next));
+    };
 
     return (
-        <View>
-            <Text
-                allowFontScaling={false}
-                style={[styles.choiceLabel, { color: colors.textTertiary }]}
-            >
-                Card design
-            </Text>
-
-            <View
-                style={[
-                    styles.segmentedContainer,
-                    { backgroundColor: colors.surface },
-                ]}
-                onLayout={(event) =>
-                    setWidth(event.nativeEvent.layout.width)
-                }
-            >
-                <Animated.View
-                    style={[
-                        pillStyle,
-                        styles.segmentedPill,
-                        {
-                            backgroundColor:
-                                theme === 'dark'
-                                    ? colors.tint + '40'
-                                    : colors.tint,
-                        },
-                    ]}
-                />
-
-                {options.map((option, index) => {
-                    const isSelected = index === selectedIndex;
-                    return (
-                        <ScalePressable
-                            key={option.value}
-                            onPress={() => onChange(option.value)}
-                            style={styles.segmentedOption}
-                            innerStyle={{ borderRadius: 7 }}
-                            scaleTo={0.98}
-                            overlayColor="transparent"
-                            accessibilityRole="button"
-                            accessibilityLabel={`Card design: ${option.label}`}
-                        >
+        <View style={styles.choiceRow}>
+            {options.map((option) => {
+                const isSelected = selected === option.value;
+                const OptionIcon = option.icon;
+                return (
+                    <ScalePressable
+                        key={option.value}
+                        onPress={() => handleSelect(option.value)}
+                        style={[
+                            styles.choiceButton,
+                            {
+                                backgroundColor: isSelected
+                                    ? colors.tint + '18'
+                                    : colors.surface,
+                                borderColor: isSelected
+                                    ? colors.tint
+                                    : 'transparent',
+                            },
+                        ]}
+                        innerStyle={{ borderRadius: 12.5 }}
+                        scaleTo={0.94}
+                        springConfig={DesignSystem.animation.springs.press}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Card design: ${option.label}`}
+                    >
+                        <View style={styles.choiceButtonContent}>
+                            <OptionIcon
+                                size={19}
+                                color={
+                                    isSelected
+                                        ? colors.tint
+                                        : colors.secondary
+                                }
+                                weight={isSelected ? 'fill' : 'line'}
+                            />
                             <Text
                                 allowFontScaling={false}
                                 style={[
-                                    styles.segmentedText,
+                                    styles.choiceButtonText,
                                     {
                                         color: isSelected
-                                            ? theme === 'dark'
-                                                ? colors.tint
-                                                : '#fff'
+                                            ? colors.tint
                                             : colors.secondary,
                                     },
                                 ]}
                             >
                                 {option.label}
                             </Text>
-                        </ScalePressable>
-                    );
-                })}
-            </View>
-
-            <Animated.View
-                key={value}
-                entering={FadeIn.duration(160)}
-            >
-                <Text
-                    allowFontScaling={false}
-                    style={[
-                        styles.choiceDescription,
-                        { color: colors.textTertiary },
-                    ]}
-                >
-                    {value === 'list'
-                        ? 'A row for each person.'
-                        : 'A grid of larger cards.'}
-                </Text>
-            </Animated.View>
+                        </View>
+                    </ScalePressable>
+                );
+            })}
         </View>
     );
 }
@@ -487,7 +441,7 @@ function GestureCopy() {
         <StepHeading
             title="Swipe and hold"
             lead="Two gestures to know."
-            body="Swipe left on a contact to edit or delete it. Press and hold a group to edit its name, color, and icon."
+            body="Swipe left on contacts to edit or delete them. Notes and journal entries delete with the same swipe. Press and hold a person or group to manage it."
         />
     );
 }
@@ -568,12 +522,6 @@ const styles = StyleSheet.create({
         lineHeight: 21.5,
         fontFamily: Typography.fontFamily.regular,
     },
-    summary: {
-        marginTop: 12,
-        fontSize: 13,
-        lineHeight: 19,
-        fontFamily: Typography.fontFamily.medium,
-    },
     hintRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -591,42 +539,27 @@ const styles = StyleSheet.create({
         fontSize: 13.5,
         fontFamily: Typography.fontFamily.semibold,
     },
-    choiceLabel: {
-        marginTop: 16,
-        fontSize: 11.5,
-        fontFamily: Typography.fontFamily.semibold,
-    },
-    segmentedContainer: {
+    choiceRow: {
         flexDirection: 'row',
-        borderRadius: 10,
-        padding: 4,
-        marginTop: 6,
-        overflow: 'hidden',
+        gap: 8,
+        marginTop: 16,
     },
-    segmentedPill: {
-        position: 'absolute',
-        top: 4,
-        bottom: 4,
-        left: 4,
-        borderRadius: 7,
-    },
-    segmentedOption: {
+    choiceButton: {
         flex: 1,
-        paddingVertical: 8,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        paddingVertical: 11,
+        paddingHorizontal: 12,
+    },
+    choiceButtonContent: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 7,
+        gap: 7,
     },
-    segmentedText: {
-        fontSize: 13,
-        fontFamily: Typography.fontFamily.bold,
-        textAlign: 'center',
-    },
-    choiceDescription: {
-        marginTop: 6,
-        fontSize: 12,
-        lineHeight: 17,
-        fontFamily: Typography.fontFamily.medium,
+    choiceButtonText: {
+        fontSize: 13.5,
+        fontFamily: Typography.fontFamily.semibold,
     },
     footer: {
         paddingTop: 12,
