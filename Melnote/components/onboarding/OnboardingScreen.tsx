@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
     Easing,
     FadeIn,
@@ -30,6 +30,7 @@ const CTA_LABELS = [
     'Get started',
     'Next',
     'Next',
+    'Next',
     'Start using Melnote',
 ];
 
@@ -47,7 +48,7 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
     const progress = useSharedValue(0);
 
     useEffect(() => {
-        progress.value = withTiming((step + 1) / 4, {
+        progress.value = withTiming((step + 1) / 5, {
             duration: 420,
             easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
         });
@@ -81,13 +82,13 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
     }, [complete, fade]);
 
     const goNext = () => {
-        if (step >= 3) {
+        if (step >= 4) {
             finish();
             return;
         }
         if (advancing.current) return;
         advancing.current = true;
-        setStep((current) => Math.min(3, current + 1));
+        setStep((current) => Math.min(4, current + 1));
         setTimeout(() => {
             advancing.current = false;
         }, 320);
@@ -136,11 +137,6 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
                             accessibilityRole="button"
                             accessibilityLabel="Previous step"
                         >
-                            <Icon
-                                name="left_line"
-                                size={15}
-                                color={colors.textSecondary}
-                            />
                             <Text
                                 allowFontScaling={false}
                                 style={[
@@ -155,7 +151,7 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
                         <View style={styles.navPlaceholder} />
                     )}
 
-                    {step < 3 ? (
+                    {step < 4 ? (
                         <ScalePressable
                             onPress={finish}
                             scaleTo={0.94}
@@ -205,36 +201,43 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
                 <ScrollView
                     ref={scrollRef}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        step === 4 && styles.betaScrollContent,
+                    ]}
                 >
-                    <View style={styles.column}>
-                        <OnboardingStage
-                            step={step}
-                            cardStyle={settings.peopleListStyle}
-                        />
+                    {step === 4 ? (
+                        <BetaStep />
+                    ) : (
+                        <View style={styles.column}>
+                            <OnboardingStage
+                                step={step}
+                                cardStyle={settings.peopleListStyle}
+                            />
 
-                        <Animated.View
-                            key={step}
-                            entering={FadeInDown.duration(300)
-                                .springify()
-                                .damping(24)
-                                .stiffness(220)
-                                .mass(0.8)}
-                            style={styles.copy}
-                        >
-                            {step === 0 && <WelcomeCopy />}
-                            {step === 1 && <QuickNoteCopy />}
-                            {step === 2 && (
-                                <AppearanceCopy
-                                    cardStyle={settings.peopleListStyle}
-                                    onCardStyleChange={(value) =>
-                                        updateSetting('peopleListStyle', value)
-                                    }
-                                />
-                            )}
-                            {step === 3 && <GestureCopy />}
-                        </Animated.View>
-                    </View>
+                            <Animated.View
+                                key={step}
+                                entering={FadeInDown.duration(300)
+                                    .springify()
+                                    .damping(24)
+                                    .stiffness(220)
+                                    .mass(0.8)}
+                                style={styles.copy}
+                            >
+                                {step === 0 && <WelcomeCopy />}
+                                {step === 1 && <QuickNoteCopy />}
+                                {step === 2 && (
+                                    <AppearanceCopy
+                                        cardStyle={settings.peopleListStyle}
+                                        onCardStyleChange={(value) =>
+                                            updateSetting('peopleListStyle', value)
+                                        }
+                                    />
+                                )}
+                                {step === 3 && <GestureCopy />}
+                            </Animated.View>
+                        </View>
+                    )}
                 </ScrollView>
 
                 <View
@@ -446,6 +449,32 @@ function GestureCopy() {
     );
 }
 
+function BetaStep() {
+    return (
+        <Animated.View
+            entering={FadeInDown.duration(300)
+                .springify()
+                .damping(24)
+                .stiffness(220)
+                .mass(0.8)}
+            style={styles.betaColumn}
+        >
+            <StepHeading
+                title="Melnote is in beta"
+                lead="Expect bugs and issues."
+                body="Thanks for trying it early. If something feels off, let me know."
+            />
+
+            <Image
+                source={require('../../assets/Notice-icon.png')}
+                style={styles.betaImage}
+                resizeMode="contain"
+                accessible={false}
+            />
+        </Animated.View>
+    );
+}
+
 const styles = StyleSheet.create({
     root: {
         flex: 1,
@@ -458,13 +487,9 @@ const styles = StyleSheet.create({
         paddingBottom: 8,
     },
     backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingVertical: 4,
-        paddingRight: 8,
     },
     backText: {
-        marginLeft: 4,
         fontSize: 13,
         fontFamily: Typography.fontFamily.semibold,
     },
@@ -498,6 +523,23 @@ const styles = StyleSheet.create({
     },
     copy: {
         marginTop: 16,
+    },
+    betaScrollContent: {
+        flexGrow: 1,
+    },
+    betaColumn: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 520,
+        alignSelf: 'center',
+        justifyContent: 'center',
+        paddingBottom: 12,
+    },
+    betaImage: {
+        width: 220,
+        height: 220,
+        alignSelf: 'center',
+        marginTop: 28,
     },
     title: {
         fontSize: 30,
